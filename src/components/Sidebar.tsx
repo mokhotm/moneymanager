@@ -46,11 +46,10 @@ export default function Sidebar() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
 
   useEffect(() => {
+    if (pathname === "/login") return;
+
     fetch("/api/auth/me")
-      .then((res) => {
-        if (res.ok) return res.json();
-        return { authenticated: false };
-      })
+      .then((res) => res.json())
       .then((data) => {
         if (data && data.authenticated && data.user) {
           setCurrentUser(data.user);
