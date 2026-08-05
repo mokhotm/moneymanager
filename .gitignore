@@ -10,8 +10,9 @@ node_modules/
 .next/
 out/
 
-# Database and log artifacts
+# Database, graphify & log artifacts
 prisma/*.db
+graphify-out/
 *.log
 *.exe
 *.gz
