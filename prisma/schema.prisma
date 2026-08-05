@@ -1,0 +1,516 @@
+// MoneyManagement App — Prisma Schema (v3 with Vector Embeddings)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum AccountType {
+  CURRENT
+  CREDIT_CARD
+  LOAN
+  MUNICIPAL
+  SERVICE_ACCOUNT
+  SAVINGS
+  INVESTMENT
+  RETIREMENT
+  PROPERTY
+}
+
+enum BalanceConfidence {
+  CONFIRMED
+  ESTIMATED
+  UNKNOWN
+}
+
+enum PaymentMode {
+  MINIMUM_ONLY
+  FIXED_INSTALMENT
+  FIXED_TERM_LOAN
+}
+
+enum UrgencyFlag {
+  NONE
+  SERVICE_INTERRUPTION_RISK
+  LEGAL_ACTION_RISK
+  CREDIT_BUREAU_RISK
+}
+
+enum DebtStatus {
+  ACTIVE
+  PAID_OFF
+  SETTLED_BY_INSURANCE
+  WRITTEN_OFF
+}
+
+enum DebtCategory {
+  SHORT_TERM
+  LONG_TERM
+}
+
+enum SnowballStrategy {
+  SNOWBALL
+  AVALANCHE
+}
+
+enum IncomeConfidence {
+  CONFIRMED
+  ESTIMATED
+}
+
+enum RecommendedUse {
+  DEBT_PAYDOWN
+  GOAL_CONTRIBUTION
+  EMERGENCY_FUND
+  UNALLOCATED
+}
+
+enum BudgetCategory {
+  FIXED_HOUSEHOLD_OBLIGATIONS
+  DEBT_ACCELERATION_PLAN
+  GOAL_CONTRIBUTIONS
+  FAMILY_AND_DISCRETIONARY
+  ONE_OFF_UNEXPECTED
+}
+
+enum DocumentType {
+  BANK_STATEMENT
+  PAYSLIP
+  INVOICE
+  MUNICIPAL_BILL
+  INVESTMENT_STATEMENT
+  OTHER
+}
+
+enum RelatedEntityType {
+  ACCOUNT
+  DEBT
+  INCOME
+  ASSET
+}
+
+enum AssetType {
+  PROPERTY
+  VEHICLE
+  INVESTMENT_PORTFOLIO
+  RETIREMENT_FUND
+  CASH
+  OTHER
+}
+
+enum GoalType {
+  EMERGENCY_FUND
+  DEBT_FREE_BY_DATE
+  HOUSE_DEPOSIT
+  RETIREMENT_INVESTMENT
+  EDUCATION_FUND
+  MAJOR_PURCHASE
+  CUSTOM
+}
+
+enum GoalStatus {
+  ACTIVE
+  PAUSED
+  ACHIEVED
+  ABANDONED
+}
+
+enum AgentType {
+  DOCUMENT_AGENT
+  BUDGET_AGENT
+  DEBT_AGENT
+  GOALS_AGENT
+}
+
+enum RecommendationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ParseStatus {
+  PENDING
+  PARSED_AWAITING_REVIEW
+  APPLIED
+  REJECTED_DUPLICATE
+  FAILED
+}
+
+enum SnapshotGeneratedBy {
+  SCHEDULED
+  MANUAL
+  AGENT_TRIGGERED
+}
+
+enum LLMProvider {
+  ANTHROPIC
+  OPENAI
+  GOOGLE
+  AZURE_OPENAI
+  CUSTOM
+}
+
+enum LLMConfigStatus {
+  ACTIVE
+  INVALID_KEY
+  UNVERIFIED
+  DISABLED
+}
+
+enum BankConnectionProviderType {
+  DIRECT_BANK_API
+  LICENSED_AGGREGATOR
+}
+
+enum BankConnectionConsentStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum SyncFrequency {
+  DAILY
+  ON_DEMAND
+}
+
+// ─── User & Profile Models ───────────────────────────────────────────────────
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  passwordHash String
+  email        String?      @unique
+  role         String       @default("user")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  profile      UserProfile?
+  accounts     Account[]
+  incomes      Income[]
+  budgetItems  BudgetLineItem[]
+  assets       Asset[]
+  goals        Goal[]
+  propertyDataConfig PropertyDataConfig?
+}
+
+model UserProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName         String?
+  lastName          String?
+  fullName          String?
+  jobTitle          String?
+  employerName      String?
+  idNumber          String?
+  taxReference      String?
+  preferredCurrency String   @default("ZAR")
+  avatarUrl         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ─── Domain Models ────────────────────────────────────────────────────────────
+
+model Account {
+  id                   String      @id @default(cuid())
+  userId               String?
+  user                 User?       @relation(fields: [userId], references: [id])
+  name                 String
+  institution          String
+  accountNumberMasked  String?
+  type                 AccountType
+  currency             String      @default("ZAR")
+  openingBalance       Decimal     @default(0)
+  openingBalanceDate   DateTime?
+  isDebt               Boolean     @default(false)
+  isAsset              Boolean     @default(false)
+  notes                String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  debt                 Debt?
+  assets               Asset[]
+  documents            Document[]
+  bankConnection       BankConnection?
+  auditLogs            AuditLogEntry[] @relation("AccountAuditLogs")
+}
+
+model Asset {
+  id              String            @id @default(cuid())
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id])
+  accountId       String?
+  account         Account?          @relation(fields: [accountId], references: [id])
+  name            String
+  type            AssetType
+  currentValue    Decimal
+  valueConfidence BalanceConfidence @default(ESTIMATED)
+  valueSource     String?
+  linkedDebtId    String?
+  lastValuedDate  DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model NetWorthSnapshot {
+  id           String              @id @default(cuid())
+  snapshotDate DateTime
+  totalAssets  Decimal
+  totalDebts   Decimal
+  netWorth     Decimal
+  generatedBy  SnapshotGeneratedBy @default(SCHEDULED)
+  createdAt    DateTime            @default(now())
+}
+
+model Debt {
+  id                       String            @id @default(cuid())
+  accountId                String            @unique
+  account                  Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  currentBalance           Decimal
+  balanceConfidence        BalanceConfidence @default(UNKNOWN)
+  balanceSource            String?
+
+  annualInterestRate       Decimal?
+  interestRateConfidence   BalanceConfidence @default(UNKNOWN)
+  interestCompounding      String            @default("MONTHLY")
+
+  minimumPayment           Decimal
+  paymentMode              PaymentMode       @default(MINIMUM_ONLY)
+
+  originationDate          DateTime?
+  originalPrincipal        Decimal?
+  originalTermMonths       Int?
+
+  urgencyFlag              UrgencyFlag       @default(NONE)
+  urgencyNote              String?
+
+  includeInSnowball        Boolean           @default(true)
+  priorityOverride         Int?
+  debtCategory             DebtCategory      @default(SHORT_TERM)
+
+  status                   DebtStatus        @default(ACTIVE)
+  settledAmount            Decimal?
+  settledDate              DateTime?
+
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  settlementEvents         SettlementEvent[]
+  auditLogs                AuditLogEntry[] @relation("DebtAuditLogs")
+}
+
+model Goal {
+  id                     String     @id @default(cuid())
+  userId                 String?
+  user                   User?      @relation(fields: [userId], references: [id])
+  name                   String
+  type                   GoalType
+  targetAmount           Decimal?
+  targetFormula          String?
+  targetDate             DateTime?
+  linkedAccountId        String?
+  currentAmount          Decimal    @default(0)
+  monthlyContribution    Decimal    @default(0)
+  priority               Int        @default(1)
+  status                 GoalStatus @default(ACTIVE)
+  projectedCompletionDate DateTime?
+  note                   String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+}
+
+model Income {
+  id                          String           @id @default(cuid())
+  userId                      String?
+  user                        User?            @relation(fields: [userId], references: [id])
+  sourceName                  String
+  recurringAmount             Decimal
+  recurringAmountConfidence   IncomeConfidence @default(ESTIMATED)
+  payDayOfMonth               Int              @default(25)
+  lastConfirmedDate           DateTime?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  incomeEvents                IncomeEvent[]
+  auditLogs                   AuditLogEntry[] @relation("IncomeAuditLogs")
+}
+
+model IncomeEvent {
+  id              String          @id @default(cuid())
+  incomeId        String?
+  income          Income?         @relation(fields: [incomeId], references: [id])
+  description     String
+  amount          Decimal
+  dateReceived    DateTime
+  recommendedUse  RecommendedUse  @default(UNALLOCATED)
+  applied         Boolean         @default(false)
+  appliedToDebtId String?
+  appliedToGoalId String?
+  createdAt       DateTime        @default(now())
+}
+
+model BudgetLineItem {
+  id          String            @id @default(cuid())
+  userId      String?
+  user        User?             @relation(fields: [userId], references: [id])
+  category    BudgetCategory
+  label       String
+  amount      Decimal
+  isComputed  Boolean           @default(false)
+  sourceRef   String?
+  confidence  BalanceConfidence @default(ESTIMATED)
+  note        String?
+  month       String            // "YYYY-MM"
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model SettlementEvent {
+  id                         String    @id @default(cuid())
+  debtId                     String
+  debt                       Debt      @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  description                String
+  amount                     Decimal
+  date                       DateTime
+  resultingNewMinimumPayment Decimal?
+  createdAt                  DateTime  @default(now())
+}
+
+model Document {
+  id                      String              @id @default(cuid())
+  relatedEntityType       RelatedEntityType
+  relatedEntityId         String
+  documentType            DocumentType
+  fileUrl                 String
+  fileHash                String?
+  periodStart             DateTime?
+  periodEnd               DateTime?
+  uploadedAt              DateTime            @default(now())
+  parsed                  Boolean             @default(false)
+  parseStatus             ParseStatus         @default(PENDING)
+  parsedData              Json?
+  supersededByDocumentId String?
+
+  account                 Account?            @relation(fields: [relatedEntityId], references: [id])
+  embeddings              DocumentEmbedding[]
+}
+
+// ─── Vector Embeddings Model (NEW) ──────────────────────────────────────────
+
+model DocumentEmbedding {
+  id            String   @id @default(cuid())
+  documentId    String
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  contentChunk  String
+  embeddingJson Json     // Store array of float numbers e.g. [0.012, -0.045, ...]
+  metadataJson  Json?    // Context metadata e.g. { institution: "SARS", amount: 8092.33 }
+  createdAt     DateTime @default(now())
+}
+
+model AgentRecommendation {
+  id          String               @id @default(cuid())
+  agent       AgentType
+  title       String
+  description String
+  rationale   String
+  payload     Json
+  status      RecommendationStatus @default(PENDING)
+  createdAt   DateTime             @default(now())
+  reviewedAt  DateTime?
+}
+
+// ─── LLM Provider BYOK Models ─────────────────────────────────────────────────
+
+model LLMProviderConfig {
+  id               String          @id @default(cuid())
+  provider         LLMProvider
+  displayName      String
+  apiKeyEncrypted  String
+  baseUrl          String?
+  modelName        String
+  supportsVision   Boolean         @default(false)
+  status           LLMConfigStatus @default(UNVERIFIED)
+  lastValidatedAt  DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  agentAssignments AgentModelAssignment[]
+}
+
+model AgentModelAssignment {
+  id                   String            @id @default(cuid())
+  agent                AgentType         @unique
+  llmProviderConfigId  String
+  llmProviderConfig    LLMProviderConfig @relation(fields: [llmProviderConfigId], references: [id], onDelete: Cascade)
+  isDefault            Boolean           @default(false)
+  updatedAt            DateTime          @updatedAt
+}
+
+model AuditLogEntry {
+  id            String   @id @default(cuid())
+  entityType    String
+  entityId      String
+  fieldChanged  String
+  oldValue      String?
+  newValue      String?
+  reason        String?
+  actor         String   @default("USER")
+  changedAt     DateTime @default(now())
+  changedBy     String   @default("user")
+
+  account       Account? @relation("AccountAuditLogs", fields: [entityId], references: [id], map: "AuditLogEntry_account_fkey")
+  debt          Debt?    @relation("DebtAuditLogs", fields: [entityId], references: [id], map: "AuditLogEntry_debt_fkey")
+  income        Income?  @relation("IncomeAuditLogs", fields: [entityId], references: [id], map: "AuditLogEntry_income_fkey")
+}
+
+model AppSettings {
+  id               String           @id @default("singleton")
+  snowballStrategy SnowballStrategy @default(SNOWBALL)
+  currency         String           @default("ZAR")
+  updatedAt        DateTime         @updatedAt
+}
+
+// ─── Property Data Services (Windeed / Lightstone) ───────────────────────────
+
+model PropertyDataConfig {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  windeedUsername      String?
+  windeedPasswordEnc   String?
+  windeedStatus        String   @default("UNVERIFIED") // ACTIVE | INVALID_CREDENTIALS | UNVERIFIED | DISABLED
+
+  lightstoneApiKeyEnc  String?
+  lightstoneStatus     String   @default("UNVERIFIED")
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ─── Bank Account Aggregation (Phase 5) ─────────────────────────────────────
+// Consent-based tokens only — never a user's banking password (see §10).
+
+model BankConnection {
+  id                    String                        @id @default(cuid())
+  accountId             String                        @unique
+  account               Account                       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  providerType          BankConnectionProviderType
+  providerName          String
+  consentStatus         BankConnectionConsentStatus   @default(ACTIVE)
+  consentGrantedAt      DateTime                      @default(now())
+  consentExpiresAt      DateTime?
+  accessTokenEncrypted  String
+  lastSyncedAt          DateTime?
+  syncFrequency         SyncFrequency                 @default(ON_DEMAND)
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+}

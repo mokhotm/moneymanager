@@ -1,0 +1,19 @@
+# Environment and secrets
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Database and log artifacts
+prisma/*.db
+*.log
+*.exe
+*.gz
+tsconfig.tsbuildinfo
+Artifacts/
