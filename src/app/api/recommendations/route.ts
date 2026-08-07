@@ -5,10 +5,8 @@ import { getEffectiveUserId, getCurrentUser } from "@/lib/session";
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-
-    // If logged-in user is NOT the demo user (e.g. testuser01 has no agent recs generated yet), return []
-    if (user && user.username !== "mokhotm") {
-      return NextResponse.json([]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to view Agent Recommendations." }, { status: 401 });
     }
 
     const recs = await prisma.agentRecommendation.findMany({
