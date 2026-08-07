@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, Loader2, AlertCircle, ChevronDown } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Loader2, AlertCircle, ChevronDown, Sparkles } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -72,7 +72,7 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating toggle button */}
+      {/* Floating toggle button - High Contrast & Prominent */}
       <button
         onClick={() => setOpen((v) => !v)}
         id="chat-widget-toggle"
@@ -81,38 +81,43 @@ export default function ChatWidget() {
           position: "fixed",
           bottom: 24,
           right: 24,
-          width: 52,
-          height: 52,
+          width: 58,
+          height: 58,
           borderRadius: "50%",
-          background: "var(--gold)",
-          color: "#0a101e",
-          border: "none",
+          background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+          color: "#070b14",
+          border: "2px solid rgba(255, 255, 255, 0.4)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          boxShadow: "0 0 24px rgba(245, 158, 11, 0.6), 0 8px 30px rgba(0,0,0,0.6)",
           zIndex: 1000,
-          transition: "transform 0.2s",
+          transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: open ? "scale(1.05) rotate(90deg)" : "scale(1)",
         }}
       >
-        {open ? <ChevronDown size={22} /> : <MessageCircle size={22} />}
+        {open ? <X size={26} /> : <MessageCircle size={26} />}
       </button>
 
-      {/* Chat panel */}
+      {/* Chat panel - Apple Obsidian Glass with Clear 2px Borders */}
       {open && (
         <div
           id="chat-widget-panel"
           style={{
             position: "fixed",
-            bottom: 88,
+            bottom: 96,
             right: 24,
-            width: 380,
-            maxHeight: 560,
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: 16,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+            width: 420,
+            maxHeight: 600,
+            background: "rgba(13, 20, 36, 0.96)",
+            borderLeft: "2px solid rgba(245, 158, 11, 0.6)",
+            borderRight: "2px solid rgba(245, 158, 11, 0.6)",
+            borderBottom: "2px solid rgba(245, 158, 11, 0.6)",
+            borderTop: "4px solid #f59e0b",
+            borderRadius: 20,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(245, 158, 11, 0.3)",
+            backdropFilter: "blur(28px)",
             zIndex: 1000,
             display: "flex",
             flexDirection: "column",
@@ -122,78 +127,117 @@ export default function ChatWidget() {
           {/* Header */}
           <div
             style={{
-              padding: "14px 16px",
-              borderBottom: "1px solid var(--border-color)",
+              padding: "16px 20px",
+              borderBottom: "1px solid rgba(245, 158, 11, 0.25)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              background: "var(--card-bg)",
+              background: "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(13, 20, 36, 0.95) 100%)",
             }}
           >
-            <div className="flex items-center gap-2">
-              <Bot size={18} style={{ color: "var(--gold)" }} />
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Financial Assistant</span>
-              <span
+            <div className="flex items-center gap-2.5">
+              <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  background: "rgba(234,179,8,0.15)",
-                  color: "var(--gold)",
-                  borderRadius: 4,
-                  padding: "2px 6px",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  color: "#070b14",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  boxShadow: "0 4px 12px rgba(245, 158, 11, 0.4)",
                 }}
               >
-                AI
-              </span>
+                <Bot size={18} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "#f8fafc" }}>AI Financial Assistant</div>
+                <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>
+                  <Sparkles size={11} /> 4 AI Agents Connected
+                </div>
+              </div>
             </div>
             <button
               onClick={() => setOpen(false)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 }}
+              style={{
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "50%",
+                width: 28,
+                height: 28,
+                cursor: "pointer",
+                color: "#94a3b8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
 
-          {/* Messages */}
+          {/* Messages Thread */}
           <div
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: "16px 14px",
+              padding: "20px 16px",
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 14,
               minHeight: 0,
             }}
           >
             {messages.length === 0 && (
-              <div style={{ textAlign: "center", padding: "24px 8px" }}>
-                <Bot size={32} style={{ color: "var(--gold)", margin: "0 auto 10px" }} />
-                <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  Ask anything about your finances — debts, goals, budget, net worth, payoff timeline, or your uploaded documents.
+              <div style={{ textAlign: "center", padding: "20px 8px" }}>
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
+                    background: "rgba(245, 158, 11, 0.15)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    color: "#f59e0b",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 12px auto",
+                  }}
+                >
+                  <Bot size={24} />
+                </div>
+                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5, marginBottom: 14 }}>
+                  Ask direct questions about your debts, monthly surplus, net worth, payslips, or snowball payoff timelines.
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 14 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {[
-                    "What is my current net worth?",
+                    "What is my current net worth & solvency?",
                     "Which debt should I pay off first?",
-                    "How long until I'm debt-free?",
-                    "What's my monthly surplus?",
+                    "How long until I'm 100% debt-free?",
+                    "What's my monthly budget surplus?",
                   ].map((q) => (
                     <button
                       key={q}
-                      onClick={() => { setInput(q); inputRef.current?.focus(); }}
+                      onClick={() => {
+                        setInput(q);
+                        inputRef.current?.focus();
+                      }}
                       style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid var(--border-light)",
-                        borderRadius: 8,
-                        padding: "6px 10px",
-                        fontSize: 12,
-                        color: "var(--text-primary)",
+                        background: "rgba(7, 11, 20, 0.8)",
+                        border: "1px solid rgba(245, 158, 11, 0.3)",
+                        borderRadius: 10,
+                        padding: "8px 12px",
+                        fontSize: 12.5,
+                        color: "#f8fafc",
+                        fontWeight: 600,
                         cursor: "pointer",
                         textAlign: "left",
+                        transition: "all 0.2s",
                       }}
                     >
-                      {q}
+                      💡 {q}
                     </button>
                   ))}
                 </div>
@@ -205,7 +249,7 @@ export default function ChatWidget() {
                 key={i}
                 style={{
                   display: "flex",
-                  gap: 8,
+                  gap: 10,
                   alignItems: "flex-start",
                   flexDirection: msg.role === "user" ? "row-reverse" : "row",
                 }}
@@ -213,36 +257,41 @@ export default function ChatWidget() {
                 {/* Avatar */}
                 <div
                   style={{
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     borderRadius: "50%",
-                    background: msg.role === "user" ? "var(--gold)" : "rgba(255,255,255,0.08)",
-                    color: msg.role === "user" ? "#0a101e" : "var(--gold)",
+                    background: msg.role === "user" ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "rgba(16, 185, 129, 0.15)",
+                    border: msg.role === "user" ? "none" : "1px solid rgba(16, 185, 129, 0.35)",
+                    color: msg.role === "user" ? "#070b14" : "#34d399",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                     marginTop: 2,
+                    fontWeight: 800,
                   }}
                 >
-                  {msg.role === "user" ? <User size={14} /> : msg.error ? <AlertCircle size={14} style={{ color: "var(--red)" }} /> : <Bot size={14} />}
+                  {msg.role === "user" ? <User size={15} /> : msg.error ? <AlertCircle size={15} className="text-red-400" /> : <Bot size={15} />}
                 </div>
 
                 {/* Bubble */}
                 <div
                   style={{
-                    maxWidth: "78%",
-                    padding: "9px 12px",
-                    borderRadius: msg.role === "user" ? "14px 4px 14px 14px" : "4px 14px 14px 14px",
+                    maxWidth: "80%",
+                    padding: "10px 14px",
+                    borderRadius: msg.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
                     background: msg.role === "user"
-                      ? "var(--gold)"
-                      : msg.error ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.06)",
-                    color: msg.role === "user" ? "#0a101e" : msg.error ? "var(--red)" : "var(--text-primary)",
-                    fontSize: 13,
+                      ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                      : msg.error
+                      ? "rgba(239, 68, 68, 0.12)"
+                      : "rgba(7, 11, 20, 0.9)",
+                    color: msg.role === "user" ? "#070b14" : msg.error ? "#f87171" : "#f8fafc",
+                    fontSize: 13.5,
                     lineHeight: 1.55,
-                    border: msg.error ? "1px solid rgba(239,68,68,0.2)" : "none",
+                    border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(245, 158, 11, 0.25)",
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
+                    fontWeight: msg.role === "user" ? 700 : 400,
                   }}
                 >
                   {msg.content}
@@ -251,22 +300,23 @@ export default function ChatWidget() {
             ))}
 
             {loading && (
-              <div className="flex items-center gap-2" style={{ paddingLeft: 36 }}>
-                <Loader2 size={14} style={{ color: "var(--gold)", animation: "spin 1s linear infinite" }} />
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Thinking…</span>
+              <div className="flex items-center gap-2" style={{ paddingLeft: 40, color: "#f59e0b", fontSize: 12, fontWeight: 700 }}>
+                <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
+                <span>AI Assistant is analyzing finances…</span>
               </div>
             )}
 
             <div ref={bottomRef} />
           </div>
 
-          {/* Input area */}
+          {/* Input Bar */}
           <div
             style={{
-              padding: "10px 12px",
-              borderTop: "1px solid var(--border-color)",
+              padding: "12px 14px",
+              borderTop: "1px solid rgba(245, 158, 11, 0.25)",
+              background: "rgba(7, 11, 20, 0.95)",
               display: "flex",
-              gap: 8,
+              gap: 10,
               alignItems: "flex-end",
             }}
           >
@@ -276,20 +326,20 @@ export default function ChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about your finances…"
+              placeholder="Ask about debts, goals, budget..."
               id="chat-input"
               style={{
                 flex: 1,
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid var(--border-light)",
-                borderRadius: 10,
-                padding: "8px 12px",
-                fontSize: 13,
-                color: "var(--text-primary)",
+                background: "rgba(13, 20, 36, 0.8)",
+                border: "1px solid rgba(245, 158, 11, 0.4)",
+                borderRadius: 12,
+                padding: "10px 14px",
+                fontSize: 13.5,
+                color: "#f8fafc",
                 resize: "none",
                 outline: "none",
-                lineHeight: 1.5,
-                maxHeight: 96,
+                lineHeight: 1.45,
+                maxHeight: 100,
                 overflowY: "auto",
               }}
             />
@@ -298,21 +348,21 @@ export default function ChatWidget() {
               disabled={!input.trim() || loading}
               id="chat-send-btn"
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: input.trim() && !loading ? "var(--gold)" : "rgba(255,255,255,0.08)",
-                color: input.trim() && !loading ? "#0a101e" : "var(--text-muted)",
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: input.trim() && !loading ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "rgba(255,255,255,0.08)",
+                color: input.trim() && !loading ? "#070b14" : "#64748b",
                 border: "none",
                 cursor: input.trim() && !loading ? "pointer" : "default",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
-                transition: "background 0.2s",
+                boxShadow: input.trim() && !loading ? "0 4px 14px rgba(245, 158, 11, 0.4)" : "none",
               }}
             >
-              <Send size={15} />
+              <Send size={16} />
             </button>
           </div>
         </div>
