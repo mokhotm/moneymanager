@@ -235,24 +235,71 @@ enum HealthTier {
   ELITE
 }
 
+enum SubscriptionTier {
+  STARTER_FREE
+  PRO_WEALTH
+  EXECUTIVE_ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum PaymentGateway {
+  CARD
+  INSTANT_EFT
+  APPLE_PAY
+}
+
 // ─── User & Profile Models ───────────────────────────────────────────────────
 
 model User {
-  id           String       @id @default(cuid())
-  username     String       @unique
-  passwordHash String
-  email        String?      @unique
-  role         String       @default("user")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id                    String             @id @default(cuid())
+  username              String             @unique
+  passwordHash          String
+  email                 String?            @unique
+  role                  String             @default("user")
+  subscriptionTier      SubscriptionTier   @default(STARTER_FREE)
+  subscriptionStatus    SubscriptionStatus @default(ACTIVE)
+  billingCycle          BillingCycle       @default(MONTHLY)
+  subscriptionExpiresAt DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
-  profile      UserProfile?
-  accounts     Account[]
-  incomes      Income[]
-  budgetItems  BudgetLineItem[]
-  assets       Asset[]
-  goals        Goal[]
-  propertyDataConfig PropertyDataConfig?
+  profile               UserProfile?
+  accounts              Account[]
+  incomes               Income[]
+  budgetItems           BudgetLineItem[]
+  assets                Asset[]
+  goals                 Goal[]
+  propertyDataConfig    PropertyDataConfig?
+  subscriptions         SubscriptionRecord[]
+}
+
+model SubscriptionRecord {
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier           SubscriptionTier
+  billingCycle   BillingCycle
+  amount         Float
+  currency       String             @default("ZAR")
+  paymentGateway PaymentGateway
+  transactionRef String             @unique
+  status         String             @default("SUCCESS")
+  paidAt         DateTime           @default(now())
+  expiresAt      DateTime
+  createdAt      DateTime           @default(now())
+
+  @@index([userId])
 }
 
 model UserProfile {

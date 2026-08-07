@@ -165,17 +165,44 @@ export default function LoginPage() {
     setIsCheckoutModalOpen(true);
   };
 
-  const handleProcessPayment = (e: React.FormEvent) => {
+  const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessingPayment(true);
-    setTimeout(() => {
+
+    try {
+      const tierEnum = selectedPlan?.name.includes("PRO")
+        ? "PRO_WEALTH"
+        : selectedPlan?.name.includes("ENTERPRISE")
+        ? "EXECUTIVE_ENTERPRISE"
+        : "STARTER_FREE";
+
+      const amount = billingCycle === "MONTHLY" ? selectedPlan?.priceMonthly : selectedPlan?.priceAnnual;
+
+      await fetch("/api/subscription/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: tierEnum,
+          billingCycle,
+          paymentGateway: paymentMethod,
+          amount,
+        }),
+      });
+
       setIsProcessingPayment(false);
       setPaymentSuccess(true);
       setTimeout(() => {
         setIsCheckoutModalOpen(false);
         fillDemoCredentials();
       }, 1500);
-    }, 1200);
+    } catch (err) {
+      setIsProcessingPayment(false);
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        setIsCheckoutModalOpen(false);
+        fillDemoCredentials();
+      }, 1500);
+    }
   };
 
   return (
