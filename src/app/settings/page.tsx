@@ -134,15 +134,37 @@ export default function SettingsPage() {
     loadSettings();
   }, []);
 
-  const handleTestKey = async (id: string) => {
+  const [testFeedback, setTestFeedback] = useState<{ id: string; ok: boolean; message: string } | null>(null);
+
+  const handleTestKey = async (id: string, displayName: string) => {
     setTestingId(id);
-    await fetch("/api/settings/llm-providers", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setTestingId(null);
-    loadSettings();
+    setTestFeedback(null);
+    try {
+      const res = await fetch("/api/settings/llm-providers", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      const isValid = data?.validation?.valid === true || data?.status === "ACTIVE";
+
+      setTestFeedback({
+        id,
+        ok: isValid,
+        message: isValid
+          ? `Key "${displayName}" validated successfully! Status is ACTIVE.`
+          : `Key "${displayName}" validation returned: ${data?.validation?.message || data?.status || "Invalid Key"}.`,
+      });
+    } catch (err: any) {
+      setTestFeedback({
+        id,
+        ok: false,
+        message: `Network error testing key "${displayName}": ${err?.message}`,
+      });
+    } finally {
+      setTestingId(null);
+      loadSettings();
+    }
   };
 
   const handleDeleteKey = async (id: string, name: string) => {
@@ -364,6 +386,20 @@ export default function SettingsPage() {
                 <span className="badge badge-gold text-xs font-mono">Direct Provider Key Billing</span>
               </div>
 
+              {testFeedback && (
+                <div
+                  className="mx-4 my-3 p-3 flex items-center gap-2 font-mono text-xs rounded-lg"
+                  style={{
+                    background: testFeedback.ok ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                    border: `1px solid ${testFeedback.ok ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)"}`,
+                    color: testFeedback.ok ? "#34d399" : "#f87171",
+                  }}
+                >
+                  {testFeedback.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                  <span>{testFeedback.message}</span>
+                </div>
+              )}
+
               {configs.length === 0 ? (
                 <div className="text-muted text-sm" style={{ padding: "48px 0", textAlign: "center" }}>
                   No LLM API keys configured. Click "+ Add AI Provider Key" above to connect your Gemini, OpenAI, or Claude key.
@@ -415,7 +451,7 @@ export default function SettingsPage() {
                                 <button
                                   className="apple-pill-btn"
                                   style={{ fontSize: "11px", padding: "4px 10px" }}
-                                  onClick={() => handleTestKey(c.id)}
+                                  onClick={() => handleTestKey(c.id, c.displayName)}
                                   disabled={testingId === c.id}
                                   id={`test-key-${c.id}`}
                                 >

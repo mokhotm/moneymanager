@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { encryptApiKey, maskApiKey, validateLLMKey, isVisionSupported } from "@/agents/llmProvider";
+import { encryptApiKey, decryptApiKey, maskApiKey, validateLLMKey, isVisionSupported } from "@/agents/llmProvider";
 
 export async function GET(req: NextRequest) {
   try {
@@ -80,7 +80,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Config not found" }, { status: 404 });
     }
 
-    const validation = await validateLLMKey(config.provider, config.apiKeyEncrypted, config.modelName);
+    const decryptedKey = decryptApiKey(config.apiKeyEncrypted);
+    const validation = await validateLLMKey(config.provider, decryptedKey, config.modelName);
 
     const updated = await prisma.lLMProviderConfig.update({
       where: { id },
