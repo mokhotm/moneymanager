@@ -19,10 +19,12 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (open) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 50);
       inputRef.current?.focus();
     }
-  }, [open, messages]);
+  }, [open, messages, loading]);
 
   const send = async () => {
     const text = input.trim();
@@ -108,15 +110,16 @@ export default function ChatWidget() {
             position: "fixed",
             bottom: 96,
             right: 24,
-            width: 420,
-            maxHeight: 600,
+            width: 480,
+            height: 640,
+            maxHeight: "calc(100vh - 120px)",
             background: "rgba(13, 20, 36, 0.96)",
             borderLeft: "2px solid rgba(245, 158, 11, 0.6)",
             borderRight: "2px solid rgba(245, 158, 11, 0.6)",
             borderBottom: "2px solid rgba(245, 158, 11, 0.6)",
             borderTop: "4px solid #f59e0b",
             borderRadius: 20,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(245, 158, 11, 0.3)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.85), 0 0 30px rgba(245, 158, 11, 0.35)",
             backdropFilter: "blur(28px)",
             zIndex: 1000,
             display: "flex",
@@ -155,7 +158,7 @@ export default function ChatWidget() {
               <div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: "#f8fafc" }}>AI Financial Assistant</div>
                 <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>
-                  <Sparkles size={11} /> 4 AI Agents Connected
+                  <Sparkles size={11} /> 4 AI Agents Connected (Extended Answers)
                 </div>
               </div>
             </div>
@@ -277,18 +280,18 @@ export default function ChatWidget() {
                 {/* Bubble */}
                 <div
                   style={{
-                    maxWidth: "80%",
-                    padding: "10px 14px",
+                    maxWidth: "88%",
+                    padding: "12px 16px",
                     borderRadius: msg.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
                     background: msg.role === "user"
                       ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
                       : msg.error
                       ? "rgba(239, 68, 68, 0.12)"
-                      : "rgba(7, 11, 20, 0.9)",
+                      : "rgba(7, 11, 20, 0.95)",
                     color: msg.role === "user" ? "#070b14" : msg.error ? "#f87171" : "#f8fafc",
                     fontSize: 13.5,
-                    lineHeight: 1.55,
-                    border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(245, 158, 11, 0.25)",
+                    lineHeight: 1.6,
+                    border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(245, 158, 11, 0.3)",
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                     fontWeight: msg.role === "user" ? 700 : 400,

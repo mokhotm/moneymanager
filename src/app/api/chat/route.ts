@@ -130,7 +130,7 @@ async function callLLM(
       headers,
       body: JSON.stringify({
         model: modelName,
-        max_tokens: 1024,
+        max_tokens: 2048,
         system,
         messages: turns.map((m) => ({ role: m.role, content: m.content })),
       }),
@@ -155,7 +155,7 @@ async function callLLM(
       body: JSON.stringify({
         systemInstruction: system ? { parts: [{ text: system }] } : undefined,
         contents,
-        generationConfig: { maxOutputTokens: 1024 },
+        generationConfig: { maxOutputTokens: 2048 },
       }),
     });
     if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
@@ -179,7 +179,7 @@ async function callLLM(
     body: JSON.stringify({
       model: provider === "AZURE_OPENAI" ? undefined : modelName,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      max_tokens: 1024,
+      max_tokens: 2048,
     }),
   });
   if (!res.ok) throw new Error(`LLM API error ${res.status}: ${await res.text()}`);
