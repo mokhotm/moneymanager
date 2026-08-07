@@ -113,8 +113,12 @@ export function BankingTransactionsCard({
     return filteredByBank;
   }, [filteredByBank, limit]);
 
+  const [extracting, setExtracting] = useState(false);
+  const [extractedNotice, setExtractedNotice] = useState<string | null>(null);
+
   const openTxDetailModal = (tx: BankingTransaction) => {
     setSelectedTx(tx);
+    setExtractedNotice(null);
     setEditForm({
       merchantName: tx.merchantName,
       merchantAddress: tx.merchantAddress || `${tx.merchantName}, Sandton Central, Johannesburg, South Africa`,
@@ -124,6 +128,40 @@ export function BankingTransactionsCard({
       city: "Johannesburg",
     });
     setIsEditingModalOpen(true);
+  };
+
+  const handleExtractFromDocument = async (customQuery?: string) => {
+    if (!selectedTx) return;
+    setExtracting(true);
+    setExtractedNotice(null);
+
+    try {
+      const targetQuery = customQuery || selectedTx.merchantName;
+      const res = await fetch("/api/documents/extract-metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: targetQuery, amount: selectedTx.amount }),
+      });
+      const data = await res.json();
+      if (data.metadata) {
+        const meta = data.metadata;
+        setEditForm((prev) => ({
+          ...prev,
+          merchantName: meta.merchantName,
+          merchantAddress: meta.merchantAddress,
+          city: meta.city || "Johannesburg",
+          flowType: meta.flowType || prev.flowType,
+          confidence: "CONFIRMED",
+        }));
+        setExtractedNotice(
+          `⚡ Pre-populated from document [${meta.sourceDocumentName}]: ${meta.merchantAddress}`
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExtracting(false);
+    }
   };
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
@@ -517,6 +555,96 @@ export function BankingTransactionsCard({
 
             <form onSubmit={handleSaveTransaction}>
               <div className="modal-body">
+                {/* Document Metadata Auto-Extraction Card */}
+                <div
+                  style={{
+                    background: "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(13, 20, 36, 0.9) 100%)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    borderRadius: "14px",
+                    padding: "14px 16px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Sparkles size={16} style={{ color: "#f59e0b" }} />
+                      <span style={{ fontSize: "12.5px", fontWeight: 700, color: "#f8fafc" }}>
+                        Auto-Extract Metadata from Document Vault
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleExtractFromDocument()}
+                      disabled={extracting}
+                      id="extract-metadata-btn"
+                      style={{
+                        background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                        color: "#070b14",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "5px 12px",
+                        fontSize: "11.5px",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        boxShadow: "0 2px 10px rgba(245, 158, 11, 0.3)",
+                      }}
+                    >
+                      <FileText size={13} />
+                      <span>{extracting ? "Extracting PDF…" : "⚡ Extract & Pre-populate"}</span>
+                    </button>
+                  </div>
+
+                  {extractedNotice && (
+                    <div
+                      style={{
+                        fontSize: "11.5px",
+                        color: "#fbbf24",
+                        fontFamily: "var(--font-mono, monospace)",
+                        background: "rgba(7, 11, 20, 0.7)",
+                        border: "1px solid rgba(245, 158, 11, 0.3)",
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {extractedNotice}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "11px", color: "#94a3b8" }}>
+                    <span>Extract sample document PDF:</span>
+                    {[
+                      { label: "Woolworths Slip", query: "Woolworths" },
+                      { label: "Telkom Invoice", query: "Telkom" },
+                      { label: "Ekurhuleni Bill", query: "Ekurhuleni" },
+                      { label: "SARS Payroll", query: "SARS" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => handleExtractFromDocument(preset.query)}
+                        style={{
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          borderRadius: "6px",
+                          padding: "2px 8px",
+                          color: "#e2e8f0",
+                          fontSize: "10.5px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📄 {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Bank Account Info Card Banner */}
                 <div
                   style={{
@@ -527,6 +655,7 @@ export function BankingTransactionsCard({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    marginBottom: "14px",
                   }}
                 >
                   <div>
