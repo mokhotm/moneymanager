@@ -468,8 +468,10 @@ export default function MoneyJourneyPage() {
                       style={{
                         padding: "18px",
                         borderRadius: "16px",
-                        border: isSelected ? "2px solid var(--gold)" : "1px solid var(--border)",
-                        borderTop: `3px solid ${color}`,
+                        borderLeft: isSelected ? "2px solid var(--gold)" : "1px solid var(--border)",
+                        borderRight: isSelected ? "2px solid var(--gold)" : "1px solid var(--border)",
+                        borderBottom: isSelected ? "2px solid var(--gold)" : "1px solid var(--border)",
+                        borderTop: isSelected ? "3px solid var(--gold)" : `3px solid ${color}`,
                         background: isSelected ? "rgba(25, 38, 66, 0.9)" : "rgba(13, 20, 36, 0.8)",
                         cursor: "pointer",
                         transition: "all 0.2s ease",
