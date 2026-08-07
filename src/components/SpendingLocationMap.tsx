@@ -22,6 +22,7 @@ export interface SpendingLocation {
   id: string;
   merchant: string;
   locationName: string;
+  address?: string;
   lat: number;
   lng: number;
   amount: number;

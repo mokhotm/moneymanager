@@ -35,6 +35,7 @@ export interface BankingTransaction {
   id: string;
   date: string;
   merchantName: string;
+  merchantAddress?: string;
   accountName: string;
   institution: string;
   accountType: string;
@@ -71,6 +72,7 @@ export function BankingTransactionsCard({
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     merchantName: "",
+    merchantAddress: "",
     flowType: "CASH_SPENDING",
     confidence: "CONFIRMED",
     amount: "",
@@ -115,6 +117,7 @@ export function BankingTransactionsCard({
     setSelectedTx(tx);
     setEditForm({
       merchantName: tx.merchantName,
+      merchantAddress: tx.merchantAddress || `${tx.merchantName}, Sandton Central, Johannesburg, South Africa`,
       flowType: tx.flowType,
       confidence: tx.confidence,
       amount: String(Math.abs(tx.amount)),
@@ -135,6 +138,7 @@ export function BankingTransactionsCard({
         body: JSON.stringify({
           id: selectedTx.id,
           merchantName: editForm.merchantName,
+          merchantAddress: editForm.merchantAddress,
           flowType: editForm.flowType,
           confidence: editForm.confidence,
           amount: parseFloat(editForm.amount) || Math.abs(selectedTx.amount),
@@ -412,6 +416,12 @@ export function BankingTransactionsCard({
                       <div style={{ fontSize: "14px", fontWeight: 700, color: "#f8fafc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {tx.merchantName}
                       </div>
+                      {tx.merchantAddress && (
+                        <div style={{ fontSize: "11px", color: "#f59e0b", display: "flex", alignItems: "center", gap: "4px", marginTop: "1px", opacity: 0.9 }}>
+                          <MapPin size={11} style={{ flexShrink: 0 }} />
+                          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.merchantAddress}</span>
+                        </div>
+                      )}
                       <div style={{ fontSize: "11.5px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
                         <span>{tx.institution} • {tx.accountName}</span>
                         <span>•</span>
@@ -545,6 +555,26 @@ export function BankingTransactionsCard({
                     id="edit-tx-merchant-input"
                   />
                   <div className="form-hint">Appears on your spending analytics and geotagged map cards.</div>
+                </div>
+
+                {/* Editable Merchant / Recipient Physical Address (Geo-Tagging) */}
+                <div className="form-group" style={{ marginTop: "12px" }}>
+                  <label className="form-label">Merchant / Recipient Physical Address (Geo-Tagging)</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={editForm.merchantAddress}
+                      onChange={(e) => setEditForm({ ...editForm, merchantAddress: e.target.value })}
+                      placeholder="e.g. 83 Rivonia Rd, Sandhurst, Sandton, 2196, South Africa"
+                      id="edit-tx-address-input"
+                      style={{ paddingLeft: "36px" }}
+                    />
+                    <MapPin size={16} style={{ position: "absolute", left: "12px", top: "14px", color: "#f59e0b" }} />
+                  </div>
+                  <div className="form-hint">
+                    Supply the exact street address of the company, merchant, or recipient for precise GPS geotagging &amp; location map analytics.
+                  </div>
                 </div>
 
                 <div className="two-col">

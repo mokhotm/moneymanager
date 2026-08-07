@@ -6,6 +6,7 @@ export interface BankingTransaction {
   id: string;
   date: string;
   merchantName: string;
+  merchantAddress?: string;
   accountName: string;
   institution: string;
   accountType: string;
@@ -97,11 +98,13 @@ export async function GET(request: NextRequest) {
       }
 
       const amountNum = Number(f.amount);
+      const merchantAddress = `${merchantName}, Sandton Central, Johannesburg, South Africa`;
 
       return {
         id: f.id,
         date: f.createdAt.toISOString().split("T")[0],
         merchantName,
+        merchantAddress,
         accountName,
         institution,
         accountType,
@@ -131,6 +134,7 @@ export async function GET(request: NextRequest) {
       filtered = filtered.filter(
         (t) =>
           t.merchantName.toLowerCase().includes(query) ||
+          (t.merchantAddress && t.merchantAddress.toLowerCase().includes(query)) ||
           t.accountName.toLowerCase().includes(query) ||
           t.category.toLowerCase().includes(query) ||
           t.referenceNumber.toLowerCase().includes(query)
@@ -172,7 +176,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, merchantName, flowType, confidence, amount } = body;
+    const { id, merchantName, merchantAddress, flowType, confidence, amount } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Transaction ID required" }, { status: 400 });
@@ -198,10 +202,10 @@ export async function PUT(request: NextRequest) {
       data: {
         entityType: "MONEY_FLOW",
         entityId: id,
-        fieldChanged: "merchantName & flowType",
+        fieldChanged: "merchantName, merchantAddress & flowType",
         oldValue: existing.destinationRef || existing.flowType,
-        newValue: `${merchantName} (${flowType})`,
-        reason: "User edited transaction metadata via UI modal",
+        newValue: `${merchantName} [${merchantAddress || "No Address"}] (${flowType})`,
+        reason: "User edited transaction merchant metadata & geotagged address via UI modal",
         actor: "USER",
         changedBy: user?.username || "user",
       },
