@@ -79,7 +79,7 @@ export function MoneyFlowNetworkCanvas({
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
 
-  // Dragging state for custom node positions
+  // Dragging state for custom node positions & canvas viewport panning
   const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const dragStartPos = useRef<{ mouseX: number; mouseY: number; nodeX: number; nodeY: number }>({
@@ -87,6 +87,16 @@ export function MoneyFlowNetworkCanvas({
     mouseY: 0,
     nodeX: 0,
     nodeY: 0,
+  });
+
+  // Canvas Viewport Panning State
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPanningCanvas, setIsPanningCanvas] = useState(false);
+  const canvasPanStart = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number }>({
+    mouseX: 0,
+    mouseY: 0,
+    panX: 0,
+    panY: 0,
   });
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -234,7 +244,23 @@ export function MoneyFlowNetworkCanvas({
     };
   }, [filteredFlows, customPositions]);
 
-  // Drag Handlers for 360° unconstrained node movement
+  // Canvas Mouse Down: Start Canvas Panning when clicking background
+  const handleCanvasMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      // If user clicked directly on canvas background (not on a node or interactive button)
+      if (draggingNodeId) return;
+      setIsPanningCanvas(true);
+      canvasPanStart.current = {
+        mouseX: e.clientX,
+        mouseY: e.clientY,
+        panX: pan.x,
+        panY: pan.y,
+      };
+    },
+    [draggingNodeId, pan]
+  );
+
+  // Drag Handlers for 360° unconstrained node movement & canvas panning
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, node: GraphNode) => {
     e.stopPropagation();
     setDraggingNodeId(node.id);
@@ -248,24 +274,38 @@ export function MoneyFlowNetworkCanvas({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!draggingNodeId) return;
+      if (draggingNodeId) {
+        const deltaX = (e.clientX - dragStartPos.current.mouseX) / zoomLevel;
+        const deltaY = (e.clientY - dragStartPos.current.mouseY) / zoomLevel;
 
-      const deltaX = (e.clientX - dragStartPos.current.mouseX) / zoomLevel;
-      const deltaY = (e.clientY - dragStartPos.current.mouseY) / zoomLevel;
+        const newX = dragStartPos.current.nodeX + deltaX;
+        const newY = dragStartPos.current.nodeY + deltaY;
 
-      const newX = Math.max(80, Math.min(width - 80, dragStartPos.current.nodeX + deltaX));
-      const newY = Math.max(40, Math.min(height - 40, dragStartPos.current.nodeY + deltaY));
+        setCustomPositions((prev) => ({
+          ...prev,
+          [draggingNodeId]: { x: newX, y: newY },
+        }));
+      } else if (isPanningCanvas) {
+        const deltaX = e.clientX - canvasPanStart.current.mouseX;
+        const deltaY = e.clientY - canvasPanStart.current.mouseY;
 
-      setCustomPositions((prev) => ({
-        ...prev,
-        [draggingNodeId]: { x: newX, y: newY },
-      }));
+        setPan({
+          x: canvasPanStart.current.panX + deltaX,
+          y: canvasPanStart.current.panY + deltaY,
+        });
+      }
     },
-    [draggingNodeId, zoomLevel, width, height]
+    [draggingNodeId, isPanningCanvas, zoomLevel]
   );
 
   const handleMouseUp = useCallback(() => {
     setDraggingNodeId(null);
+    setIsPanningCanvas(false);
+  }, []);
+
+  const resetView = useCallback(() => {
+    setPan({ x: 0, y: 0 });
+    setCustomPositions({});
   }, []);
 
   const activeFlow = useMemo(() => {
@@ -286,30 +326,33 @@ export function MoneyFlowNetworkCanvas({
   return (
     <div
       ref={canvasRef}
+      onMouseDown={handleCanvasMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       style={{
         position: "relative",
         width: "100%",
-        overflowX: "auto",
-        overflowY: "hidden",
+        height: "640px",
+        overflow: "hidden",
         borderRadius: "20px",
         border: "1px solid var(--border)",
         background: "radial-gradient(ellipse at 50% 20%, rgba(17, 24, 39, 0.98) 0%, rgba(7, 11, 20, 0.98) 100%)",
         padding: "16px",
-        cursor: draggingNodeId ? "grabbing" : "default",
+        cursor: draggingNodeId || isPanningCanvas ? "grabbing" : "grab",
         boxShadow: "var(--shadow-card)",
+        userSelect: "none",
       }}
     >
+      {/* Pan & Zoom Transform Layer */}
       <div
         style={{
           position: "relative",
           width: `${width}px`,
           height: `${height}px`,
-          transform: `scale(${zoomLevel})`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`,
           transformOrigin: "top left",
-          transition: draggingNodeId ? "none" : "transform 0.3s ease",
+          transition: draggingNodeId || isPanningCanvas ? "none" : "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
         <svg
@@ -536,9 +579,9 @@ export function MoneyFlowNetworkCanvas({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto" }}>
-          {Object.keys(customPositions).length > 0 && (
+          {(pan.x !== 0 || pan.y !== 0 || Object.keys(customPositions).length > 0) && (
             <button
-              onClick={() => setCustomPositions({})}
+              onClick={resetView}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -553,11 +596,11 @@ export function MoneyFlowNetworkCanvas({
                 fontWeight: 600,
               }}
             >
-              <RotateCcw size={13} /> Reset Node Positions
+              <RotateCcw size={13} /> Reset View &amp; Positions
             </button>
           )}
           <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-muted)" }}>
-            <Move size={14} style={{ color: "var(--gold)" }} /> Drag nodes 360° anywhere • Bezier curves auto-adjust
+            <Move size={14} style={{ color: "var(--gold)" }} /> Click &amp; drag canvas to pan • Drag nodes 360° anywhere
           </span>
         </div>
       </div>
