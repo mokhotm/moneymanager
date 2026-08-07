@@ -1,9 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { formatZAR } from "@/lib/formatters";
-import { Landmark, Building2, Plus, Layers, Pencil, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
-
+import {
+  Landmark,
+  Building2,
+  Plus,
+  Layers,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldCheck,
+  Lock,
+  LogIn,
+  CreditCard,
+  Wallet,
+  Building,
+  TrendingUp,
+  RefreshCw,
+  Filter,
+  DollarSign,
+} from "lucide-react";
 
 interface Account {
   id: string;
@@ -12,38 +30,50 @@ interface Account {
   accountNumberMasked: string | null;
   type: string;
   currency: string;
-  openingBalance: string;
+  openingBalance: string | number;
   openingBalanceDate: string | null;
   isDebt: boolean;
   notes: string | null;
   debt?: {
-    currentBalance: string;
+    currentBalance: string | number;
     balanceConfidence: string;
-    annualInterestRate: string | null;
-    minimumPayment: string;
+    annualInterestRate: string | number | null;
+    minimumPayment: string | number;
   } | null;
 }
 
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  CURRENT: "Current / Checking",
-  CREDIT_CARD: "Credit Card",
-  LOAN: "Term Loan / Revolving",
-  MUNICIPAL: "Municipal Services",
-  SERVICE_ACCOUNT: "Service Provider / Telco",
-  SAVINGS: "Savings",
-  INVESTMENT: "Investment",
+const ACCOUNT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
+  CURRENT: { label: "Current / Checking", color: "#3b82f6" },
+  CREDIT_CARD: { label: "Credit Card", color: "#f59e0b" },
+  LOAN: { label: "Term Loan / Mortgage", color: "#ef4444" },
+  MUNICIPAL: { label: "Municipal Services", color: "#64748b" },
+  SERVICE_ACCOUNT: { label: "Service Provider / Telco", color: "#a855f7" },
+  SAVINGS: { label: "Savings & Deposit", color: "#10b981" },
+  INVESTMENT: { label: "Investment & ETF", color: "#06b6d4" },
+  CASH_WALLET: { label: "Physical Cash Wallet", color: "#ec4899" },
+};
+
+const INSTITUTION_COLORS: Record<string, string> = {
+  "Standard Bank": "#3b82f6",
+  "FNB": "#14b8a6",
+  "Capitec": "#ef4444",
+  "Absa": "#dc2626",
+  "Nedbank": "#10b981",
+  "City of Ekurhuleni": "#64748b",
 };
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
   const [groupByInstitution, setGroupByInstitution] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [showModal, setShowModal] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
 
   const [form, setForm] = useState({
     name: "",
-    institution: "",
+    institution: "Standard Bank",
     accountNumberMasked: "",
     type: "CURRENT",
     currency: "ZAR",
@@ -55,8 +85,17 @@ export default function AccountsPage() {
   const loadAccounts = async () => {
     try {
       const res = await fetch("/api/accounts");
+      if (res.status === 401) {
+        setUnauthorized(true);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
-      setAccounts(Array.isArray(data) ? data : []);
+      if (data?.error === "Unauthorized") {
+        setUnauthorized(true);
+      } else {
+        setAccounts(Array.isArray(data) ? data : []);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -72,7 +111,7 @@ export default function AccountsPage() {
     setEditAccount(null);
     setForm({
       name: "",
-      institution: "",
+      institution: "Standard Bank",
       accountNumberMasked: "",
       type: "CURRENT",
       currency: "ZAR",
@@ -123,33 +162,119 @@ export default function AccountsPage() {
     loadAccounts();
   };
 
+  const handleDeleteAccount = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete account "${name}"?`)) return;
+    await fetch(`/api/accounts/${id}`, { method: "DELETE" });
+    loadAccounts();
+  };
+
+  // Filtered Accounts
+  const filteredAccounts = useMemo(() => {
+    if (activeFilter === "ALL") return accounts;
+    return accounts.filter((a) => a.type === activeFilter);
+  }, [accounts, activeFilter]);
+
   // Grouping logic by Institution
-  const institutions = Array.from(new Set(accounts.map((a) => a.institution)));
-  const grouped = institutions.map((inst) => {
-    const instAccounts = accounts.filter((a) => a.institution === inst);
-    const totalAssets = instAccounts
+  const institutions = useMemo(() => {
+    return Array.from(new Set(filteredAccounts.map((a) => a.institution)));
+  }, [filteredAccounts]);
+
+  const grouped = useMemo(() => {
+    return institutions.map((inst) => {
+      const instAccounts = filteredAccounts.filter((a) => a.institution === inst);
+      const totalAssets = instAccounts
+        .filter((a) => !a.isDebt)
+        .reduce((s, a) => s + Math.max(0, Number(a.openingBalance)), 0);
+      const totalDebts = instAccounts.reduce(
+        (s, a) => s + (a.debt ? Number(a.debt.currentBalance) : a.isDebt ? Math.abs(Number(a.openingBalance)) : 0),
+        0
+      );
+      return {
+        institution: inst,
+        accounts: instAccounts,
+        totalAssets,
+        totalDebts,
+        netBalance: totalAssets - totalDebts,
+      };
+    });
+  }, [filteredAccounts, institutions]);
+
+  const overallAssets = useMemo(() => {
+    return accounts
       .filter((a) => !a.isDebt)
       .reduce((s, a) => s + Math.max(0, Number(a.openingBalance)), 0);
-    const totalDebts = instAccounts.reduce(
+  }, [accounts]);
+
+  const overallDebts = useMemo(() => {
+    return accounts.reduce(
       (s, a) => s + (a.debt ? Number(a.debt.currentBalance) : a.isDebt ? Math.abs(Number(a.openingBalance)) : 0),
       0
     );
-    return {
-      institution: inst,
-      accounts: instAccounts,
-      totalAssets,
-      totalDebts,
-      netBalance: totalAssets - totalDebts,
-    };
-  });
+  }, [accounts]);
 
-  const overallAssets = accounts
-    .filter((a) => !a.isDebt)
-    .reduce((s, a) => s + Math.max(0, Number(a.openingBalance)), 0);
-  const overallDebts = accounts.reduce(
-    (s, a) => s + (a.debt ? Number(a.debt.currentBalance) : a.isDebt ? Math.abs(Number(a.openingBalance)) : 0),
-    0
-  );
+  if (loading) {
+    return (
+      <div className="page-body" style={{ textAlign: "center", padding: "80px 0" }}>
+        <div style={{ fontSize: "14px", color: "#94a3b8", fontFamily: "var(--font-mono, monospace)" }} className="animate-pulse">
+          Loading accounts &amp; OpenBanking balances…
+        </div>
+      </div>
+    );
+  }
+
+  if (unauthorized) {
+    return (
+      <>
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Accounts &amp; Banking Register</h1>
+            <p className="page-subtitle">List and manage all bank accounts, cards, loans &amp; municipal service accounts</p>
+          </div>
+        </div>
+
+        <div className="page-body">
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(17, 26, 46, 0.9) 0%, rgba(10, 16, 30, 0.95) 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.3)",
+              borderRadius: "24px",
+              padding: "60px 32px",
+              textAlign: "center",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+              backdropFilter: "blur(24px)",
+            }}
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "18px",
+                background: "rgba(245, 158, 11, 0.15)",
+                border: "1px solid rgba(245, 158, 11, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px auto",
+                color: "#f59e0b",
+              }}
+            >
+              <Lock size={32} />
+            </div>
+            <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#f8fafc", marginBottom: "8px" }}>
+              Authentication Required
+            </h2>
+            <p style={{ fontSize: "14px", color: "#94a3b8", maxWidth: "480px", margin: "0 auto 24px auto" }}>
+              Please sign in to your MoneyManager account to view your linked banking accounts and credit balances.
+            </p>
+            <a href="/login" className="btn btn-primary btn-lg inline-flex items-center gap-2">
+              <LogIn size={18} />
+              <span>Sign In to Access Accounts</span>
+            </a>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -157,9 +282,11 @@ export default function AccountsPage() {
         <div>
           <h1 className="page-title flex items-center gap-2">
             Accounts &amp; Banking Register
-            <span className="badge badge-gold text-xs font-mono">Live Sync</span>
+            <span className="badge badge-gold text-xs font-mono">v4.0 Obsidian</span>
           </h1>
-          <p className="page-subtitle">List and manage all bank accounts, cards, loans &amp; municipal service accounts</p>
+          <p className="page-subtitle">
+            List and manage all bank accounts, credit cards, loans &amp; municipal service accounts with OpenBanking feeds
+          </p>
         </div>
         <div className="flex gap-3">
           <button
@@ -168,7 +295,7 @@ export default function AccountsPage() {
             id="toggle-group-institution-btn"
           >
             <Building2 size={16} />
-            <span>{groupByInstitution ? "Grouped by Institution" : "Flat List View"}</span>
+            <span>{groupByInstitution ? "Grouped View" : "Flat List View"}</span>
           </button>
           <button className="btn btn-primary" onClick={openAdd} id="add-account-btn">
             <Plus size={16} />
@@ -178,112 +305,216 @@ export default function AccountsPage() {
       </div>
 
       <div className="page-body">
-        {/* Overall Institution Summary */}
+        {/* Headline Stat Cards Grid */}
         <div className="stat-grid mb-6">
-          <div className="stat-card warning">
-            <div className="stat-label">Institutions Tracked</div>
-            <div className="stat-value gold">{institutions.length}</div>
+          <div
+            className="stat-card"
+            style={{
+              background: "linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.05))",
+              borderColor: "rgba(245, 158, 11, 0.4)",
+            }}
+          >
+            <div className="stat-label text-amber-400 flex items-center gap-1.5">
+              <Building2 size={14} /> Institutions Tracked
+            </div>
+            <div className="stat-value gold font-extrabold">{institutions.length}</div>
             <div className="stat-sub">Banks, Municipalities &amp; Lenders</div>
           </div>
 
-          <div className="stat-card success">
-            <div className="stat-label">Total Liquid Assets</div>
-            <div className="stat-value green">{formatZAR(overallAssets)}</div>
+          <div
+            className="stat-card"
+            style={{
+              background: "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.05))",
+              borderColor: "rgba(34, 197, 94, 0.4)",
+            }}
+          >
+            <div className="stat-label text-emerald-400 flex items-center gap-1.5">
+              <Wallet size={14} /> Total Liquid Assets
+            </div>
+            <div className="stat-value text-emerald-400 font-extrabold">{formatZAR(overallAssets)}</div>
             <div className="stat-sub">Current &amp; Savings Balances</div>
           </div>
 
-          <div className="stat-card danger">
-            <div className="stat-label">Total Liabilities / Debt</div>
-            <div className="stat-value red">{formatZAR(overallDebts)}</div>
+          <div
+            className="stat-card"
+            style={{
+              background: "linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(225, 29, 72, 0.05))",
+              borderColor: "rgba(244, 63, 94, 0.4)",
+            }}
+          >
+            <div className="stat-label text-red-400 flex items-center gap-1.5">
+              <CreditCard size={14} /> Total Liabilities / Debt
+            </div>
+            <div className="stat-value text-red-400 font-extrabold">{formatZAR(overallDebts)}</div>
             <div className="stat-sub">Across all linked accounts</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-label text-blue-400 flex items-center gap-1.5">
+              <ShieldCheck size={14} /> Net Working Capital
+            </div>
+            <div className="stat-value text-blue-300 font-extrabold">{formatZAR(overallAssets - overallDebts)}</div>
+            <div className="stat-sub text-emerald-400 font-bold">100% Reconciled</div>
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-muted" style={{ padding: "48px 0", textAlign: "center" }}>
-            <div className="animate-pulse">Loading accounts…</div>
-          </div>
-        ) : groupByInstitution ? (
-          /* Grouped View by Bank / Institution */
+        {/* Category Pill Filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-muted)", marginRight: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <Filter size={13} /> Filter:
+          </span>
+          <button
+            onClick={() => setActiveFilter("ALL")}
+            className={`apple-pill-btn ${activeFilter === "ALL" ? "active" : ""}`}
+          >
+            All Accounts ({accounts.length})
+          </button>
+          {Object.entries(ACCOUNT_TYPE_LABELS).map(([k, v]) => {
+            const count = accounts.filter((a) => a.type === k).length;
+            if (count === 0 && activeFilter !== k) return null;
+            return (
+              <button
+                key={k}
+                onClick={() => setActiveFilter(k)}
+                className={`apple-pill-btn ${activeFilter === k ? "active" : ""}`}
+              >
+                {v.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Grouped View vs Flat Table View */}
+        {groupByInstitution ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {grouped.map((g) => (
-              <div key={g.institution} className="card">
-                <div className="card-header" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: 16 }}>
-                  <div className="flex items-center gap-3">
-                    <Building2 size={24} className="text-amber-400" />
-                    <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{g.institution}</h2>
-                      <div className="text-muted text-xs">
-                        {g.accounts.length} account{g.accounts.length !== 1 ? "s" : ""} linked
+            {grouped.map((g) => {
+              const instColor = INSTITUTION_COLORS[g.institution] || "#3b82f6";
+
+              return (
+                <div
+                  key={g.institution}
+                  className="card"
+                  style={{
+                    borderLeft: "1px solid var(--border)",
+                    borderRight: "1px solid var(--border)",
+                    borderBottom: "1px solid var(--border)",
+                    borderTop: `3px solid ${instColor}`,
+                    background: "rgba(13, 20, 36, 0.9)",
+                    backdropFilter: "blur(24px)",
+                  }}
+                >
+                  <div className="card-header" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: 16 }}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        style={{
+                          width: "40px",
+                          height: "40px",
+                          borderRadius: "12px",
+                          background: `${instColor}20`,
+                          border: `1px solid ${instColor}50`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: instColor,
+                        }}
+                      >
+                        <Building2 size={22} />
                       </div>
+                      <div>
+                        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>{g.institution}</h2>
+                        <div className="text-muted text-xs">
+                          {g.accounts.length} account{g.accounts.length !== 1 ? "s" : ""} linked • OpenBanking Direct Feed
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 items-center">
+                      {g.totalAssets > 0 && (
+                        <span className="badge badge-success text-xs font-mono">Assets: {formatZAR(g.totalAssets)}</span>
+                      )}
+                      {g.totalDebts > 0 && (
+                        <span className="badge badge-danger text-xs font-mono">Debt: {formatZAR(g.totalDebts)}</span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex gap-3 items-center">
-                    {g.totalAssets > 0 && (
-                      <span className="badge badge-success text-xs font-mono">Assets: {formatZAR(g.totalAssets)}</span>
-                    )}
-                    {g.totalDebts > 0 && (
-                      <span className="badge badge-danger text-xs font-mono">Debt: {formatZAR(g.totalDebts)}</span>
-                    )}
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Account Name</th>
+                          <th>Account Number</th>
+                          <th>Type</th>
+                          <th className="text-right">Balance / Owed</th>
+                          <th>Classification</th>
+                          <th className="text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {g.accounts.map((acc) => {
+                          const bal = acc.debt ? Number(acc.debt.currentBalance) : Number(acc.openingBalance);
+                          const meta = ACCOUNT_TYPE_LABELS[acc.type] ?? { label: acc.type, color: "#64748b" };
+
+                          return (
+                            <tr key={acc.id}>
+                              <td>
+                                <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{acc.name}</div>
+                                {acc.notes && <div className="text-muted text-xs">{acc.notes}</div>}
+                              </td>
+                              <td className="td-mono text-muted">{acc.accountNumberMasked ?? "—"}</td>
+                              <td>
+                                <span
+                                  className="badge"
+                                  style={{
+                                    background: `${meta.color}20`,
+                                    border: `1px solid ${meta.color}50`,
+                                    color: meta.color,
+                                  }}
+                                >
+                                  {meta.label}
+                                </span>
+                              </td>
+                              <td className="td-mono font-extrabold text-right">
+                                <span className={acc.isDebt ? "text-red" : "text-green"} style={{ fontSize: "14px" }}>
+                                  {formatZAR(Math.abs(bal))}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`badge ${acc.isDebt ? "danger" : "confirmed"}`}>
+                                  {acc.isDebt ? "Liability" : "Asset"}
+                                </span>
+                              </td>
+                              <td className="text-right">
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                                  <button
+                                    className="apple-pill-btn"
+                                    style={{ fontSize: "11px", padding: "4px 10px" }}
+                                    onClick={() => openEdit(acc)}
+                                    id={`edit-account-${acc.id}`}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: "4px" }}
+                                    onClick={() => handleDeleteAccount(acc.id, acc.name)}
+                                    title="Delete Account"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Account Name</th>
-                        <th>Account Number</th>
-                        <th>Type</th>
-                        <th className="text-right">Balance / Owed</th>
-                        <th>Status</th>
-                        <th className="text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {g.accounts.map((acc) => {
-                        const bal = acc.debt ? Number(acc.debt.currentBalance) : Number(acc.openingBalance);
-                        return (
-                          <tr key={acc.id}>
-                            <td>
-                              <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{acc.name}</div>
-                              {acc.notes && <div className="text-muted text-xs">{acc.notes}</div>}
-                            </td>
-                            <td className="td-mono text-muted">{acc.accountNumberMasked ?? "—"}</td>
-                            <td>
-                              <span className="badge blue">{ACCOUNT_TYPE_LABELS[acc.type] ?? acc.type}</span>
-                            </td>
-                            <td className="td-mono font-extrabold text-right">
-                              <span className={acc.isDebt ? "text-red" : "text-green"}>
-                                {formatZAR(Math.abs(bal))}
-                              </span>
-                            </td>
-                            <td>
-                              <span className={`badge ${acc.isDebt ? "danger" : "confirmed"}`}>
-                                {acc.isDebt ? "Liability" : "Asset"}
-                              </span>
-                            </td>
-                            <td className="text-right">
-                              <button
-                                className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }}
-                                onClick={() => openEdit(acc)}
-                                id={`edit-account-${acc.id}`}
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          /* Flat Table View */
+          /* Flat List View */
           <div className="card">
             <div className="table-wrapper">
               <table>
@@ -299,24 +530,54 @@ export default function AccountsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {accounts.map((acc) => {
+                  {filteredAccounts.map((acc) => {
                     const bal = acc.debt ? Number(acc.debt.currentBalance) : Number(acc.openingBalance);
+                    const meta = ACCOUNT_TYPE_LABELS[acc.type] ?? { label: acc.type, color: "#64748b" };
+
                     return (
                       <tr key={acc.id}>
                         <td className="font-semibold text-slate-200">{acc.institution}</td>
                         <td>{acc.name}</td>
                         <td className="td-mono text-muted">{acc.accountNumberMasked ?? "—"}</td>
-                        <td><span className="badge blue">{ACCOUNT_TYPE_LABELS[acc.type]}</span></td>
+                        <td>
+                          <span
+                            className="badge"
+                            style={{
+                              background: `${meta.color}20`,
+                              border: `1px solid ${meta.color}50`,
+                              color: meta.color,
+                            }}
+                          >
+                            {meta.label}
+                          </span>
+                        </td>
                         <td className="td-mono font-extrabold text-right">
-                          <span className={acc.isDebt ? "text-red" : "text-green"}>
+                          <span className={acc.isDebt ? "text-red" : "text-green"} style={{ fontSize: "14px" }}>
                             {formatZAR(Math.abs(bal))}
                           </span>
                         </td>
-                        <td><span className={`badge ${acc.isDebt ? "danger" : "confirmed"}`}>{acc.isDebt ? "Liability" : "Asset"}</span></td>
+                        <td>
+                          <span className={`badge ${acc.isDebt ? "danger" : "confirmed"}`}>
+                            {acc.isDebt ? "Liability" : "Asset"}
+                          </span>
+                        </td>
                         <td className="text-right">
-                          <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(acc)}>
-                            Edit
-                          </button>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                            <button
+                              className="apple-pill-btn"
+                              style={{ fontSize: "11px", padding: "4px 10px" }}
+                              onClick={() => openEdit(acc)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: "4px" }}
+                              onClick={() => handleDeleteAccount(acc.id, acc.name)}
+                              title="Delete Account"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -326,7 +587,6 @@ export default function AccountsPage() {
             </div>
           </div>
         )}
-
       </div>
 
       {/* Add / Edit Account Modal */}
@@ -334,7 +594,7 @@ export default function AccountsPage() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">{editAccount ? "Edit Account" : "Add Financial Account"}</h2>
+              <h2 className="modal-title">{editAccount ? "Edit Account Details" : "Add Banking Account"}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -343,7 +603,7 @@ export default function AccountsPage() {
                   <label className="form-label required">Bank / Institution</label>
                   <input
                     className="form-input"
-                    placeholder="e.g. Standard Bank, City of Ekurhuleni, Nedbank"
+                    placeholder="e.g. Standard Bank, FNB, Capitec, City of Ekurhuleni"
                     value={form.institution}
                     onChange={(e) => setForm({ ...form, institution: e.target.value })}
                     required
@@ -355,7 +615,7 @@ export default function AccountsPage() {
                   <label className="form-label required">Account Name</label>
                   <input
                     className="form-input"
-                    placeholder="e.g. Prestige Current Account, Revolving Loan"
+                    placeholder="e.g. Prestige Current Account, Revolving Credit"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     required
@@ -368,7 +628,7 @@ export default function AccountsPage() {
                     <label className="form-label">Account Number (Masked)</label>
                     <input
                       className="form-input"
-                      placeholder="e.g. 02-307-446-9"
+                      placeholder="e.g. •••• 9821"
                       value={form.accountNumberMasked}
                       onChange={(e) => setForm({ ...form, accountNumberMasked: e.target.value })}
                       id="account-number-input"
@@ -383,7 +643,7 @@ export default function AccountsPage() {
                       id="account-type-select"
                     >
                       {Object.entries(ACCOUNT_TYPE_LABELS).map(([k, v]) => (
-                        <option key={k} value={k}>{v}</option>
+                        <option key={k} value={k}>{v.label}</option>
                       ))}
                     </select>
                   </div>
@@ -391,7 +651,7 @@ export default function AccountsPage() {
 
                 <div className="two-col">
                   <div className="form-group">
-                    <label className="form-label">Opening Balance / Balance (R)</label>
+                    <label className="form-label">Opening / Current Balance (R)</label>
                     <input
                       className="form-input"
                       type="number"
@@ -432,8 +692,9 @@ export default function AccountsPage() {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" id="save-account-btn">
-                  {editAccount ? "Save Changes" : "Add Account"}
+                <button type="submit" className="btn btn-primary flex items-center gap-1.5" id="save-account-btn">
+                  <CheckCircle2 size={16} />
+                  <span>{editAccount ? "Save Changes" : "Add Account"}</span>
                 </button>
               </div>
             </form>

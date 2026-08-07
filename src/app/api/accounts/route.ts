@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
-      return NextResponse.json([]);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const accounts = await prisma.account.findMany({
