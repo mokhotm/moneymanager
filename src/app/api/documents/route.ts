@@ -6,7 +6,9 @@ import { getEffectiveUserId } from "@/lib/session";
 export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
-    if (!userId) return NextResponse.json([]);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const [accountIds, incomeIds] = await Promise.all([
       prisma.account.findMany({ where: { userId }, select: { id: true } }).then((rows) => rows.map((r) => r.id)),
