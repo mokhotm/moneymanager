@@ -300,9 +300,14 @@ export default function ChatWidget() {
             ))}
 
             {loading && (
-              <div className="flex items-center gap-2" style={{ paddingLeft: 40, color: "#f59e0b", fontSize: 12, fontWeight: 700 }}>
-                <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
-                <span>AI Assistant is analyzing finances…</span>
+              <div className="flex items-center gap-2.5 p-3 rounded-xl" style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.35)", margin: "4px 0" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" className="animate-spin" style={{ color: "#f59e0b", flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span style={{ fontSize: "12.5px", color: "#f59e0b", fontWeight: 700, fontFamily: "var(--font-mono, monospace)" }}>
+                  AI Multi-Agent Engine is analyzing finances…
+                </span>
               </div>
             )}
 
