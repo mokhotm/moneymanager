@@ -31,19 +31,10 @@ export async function getCurrentUser(request: NextRequest): Promise<SessionUser 
 }
 
 /**
-  * Helper to get active user ID or default to demo user ID if unauthenticated (for public demo fallback)
-  */
+ * Strict User ID resolver — returns authenticated User ID or null if unauthenticated.
+ * Security enforcement: NEVER fall back to demo user data when unauthenticated.
+ */
 export async function getEffectiveUserId(request: NextRequest): Promise<string | null> {
   const user = await getCurrentUser(request);
-  if (user) {
-    return user.id;
-  }
-
-  // Fallback to primary demo user (mokhotm) if unauthenticated
-  const demoUser = await prisma.user.findFirst({
-    where: { username: "mokhotm" },
-    select: { id: true },
-  });
-
-  return demoUser?.id ?? null;
+  return user ? user.id : null;
 }

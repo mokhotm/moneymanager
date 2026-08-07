@@ -4,8 +4,6 @@
    Aesthetic: Ultra-modern Dark Glassmorphism with Metallic Accents
    ============================================================ */
 
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
-
 /* ─── Design System Tokens ───────────────────────────────── */
 :root {
   /* Color Palette — Deep Obsidian Navy & Amber Gold */
@@ -882,7 +880,70 @@ select option {
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
+/* ─── Apple-Level Layout Utility Classes ──────────────────── */
+.flow-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 16px;
+}
+
+.cash-wallet-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+}
+
+.category-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.apple-card {
+  background: rgba(13, 20, 36, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.apple-pill-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.apple-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.apple-pill-btn.active {
+  background: var(--gold-dim);
+  color: var(--gold-light);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
 /* ─── Mobile Media Queries ───────────────────────────────── */
+@media (max-width: 900px) {
+  .cash-wallet-layout { grid-template-columns: 1fr; }
+  .pipeline-grid { grid-template-columns: 1fr; }
+  .flow-cards-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none; }
@@ -891,3 +952,4 @@ select option {
   .stat-grid { grid-template-columns: 1fr; }
   .two-col, .three-col { grid-template-columns: 1fr; }
 }
+

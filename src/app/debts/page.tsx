@@ -164,47 +164,47 @@ export default function DebtsPage() {
     <>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Debt Register</h1>
+          <h1 className="page-title flex items-center gap-2">
+            Debt Register &amp; Waterfall Accelerator
+            <span className="badge badge-warning text-xs font-mono">Snowball v2</span>
+          </h1>
           <p className="page-subtitle">All active debts organized by payoff order &amp; financial institutions</p>
         </div>
         <div className="flex gap-3 items-center">
           <div
             className="flex"
             style={{
-              background: "rgba(13, 20, 36, 0.6)",
-              borderRadius: "var(--radius-md)",
+              background: "rgba(13, 20, 36, 0.9)",
+              borderRadius: "999px",
               border: "1px solid var(--border)",
-              padding: 4,
-              gap: 4,
+              padding: "4px",
+              gap: "4px",
             }}
           >
             <button
               onClick={() => setViewMode("CATEGORY")}
-              className={`btn btn-sm ${viewMode === "CATEGORY" ? "btn-primary" : "btn-secondary"}`}
-              style={{ border: "none" }}
+              className={`apple-pill-btn ${viewMode === "CATEGORY" ? "active" : ""}`}
               id="view-category-group"
             >
-              <CreditCard size={14} className="inline mr-1" /> Short vs Long Term
+              Short vs Long Term
             </button>
             <button
               onClick={() => setViewMode("PRIORITY")}
-              className={`btn btn-sm ${viewMode === "PRIORITY" ? "btn-primary" : "btn-secondary"}`}
-              style={{ border: "none" }}
+              className={`apple-pill-btn ${viewMode === "PRIORITY" ? "active" : ""}`}
               id="view-priority-order"
             >
-              <Flame size={14} className="inline mr-1 text-amber-400" /> Payoff Priority
+              Payoff Priority
             </button>
             <button
               onClick={() => setViewMode("BANK")}
-              className={`btn btn-sm ${viewMode === "BANK" ? "btn-primary" : "btn-secondary"}`}
-              style={{ border: "none" }}
+              className={`apple-pill-btn ${viewMode === "BANK" ? "active" : ""}`}
               id="view-by-institution"
             >
-              <Building2 size={14} className="inline mr-1 text-blue-400" /> Group by Bank
+              Group by Bank
             </button>
           </div>
 
-          <div className="badge danger font-bold">Total: {formatZAR(totalDebt)}</div>
+          <div className="badge badge-danger text-xs font-mono font-bold">Total: {formatZAR(totalDebt)}</div>
           <button className="btn btn-primary flex items-center gap-1" onClick={openAdd} id="add-debt-btn">
             <Plus size={16} /> Add Debt
           </button>
@@ -213,7 +213,9 @@ export default function DebtsPage() {
 
       <div className="page-body">
         {loading ? (
-          <div className="text-muted" style={{ padding: "48px 0", textAlign: "center" }}>Loading debts…</div>
+          <div className="text-muted" style={{ padding: "48px 0", textAlign: "center" }}>
+            <div className="animate-pulse">Loading debt portfolio…</div>
+          </div>
         ) : activeDebts.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: "60px 24px" }}>
             <CreditCard size={40} className="mx-auto mb-4 text-amber-400" />
@@ -227,18 +229,18 @@ export default function DebtsPage() {
           /* Grouped by Short-Term vs Long-Term Category */
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             {/* Short-Term Debts Card */}
-            <div className="card" style={{ borderLeft: "4px solid var(--amber-500)" }}>
+            <div className="card" style={{ borderTop: "3px solid #f59e0b" }}>
               <div className="card-header flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: 16 }}>
                 <div className="flex items-center gap-3">
                   <CreditCard className="text-amber-400" size={24} />
                   <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 700 }}>Short-Term Consumer Debts</h2>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>Short-Term Consumer Debts</h2>
                     <div className="text-muted text-xs">Clears rapidly in 18 Months (1 yr 6 mo)</div>
                   </div>
                 </div>
                 <div className="flex gap-4 items-center">
-                  <span className="badge danger">Owed: {formatZAR(activeDebts.filter(d => !d.account.name.toLowerCase().includes("home loan") && !d.account.name.toLowerCase().includes("bond")).reduce((s, d) => s + Number(d.currentBalance), 0))}</span>
-                  <span className="badge gold">Clears: 18 Months</span>
+                  <span className="badge badge-danger font-mono text-xs">Owed: {formatZAR(activeDebts.filter(d => !d.account.name.toLowerCase().includes("home loan") && !d.account.name.toLowerCase().includes("bond")).reduce((s, d) => s + Number(d.currentBalance), 0))}</span>
+                  <span className="badge badge-gold font-mono text-xs">Clears: 18 Months</span>
                 </div>
               </div>
 
@@ -248,11 +250,11 @@ export default function DebtsPage() {
                     <tr>
                       <th>Debt Account</th>
                       <th>Institution</th>
-                      <th>Balance</th>
+                      <th className="text-right">Balance</th>
                       <th>Rate</th>
-                      <th>Payment / Month</th>
+                      <th className="text-right">Payment / Month</th>
                       <th>Mode</th>
-                      <th>Action</th>
+                      <th className="text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -261,23 +263,23 @@ export default function DebtsPage() {
                       .map((debt) => (
                         <tr key={debt.id}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{debt.account.name}</div>
+                            <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{debt.account.name}</div>
                             {debt.urgencyFlag !== "NONE" && (
                               <span className="badge danger" style={{ marginTop: 4 }}>
                                 {URGENCY_LABEL[debt.urgencyFlag]}
                               </span>
                             )}
                           </td>
-                          <td className="font-semibold">{debt.account.institution}</td>
-                          <td className="td-mono font-bold text-red">{formatZAR(Number(debt.currentBalance))}</td>
+                          <td className="font-semibold text-slate-200">{debt.account.institution}</td>
+                          <td className="td-mono font-extrabold text-red text-right">{formatZAR(Number(debt.currentBalance))}</td>
                           <td className="td-mono">
                             {debt.annualInterestRate ? formatPercent(Number(debt.annualInterestRate)) : "0%"}
                           </td>
-                          <td className="td-mono">{formatZAR(Number(debt.minimumPayment))}</td>
+                          <td className="td-mono text-right">{formatZAR(Number(debt.minimumPayment))}</td>
                           <td><span className="badge blue">{PAYMENT_MODE_LABEL[debt.paymentMode]}</span></td>
-                          <td>
-                            <button className="btn btn-secondary btn-sm flex items-center gap-1" onClick={() => openEdit(debt)}>
-                              <Edit3 size={12} /> Edit
+                          <td className="text-right">
+                            <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(debt)}>
+                              Edit
                             </button>
                           </td>
                         </tr>
@@ -288,18 +290,18 @@ export default function DebtsPage() {
             </div>
 
             {/* Long-Term Home Loan Card */}
-            <div className="card" style={{ borderLeft: "4px solid var(--purple-500)", background: "linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(15, 23, 42, 0.4))" }}>
+            <div className="card" style={{ borderTop: "3px solid #a855f7" }}>
               <div className="card-header flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: 16 }}>
                 <div className="flex items-center gap-3">
                   <Home className="text-purple-400" size={24} />
                   <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 700 }}>Long-Term Mortgage & Property Bonds</h2>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>Long-Term Mortgage &amp; Property Bonds</h2>
                     <div className="text-muted text-xs">Primary residence mortgage bond (20-30 Year Term)</div>
                   </div>
                 </div>
                 <div className="flex gap-4 items-center">
-                  <span className="badge danger">Balance: {formatZAR(activeDebts.filter(d => d.account.name.toLowerCase().includes("home loan") || d.account.name.toLowerCase().includes("bond")).reduce((s, d) => s + Number(d.currentBalance), 0))}</span>
-                  <span className="badge blue">Term: 240 Months</span>
+                  <span className="badge badge-danger font-mono text-xs">Balance: {formatZAR(activeDebts.filter(d => d.account.name.toLowerCase().includes("home loan") || d.account.name.toLowerCase().includes("bond")).reduce((s, d) => s + Number(d.currentBalance), 0))}</span>
+                  <span className="badge blue font-mono text-xs">Term: 240 Months</span>
                 </div>
               </div>
 
@@ -309,11 +311,11 @@ export default function DebtsPage() {
                     <tr>
                       <th>Mortgage Account</th>
                       <th>Institution</th>
-                      <th>Balance</th>
+                      <th className="text-right">Balance</th>
                       <th>Rate</th>
-                      <th>Payment / Month</th>
+                      <th className="text-right">Payment / Month</th>
                       <th>Mode</th>
-                      <th>Action</th>
+                      <th className="text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -322,18 +324,18 @@ export default function DebtsPage() {
                       .map((debt) => (
                         <tr key={debt.id}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{debt.account.name}</div>
+                            <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{debt.account.name}</div>
                           </td>
-                          <td className="font-semibold">{debt.account.institution}</td>
-                          <td className="td-mono font-bold text-purple-400">{formatZAR(Number(debt.currentBalance))}</td>
+                          <td className="font-semibold text-slate-200">{debt.account.institution}</td>
+                          <td className="td-mono font-extrabold text-purple-400 text-right">{formatZAR(Number(debt.currentBalance))}</td>
                           <td className="td-mono">
                             {debt.annualInterestRate ? formatPercent(Number(debt.annualInterestRate)) : "11.75%"}
                           </td>
-                          <td className="td-mono">{formatZAR(Number(debt.minimumPayment))}</td>
+                          <td className="td-mono text-right">{formatZAR(Number(debt.minimumPayment))}</td>
                           <td><span className="badge blue">{PAYMENT_MODE_LABEL[debt.paymentMode]}</span></td>
-                          <td>
-                            <button className="btn btn-secondary btn-sm flex items-center gap-1" onClick={() => openEdit(debt)}>
-                              <Edit3 size={12} /> Edit
+                          <td className="text-right">
+                            <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(debt)}>
+                              Edit
                             </button>
                           </td>
                         </tr>
@@ -352,13 +354,13 @@ export default function DebtsPage() {
                   <div className="flex items-center gap-3">
                     <Building2 size={24} className="text-blue-400" />
                     <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 700 }}>{g.institution}</h2>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{g.institution}</h2>
                       <div className="text-muted text-xs">{g.debts.length} debt account{g.debts.length !== 1 ? "s" : ""}</div>
                     </div>
                   </div>
                   <div className="flex gap-4 items-center">
-                    <span className="badge danger">Owed: {formatZAR(g.subtotal)}</span>
-                    <span className="badge gold">Monthly: {formatZAR(g.monthlyTotal)}</span>
+                    <span className="badge badge-danger font-mono text-xs">Owed: {formatZAR(g.subtotal)}</span>
+                    <span className="badge badge-gold font-mono text-xs">Monthly: {formatZAR(g.monthlyTotal)}</span>
                   </div>
                 </div>
 
@@ -367,26 +369,26 @@ export default function DebtsPage() {
                     <thead>
                       <tr>
                         <th>Debt Account</th>
-                        <th>Balance</th>
+                        <th className="text-right">Balance</th>
                         <th>Confidence</th>
                         <th>Rate</th>
-                        <th>Payment / Month</th>
+                        <th className="text-right">Payment / Month</th>
                         <th>Mode</th>
-                        <th>Action</th>
+                        <th className="text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {g.debts.map((debt) => (
                         <tr key={debt.id}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{debt.account.name}</div>
+                            <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{debt.account.name}</div>
                             {debt.urgencyFlag !== "NONE" && (
                               <span className="badge danger" style={{ marginTop: 4 }}>
                                 {URGENCY_LABEL[debt.urgencyFlag]}
                               </span>
                             )}
                           </td>
-                          <td className="td-mono font-bold text-red">{formatZAR(Number(debt.currentBalance))}</td>
+                          <td className="td-mono font-extrabold text-red text-right">{formatZAR(Number(debt.currentBalance))}</td>
                           <td>
                             <span className={`badge ${CONFIDENCE_LABEL[debt.balanceConfidence]}`}>
                               {debt.balanceConfidence}
@@ -395,10 +397,10 @@ export default function DebtsPage() {
                           <td className="td-mono">
                             {debt.annualInterestRate ? formatPercent(Number(debt.annualInterestRate)) : "0%"}
                           </td>
-                          <td className="td-mono">{formatZAR(Number(debt.minimumPayment))}</td>
+                          <td className="td-mono text-right">{formatZAR(Number(debt.minimumPayment))}</td>
                           <td><span className="badge blue">{PAYMENT_MODE_LABEL[debt.paymentMode]}</span></td>
-                          <td>
-                            <button className="btn btn-secondary btn-sm" onClick={() => openEdit(debt)}>
+                          <td className="text-right">
+                            <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(debt)}>
                               Edit
                             </button>
                           </td>
@@ -425,12 +427,12 @@ export default function DebtsPage() {
                       <th>#</th>
                       <th>Debt Account</th>
                       <th>Institution</th>
-                      <th>Balance</th>
+                      <th className="text-right">Balance</th>
                       <th>Confidence</th>
                       <th>Rate</th>
-                      <th>Payment / Month</th>
+                      <th className="text-right">Payment / Month</th>
                       <th>Mode</th>
-                      <th>Action</th>
+                      <th className="text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -438,15 +440,15 @@ export default function DebtsPage() {
                       <tr key={debt.id}>
                         <td className="text-muted font-bold">{i + 1}</td>
                         <td>
-                          <div style={{ fontWeight: 600 }}>{debt.account.name}</div>
+                          <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{debt.account.name}</div>
                           {debt.urgencyFlag !== "NONE" && (
                             <span className="badge danger" style={{ marginTop: 4 }}>
                               {URGENCY_LABEL[debt.urgencyFlag]}
                             </span>
                           )}
                         </td>
-                        <td className="font-semibold">{debt.account.institution}</td>
-                        <td className="td-mono font-bold text-red">{formatZAR(Number(debt.currentBalance))}</td>
+                        <td className="font-semibold text-slate-200">{debt.account.institution}</td>
+                        <td className="td-mono font-extrabold text-red text-right">{formatZAR(Number(debt.currentBalance))}</td>
                         <td>
                           <span className={`badge ${CONFIDENCE_LABEL[debt.balanceConfidence]}`}>
                             {debt.balanceConfidence}
@@ -455,10 +457,10 @@ export default function DebtsPage() {
                         <td className="td-mono">
                           {debt.annualInterestRate ? formatPercent(Number(debt.annualInterestRate)) : "0%"}
                         </td>
-                        <td className="td-mono">{formatZAR(Number(debt.minimumPayment))}</td>
+                        <td className="td-mono text-right">{formatZAR(Number(debt.minimumPayment))}</td>
                         <td><span className="badge blue">{PAYMENT_MODE_LABEL[debt.paymentMode]}</span></td>
-                        <td>
-                          <button className="btn btn-secondary btn-sm" onClick={() => openEdit(debt)}>
+                        <td className="text-right">
+                          <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(debt)}>
                             Edit
                           </button>
                         </td>
@@ -481,20 +483,20 @@ export default function DebtsPage() {
                       <tr>
                         <th>Debt</th>
                         <th>Institution</th>
-                        <th>Balance</th>
+                        <th className="text-right">Balance</th>
                         <th>Confidence</th>
-                        <th>Action</th>
+                        <th className="text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {excludedDebts.map((debt) => (
                         <tr key={debt.id}>
-                          <td className="font-semibold">{debt.account.name}</td>
+                          <td className="font-semibold text-slate-200">{debt.account.name}</td>
                           <td>{debt.account.institution}</td>
-                          <td className="td-mono">{formatZAR(Number(debt.currentBalance))}</td>
+                          <td className="td-mono text-right">{formatZAR(Number(debt.currentBalance))}</td>
                           <td><span className="badge unknown">UNKNOWN</span></td>
-                          <td>
-                            <button className="btn btn-secondary btn-sm" onClick={() => openEdit(debt)}>
+                          <td className="text-right">
+                            <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(debt)}>
                               Confirm
                             </button>
                           </td>

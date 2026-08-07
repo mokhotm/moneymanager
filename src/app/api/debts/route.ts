@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
-      return NextResponse.json([]);
+      return NextResponse.json({ error: "Unauthorized. Log in required." }, { status: 401 });
     }
 
     const debts = await prisma.debt.findMany({

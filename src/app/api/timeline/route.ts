@@ -6,25 +6,15 @@ import { getEffectiveUserId } from "@/lib/session";
 /**
  * GET /api/timeline
  * Runs the snowball/avalanche simulation and returns the full timeline.
- * Query params:
- *   - strategy: "SNOWBALL" | "AVALANCHE" (default: from AppSettings)
- *   - extraPool: number (monthly extra cash, overrides auto-calculation if provided)
  */
 export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
-      return NextResponse.json({
-        timeline: [],
-        totalMonths: 0,
-        shortTermClearanceMonths: 0,
-        longTermClearanceMonths: 0,
-        shortTermCompleted: true,
-        totalInterestPaid: 0,
-        monthlyAccelerationPool: 0,
-        neverClearingDebts: [],
-        clearanceSchedule: [],
-      });
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in to view timeline." },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

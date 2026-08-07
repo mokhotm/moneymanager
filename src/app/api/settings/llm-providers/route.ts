@@ -1,9 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import { encryptApiKey, maskApiKey, validateLLMKey, isVisionSupported } from "@/agents/llmProvider";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to view LLM Provider settings." }, { status: 401 });
+    }
+
     const configs = await prisma.lLMProviderConfig.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -20,8 +26,13 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to modify LLM Provider settings." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { provider, displayName, apiKey, baseUrl, modelName } = body;
 
@@ -54,8 +65,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to modify LLM Provider settings." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { id } = body;
 
@@ -79,6 +95,26 @@ export async function PUT(req: Request) {
       apiKeyMasked: maskApiKey(updated.apiKeyEncrypted),
       validation,
     });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to modify LLM Provider settings." }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Config ID required" }, { status: 400 });
+    }
+
+    await prisma.lLMProviderConfig.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

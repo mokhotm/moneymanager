@@ -92,7 +92,6 @@ export default function NetWorthPage() {
       setValuationMsg({ assetId, ok: false, text: result.error ?? "Valuation failed" });
     } else {
       setValuationMsg({ assetId, ok: true, text: `AVM: ${formatZAR(result.estimatedValue)}${result.appliedToAsset ? " — applied to asset" : ""}` });
-      // Refresh net worth data after valuation update
       if (result.appliedToAsset) {
         fetch("/api/net-worth").then((r) => r.json()).then(setData).catch(console.error);
       }
@@ -102,7 +101,7 @@ export default function NetWorthPage() {
   if (loading || !data) {
     return (
       <div className="page-body" style={{ textAlign: "center", padding: "60px 0" }}>
-        <div className="text-muted">Calculating Net Worth portfolio…</div>
+        <div className="animate-pulse text-muted">Calculating Net Worth portfolio…</div>
       </div>
     );
   }
@@ -111,11 +110,16 @@ export default function NetWorthPage() {
     <>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Net Worth &amp; Wealth Portfolio</h1>
+          <h1 className="page-title flex items-center gap-2">
+            Net Worth &amp; Wealth Portfolio
+            <span className="badge badge-gold text-xs font-mono">Verified</span>
+          </h1>
           <p className="page-subtitle">Complete breakdown of everything you own (Assets) vs owe (Debts)</p>
         </div>
         <div className="flex gap-3 items-center">
-          <span className="badge gold">Currency: ZAR (R)</span>
+          <span className="badge badge-gold flex items-center gap-1.5 px-3 py-1 text-xs">
+            <Gem size={14} /> Currency: ZAR (R)
+          </span>
         </div>
       </div>
 
@@ -124,7 +128,7 @@ export default function NetWorthPage() {
         <div className="stat-grid mb-6">
           <div className="stat-card warning" style={{ gridColumn: "span 2" }}>
             <div className="stat-label">Total Net Worth</div>
-            <div className="stat-value gold" style={{ fontSize: "40px" }}>{formatZAR(data.netWorth)}</div>
+            <div className="stat-value gold" style={{ fontSize: "38px" }}>{formatZAR(data.netWorth)}</div>
             <div className="stat-sub">Total Assets ({formatZAR(data.totalAssets)}) − Total Liabilities ({formatZAR(data.totalDebts)})</div>
           </div>
 
@@ -146,7 +150,9 @@ export default function NetWorthPage() {
           {/* Assets Section */}
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Assets &amp; Holdings ({data.assets.length + 1})</span>
+              <span className="card-title flex items-center gap-2">
+                <Gem size={18} className="text-emerald-400" /> Assets &amp; Holdings ({data.assets.length + 1})
+              </span>
               <span className="text-green font-bold">{formatZAR(data.totalAssets)}</span>
             </div>
 
@@ -156,33 +162,33 @@ export default function NetWorthPage() {
                   <tr>
                     <th>Asset Name</th>
                     <th>Category</th>
-                    <th>Current Value</th>
+                    <th className="text-right">Current Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.assets.map((asset) => (
                     <tr key={asset.id}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{asset.name}</div>
+                        <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>{asset.name}</div>
                         {asset.valueSource && <div className="text-muted text-xs">{asset.valueSource}</div>}
                         {asset.type === "PROPERTY" && (
-                          <div className="flex gap-2 mt-1" style={{ flexWrap: "wrap" }}>
+                          <div className="flex gap-2 mt-2" style={{ flexWrap: "wrap" }}>
                             <button
-                              className="btn btn-secondary btn-sm" style={{ fontSize: 10, padding: "2px 8px" }}
+                              className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }}
                               onClick={() => { setDeedsModal({ assetId: asset.id, assetName: asset.name }); setDeedsQuery(asset.name); setDeedsResults(null); setDeedsError(null); }}
                               id={`deeds-search-${asset.id}`}
                             >
-                              <Search size={10} /> Verify Deeds
+                              <Search size={11} /> Verify Deeds
                             </button>
                             <button
-                              className="btn btn-secondary btn-sm" style={{ fontSize: 10, padding: "2px 8px" }}
+                              className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }}
                               disabled={valuationLoading === asset.id}
                               onClick={() => runValuation(asset.id, asset.name)}
                               id={`valuation-${asset.id}`}
                             >
                               {valuationLoading === asset.id
-                                ? <><Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Fetching AVM…</>
-                                : <><ValuationIcon size={10} /> Get Valuation</>}
+                                ? <><Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> Fetching AVM…</>
+                                : <><ValuationIcon size={11} /> Get Valuation</>}
                             </button>
                           </div>
                         )}
@@ -193,7 +199,7 @@ export default function NetWorthPage() {
                         )}
                       </td>
                       <td><span className="badge gold">{ASSET_TYPE_LABELS[asset.type] ?? asset.type}</span></td>
-                      <td className="td-mono font-bold text-green">{formatZAR(Number(asset.currentValue))}</td>
+                      <td className="td-mono font-bold text-green text-right">{formatZAR(Number(asset.currentValue))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -204,7 +210,9 @@ export default function NetWorthPage() {
           {/* Debts Section */}
           <div className="card">
             <div className="card-header">
-              <span className="card-title">Liabilities &amp; Debts ({data.debts.length})</span>
+              <span className="card-title flex items-center gap-2">
+                <ShieldCheck size={18} className="text-rose-400" /> Liabilities &amp; Debts ({data.debts.length})
+              </span>
               <span className="text-red font-bold">{formatZAR(data.totalDebts)}</span>
             </div>
 
@@ -214,15 +222,15 @@ export default function NetWorthPage() {
                   <tr>
                     <th>Debt Account</th>
                     <th>Institution</th>
-                    <th>Owed Balance</th>
+                    <th className="text-right">Owed Balance</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.debts.map((debt) => (
                     <tr key={debt.id}>
-                      <td className="font-semibold">{debt.account.name}</td>
+                      <td className="font-semibold text-slate-200">{debt.account.name}</td>
                       <td>{debt.account.institution}</td>
-                      <td className="td-mono font-bold text-red">{formatZAR(Number(debt.currentBalance))}</td>
+                      <td className="td-mono font-bold text-red text-right">{formatZAR(Number(debt.currentBalance))}</td>
                     </tr>
                   ))}
                 </tbody>

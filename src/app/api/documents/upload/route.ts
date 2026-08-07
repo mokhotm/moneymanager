@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
 import { processAndVectorizeDocument } from "@/agents/documentAgent";
 
-// Disable Next.js body parser — we handle multipart manually via formData()
-export const config = { api: { bodyParser: false } };
 
 /** Extract text from a PDF buffer, with optional password for protected files. */
 async function extractPdfText(buffer: Buffer, password?: string): Promise<string> {

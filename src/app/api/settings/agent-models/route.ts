@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to view agent model assignments." }, { status: 401 });
+    }
+
     const assignments = await prisma.agentModelAssignment.findMany({
       include: { llmProviderConfig: true },
     });
@@ -24,8 +30,13 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Log in to modify agent model assignments." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { agent, llmProviderConfigId } = body;
 

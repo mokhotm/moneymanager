@@ -2,25 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { currentMonthKey } from "@/lib/formatters";
 import { getEffectiveUserId } from "@/lib/session";
-import { getPayCycleBounds } from "@/lib/payrollCalendar";
+import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
 
-/** Resolve the active budget month key from the pay cycle (pay-day-to-pay-day, not calendar). */
-async function activeCycleMonthKey(): Promise<string> {
-  try {
-    const payslip = await prisma.document.findFirst({
-      where: { documentType: "PAYSLIP" },
-      orderBy: { uploadedAt: "desc" },
-    });
-    let payDate = new Date("2026-07-15");
-    if (payslip?.parsedData && (payslip.parsedData as any).mainPayDate) {
-      payDate = new Date((payslip.parsedData as any).mainPayDate);
-    }
-    const bounds = getPayCycleBounds(payDate, "PAYSLIP_AUTO");
-    return bounds.cycleMonthKey;
-  } catch {
-    return currentMonthKey();
-  }
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const month = searchParams.get("month") ?? await activeCycleMonthKey();
+    const month = searchParams.get("month") ?? await getActiveCycleMonthKey();
 
     const items = await prisma.budgetLineItem.findMany({
       where: {
@@ -63,7 +46,7 @@ export async function POST(req: NextRequest) {
         sourceRef: body.sourceRef ?? null,
         confidence: body.confidence ?? "ESTIMATED",
         note: body.note ?? null,
-        month: body.month ?? await activeCycleMonthKey(),
+        month: body.month ?? await getActiveCycleMonthKey(),
       },
     });
     return NextResponse.json(item, { status: 201 });

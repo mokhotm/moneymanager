@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { formatZAR } from "@/lib/formatters";
-import { Landmark, Building2, Plus, Layers, Pencil, Trash2 } from "lucide-react";
+import { Landmark, Building2, Plus, Layers, Pencil, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
+
 
 interface Account {
   id: string;
@@ -154,7 +155,10 @@ export default function AccountsPage() {
     <>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Accounts &amp; Banking Register</h1>
+          <h1 className="page-title flex items-center gap-2">
+            Accounts &amp; Banking Register
+            <span className="badge badge-gold text-xs font-mono">Live Sync</span>
+          </h1>
           <p className="page-subtitle">List and manage all bank accounts, cards, loans &amp; municipal service accounts</p>
         </div>
         <div className="flex gap-3">
@@ -164,7 +168,7 @@ export default function AccountsPage() {
             id="toggle-group-institution-btn"
           >
             <Building2 size={16} />
-            <span>{groupByInstitution ? "Grouped by Bank / Institution" : "Flat List View"}</span>
+            <span>{groupByInstitution ? "Grouped by Institution" : "Flat List View"}</span>
           </button>
           <button className="btn btn-primary" onClick={openAdd} id="add-account-btn">
             <Plus size={16} />
@@ -176,14 +180,14 @@ export default function AccountsPage() {
       <div className="page-body">
         {/* Overall Institution Summary */}
         <div className="stat-grid mb-6">
-          <div className="stat-card">
+          <div className="stat-card warning">
             <div className="stat-label">Institutions Tracked</div>
             <div className="stat-value gold">{institutions.length}</div>
             <div className="stat-sub">Banks, Municipalities &amp; Lenders</div>
           </div>
 
           <div className="stat-card success">
-            <div className="stat-label">Total Assets</div>
+            <div className="stat-label">Total Liquid Assets</div>
             <div className="stat-value green">{formatZAR(overallAssets)}</div>
             <div className="stat-sub">Current &amp; Savings Balances</div>
           </div>
@@ -197,7 +201,7 @@ export default function AccountsPage() {
 
         {loading ? (
           <div className="text-muted" style={{ padding: "48px 0", textAlign: "center" }}>
-            Loading accounts…
+            <div className="animate-pulse">Loading accounts…</div>
           </div>
         ) : groupByInstitution ? (
           /* Grouped View by Bank / Institution */
@@ -208,19 +212,19 @@ export default function AccountsPage() {
                   <div className="flex items-center gap-3">
                     <Building2 size={24} className="text-amber-400" />
                     <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 700 }}>{g.institution}</h2>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)" }}>{g.institution}</h2>
                       <div className="text-muted text-xs">
                         {g.accounts.length} account{g.accounts.length !== 1 ? "s" : ""} linked
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-4 items-center">
+                  <div className="flex gap-3 items-center">
                     {g.totalAssets > 0 && (
-                      <span className="badge active">Assets: {formatZAR(g.totalAssets)}</span>
+                      <span className="badge badge-success text-xs font-mono">Assets: {formatZAR(g.totalAssets)}</span>
                     )}
                     {g.totalDebts > 0 && (
-                      <span className="badge danger">Debt: {formatZAR(g.totalDebts)}</span>
+                      <span className="badge badge-danger text-xs font-mono">Debt: {formatZAR(g.totalDebts)}</span>
                     )}
                   </div>
                 </div>
@@ -232,9 +236,9 @@ export default function AccountsPage() {
                         <th>Account Name</th>
                         <th>Account Number</th>
                         <th>Type</th>
-                        <th>Balance / Owed</th>
+                        <th className="text-right">Balance / Owed</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th className="text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -243,26 +247,26 @@ export default function AccountsPage() {
                         return (
                           <tr key={acc.id}>
                             <td>
-                              <div style={{ fontWeight: 600 }}>{acc.name}</div>
+                              <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>{acc.name}</div>
                               {acc.notes && <div className="text-muted text-xs">{acc.notes}</div>}
                             </td>
                             <td className="td-mono text-muted">{acc.accountNumberMasked ?? "—"}</td>
                             <td>
                               <span className="badge blue">{ACCOUNT_TYPE_LABELS[acc.type] ?? acc.type}</span>
                             </td>
-                            <td className="td-mono font-bold">
+                            <td className="td-mono font-extrabold text-right">
                               <span className={acc.isDebt ? "text-red" : "text-green"}>
                                 {formatZAR(Math.abs(bal))}
                               </span>
                             </td>
                             <td>
-                              <span className={`badge ${acc.isDebt ? "danger" : "active"}`}>
-                                {acc.isDebt ? "Debt" : "Asset"}
+                              <span className={`badge ${acc.isDebt ? "danger" : "confirmed"}`}>
+                                {acc.isDebt ? "Liability" : "Asset"}
                               </span>
                             </td>
-                            <td>
+                            <td className="text-right">
                               <button
-                                className="btn btn-secondary btn-sm"
+                                className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }}
                                 onClick={() => openEdit(acc)}
                                 id={`edit-account-${acc.id}`}
                               >
@@ -289,9 +293,9 @@ export default function AccountsPage() {
                     <th>Account Name</th>
                     <th>Account Number</th>
                     <th>Type</th>
-                    <th>Balance / Owed</th>
+                    <th className="text-right">Balance / Owed</th>
                     <th>Category</th>
-                    <th></th>
+                    <th className="text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -299,18 +303,18 @@ export default function AccountsPage() {
                     const bal = acc.debt ? Number(acc.debt.currentBalance) : Number(acc.openingBalance);
                     return (
                       <tr key={acc.id}>
-                        <td className="font-semibold">{acc.institution}</td>
+                        <td className="font-semibold text-slate-200">{acc.institution}</td>
                         <td>{acc.name}</td>
                         <td className="td-mono text-muted">{acc.accountNumberMasked ?? "—"}</td>
                         <td><span className="badge blue">{ACCOUNT_TYPE_LABELS[acc.type]}</span></td>
-                        <td className="td-mono font-bold">
+                        <td className="td-mono font-extrabold text-right">
                           <span className={acc.isDebt ? "text-red" : "text-green"}>
                             {formatZAR(Math.abs(bal))}
                           </span>
                         </td>
-                        <td><span className={`badge ${acc.isDebt ? "danger" : "active"}`}>{acc.isDebt ? "Liability" : "Asset"}</span></td>
-                        <td>
-                          <button className="btn btn-secondary btn-sm" onClick={() => openEdit(acc)}>
+                        <td><span className={`badge ${acc.isDebt ? "danger" : "confirmed"}`}>{acc.isDebt ? "Liability" : "Asset"}</span></td>
+                        <td className="text-right">
+                          <button className="apple-pill-btn" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => openEdit(acc)}>
                             Edit
                           </button>
                         </td>
@@ -322,6 +326,7 @@ export default function AccountsPage() {
             </div>
           </div>
         )}
+
       </div>
 
       {/* Add / Edit Account Modal */}

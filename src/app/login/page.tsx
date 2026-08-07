@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock, User, ShieldCheck, ArrowRight, Sparkles, AlertCircle, Eye, EyeOff, UserPlus, Mail, Briefcase } from "lucide-react";
 
 export default function LoginPage() {
@@ -22,6 +22,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          window.location.href = "/";
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const fillDemoCredentials = () => {
     setMode("LOGIN");

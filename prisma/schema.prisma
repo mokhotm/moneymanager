@@ -21,6 +21,7 @@ enum AccountType {
   INVESTMENT
   RETIREMENT
   PROPERTY
+  CASH_WALLET
 }
 
 enum BalanceConfidence {
@@ -85,6 +86,8 @@ enum DocumentType {
   INVOICE
   MUNICIPAL_BILL
   INVESTMENT_STATEMENT
+  RECEIPT
+  CREDIT_REPORT
   OTHER
 }
 
@@ -126,6 +129,7 @@ enum AgentType {
   BUDGET_AGENT
   DEBT_AGENT
   GOALS_AGENT
+  COACH
 }
 
 enum RecommendationStatus {
@@ -177,6 +181,58 @@ enum BankConnectionConsentStatus {
 enum SyncFrequency {
   DAILY
   ON_DEMAND
+}
+
+enum FlowType {
+  INCOME
+  TRANSFER
+  INVESTMENT
+  DEBT_PAYMENT
+  CASH_WITHDRAWAL
+  CASH_SPENDING
+  ASSET_PURCHASE
+  ASSET_SALE
+  GOAL_CONTRIBUTION
+  DIVIDEND
+  INTEREST
+  REFUND
+  TAX
+  FEE
+  LOAN
+  OTHER
+}
+
+enum FlowStatus {
+  ACTIVE
+  PARTIALLY_CONSUMED
+  FULLY_CONSUMED
+}
+
+enum FlowEndpointType {
+  ACCOUNT
+  ASSET
+  DEBT
+  CASH_WALLET
+  EXTERNAL
+}
+
+enum FlowConfidence {
+  CONFIRMED
+  AGENT_SUGGESTED
+}
+
+enum DriftStatus {
+  AHEAD_OF_PLAN
+  ON_TRACK
+  BEHIND_PLAN
+}
+
+enum HealthTier {
+  ROOKIE
+  ENTHUSIAST
+  COMPETITOR
+  EXPERT
+  ELITE
 }
 
 // ─── User & Profile Models ───────────────────────────────────────────────────
@@ -237,9 +293,10 @@ model Account {
 
   debt                 Debt?
   assets               Asset[]
-  documents            Document[]
   bankConnection       BankConnection?
-  auditLogs            AuditLogEntry[] @relation("AccountAuditLogs")
+
+  @@index([userId])
+  @@index([type])
 }
 
 model Asset {
@@ -257,6 +314,9 @@ model Asset {
   lastValuedDate  DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([accountId])
 }
 
 model NetWorthSnapshot {
@@ -267,6 +327,8 @@ model NetWorthSnapshot {
   netWorth     Decimal
   generatedBy  SnapshotGeneratedBy @default(SCHEDULED)
   createdAt    DateTime            @default(now())
+
+  @@index([snapshotDate])
 }
 
 model Debt {
@@ -304,7 +366,9 @@ model Debt {
   updatedAt                DateTime          @updatedAt
 
   settlementEvents         SettlementEvent[]
-  auditLogs                AuditLogEntry[] @relation("DebtAuditLogs")
+
+  @@index([status])
+  @@index([debtCategory])
 }
 
 model Goal {
@@ -325,6 +389,9 @@ model Goal {
   note                   String?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model Income {
@@ -340,7 +407,8 @@ model Income {
   updatedAt                   DateTime         @updatedAt
 
   incomeEvents                IncomeEvent[]
-  auditLogs                   AuditLogEntry[] @relation("IncomeAuditLogs")
+
+  @@index([userId])
 }
 
 model IncomeEvent {
@@ -371,6 +439,9 @@ model BudgetLineItem {
   month       String            // "YYYY-MM"
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+
+  @@index([userId, month])
+  @@index([category])
 }
 
 model SettlementEvent {
@@ -399,8 +470,11 @@ model Document {
   parsedData              Json?
   supersededByDocumentId String?
 
-  account                 Account?            @relation(fields: [relatedEntityId], references: [id])
   embeddings              DocumentEmbedding[]
+
+  @@index([documentType])
+  @@index([relatedEntityId])
+  @@index([uploadedAt])
 }
 
 // ─── Vector Embeddings Model (NEW) ──────────────────────────────────────────
@@ -466,9 +540,8 @@ model AuditLogEntry {
   changedAt     DateTime @default(now())
   changedBy     String   @default("user")
 
-  account       Account? @relation("AccountAuditLogs", fields: [entityId], references: [id], map: "AuditLogEntry_account_fkey")
-  debt          Debt?    @relation("DebtAuditLogs", fields: [entityId], references: [id], map: "AuditLogEntry_debt_fkey")
-  income        Income?  @relation("IncomeAuditLogs", fields: [entityId], references: [id], map: "AuditLogEntry_income_fkey")
+  @@index([entityType, entityId])
+  @@index([changedAt])
 }
 
 model AppSettings {
@@ -514,3 +587,101 @@ model BankConnection {
   createdAt             DateTime                      @default(now())
   updatedAt             DateTime                      @updatedAt
 }
+
+// ─── Money Flow Engine Models (v4 — §12) ────────────────────────────────────
+
+model MoneyFlow {
+  id                   String           @id @default(cuid())
+  parentFlowId         String?
+  parentFlow           MoneyFlow?       @relation("FlowChain", fields: [parentFlowId], references: [id])
+  childFlows           MoneyFlow[]      @relation("FlowChain")
+
+  originTransactionId String?
+
+  sourceType           FlowEndpointType
+  sourceRef            String?
+
+  destinationType      FlowEndpointType
+  destinationRef       String?
+
+  amount               Decimal
+  currentAmount        Decimal
+  flowType             FlowType
+  status               FlowStatus       @default(ACTIVE)
+  confidence           FlowConfidence   @default(CONFIRMED)
+
+  createdAt            DateTime         @default(now())
+
+  @@index([parentFlowId])
+  @@index([sourceRef])
+  @@index([destinationRef])
+  @@index([flowType])
+}
+
+// ─── Debt Payoff Position Tracking Models (v4 — §13) ──────────────────────────
+
+model DebtPayoffPlan {
+  id                 String               @id @default(cuid())
+  createdDate        DateTime             @default(now())
+  strategy           SnowballStrategy     @default(SNOWBALL)
+  isActive           Boolean              @default(true)
+  supersededByPlanId String?
+  supersededByPlan   DebtPayoffPlan?      @relation("PlanSupersession", fields: [supersededByPlanId], references: [id])
+  supersedesPlans    DebtPayoffPlan[]     @relation("PlanSupersession")
+
+  months             DebtPayoffPlanMonth[]
+  createdAt          DateTime             @default(now())
+}
+
+model DebtPayoffPlanMonth {
+  id               String         @id @default(cuid())
+  planId           String
+  plan             DebtPayoffPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  monthNumber      Int
+  calendarDate     DateTime
+  debtId           String
+  projectedBalance Decimal
+  projectedPayment Decimal
+
+  @@index([planId, monthNumber])
+  @@index([debtId])
+}
+
+// ─── Financial Health Score Model (v4 — §2.12) ───────────────────────────────
+
+model FinancialHealthScore {
+  id                   String     @id @default(cuid())
+  snapshotDate         DateTime   @default(now())
+  score                Int
+  tier                 HealthTier @default(ROOKIE)
+  contributingFactors  Json
+  badges               Json       // string[]
+  streakCount          Int        @default(0)
+  createdAt            DateTime   @default(now())
+}
+
+// ─── Transaction Rules Model (v4 — §11.2) ────────────────────────────────────
+
+model TransactionRule {
+  id                         String   @id @default(cuid())
+  matchType                  String   // MERCHANT_EXACT | MERCHANT_CONTAINS | DESCRIPTION_PATTERN
+  matchValue                 String
+  actionType                 String   // SET_CATEGORY | SET_ACCOUNT_LINK | MARK_TAX_DEDUCTIBLE | SUPPRESS_UNUSUAL_ALERT
+  actionValue                String
+  createdFromTransactionId   String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+// ─── RAG Document Passages Model (v4 — §11.6) ────────────────────────────────
+
+model DocumentChunk {
+  id                     String   @id @default(cuid())
+  documentId             String
+  chunkText              String
+  chunkIndex             Int
+  embeddingJson          Json     // Array of float numbers
+  embeddingModelVersion  String   @default("v1")
+  createdAt              DateTime @default(now())
+}
+

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ThemeSelector from "@/components/ThemeSwitcher";
 import { Edit3, LogOut } from "lucide-react";
 
 interface UserProfileData {
@@ -99,11 +98,6 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "800px" }}>
-            {/* Theme Selector Section */}
-            <div className="card">
-              <ThemeSelector />
-            </div>
-
             {/* User Card */}
             <div className="card">
               <div className="flex items-center gap-5" style={{ marginBottom: "20px" }}>
