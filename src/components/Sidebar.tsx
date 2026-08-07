@@ -22,6 +22,7 @@ import {
   Wallet,
   Sparkles,
   ArrowLeftRight,
+  Bot,
 } from "lucide-react";
 
 const navItems = [
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/timeline", icon: LineChart, label: "Payoff Timeline" },
   { href: "/budget", icon: Receipt, label: "Monthly Budget" },
   { href: "/recommendations", icon: Inbox, label: "Agent Inbox" },
+  { href: "/chatbot", icon: Bot, label: "ChatBot AI" },
   { href: "/documents", icon: FolderOpen, label: "Documents" },
   { href: "/scenario", icon: FlaskConical, label: "Scenario Planner" },
   { href: "/settings", icon: Settings, label: "Settings & BYOK" },
