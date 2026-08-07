@@ -485,9 +485,9 @@ export function BankingTransactionsCard({
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(7, 11, 20, 0.65)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            background: "rgba(7, 11, 20, 0.4)",
+            backdropFilter: "blur(3px)",
+            WebkitBackdropFilter: "blur(3px)",
             zIndex: 1000,
           }}
         >

@@ -749,9 +749,9 @@ select option {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(7, 11, 20, 0.65);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: rgba(7, 11, 20, 0.4);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   z-index: 1000;
   display: flex;
   align-items: center;
