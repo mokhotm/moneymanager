@@ -6,16 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
-      return NextResponse.json({
-        totalAssets: 0,
-        totalDebts: 0,
-        netWorth: 0,
-        assetTotal: 0,
-        bankAssetsTotal: 0,
-        assets: [],
-        debts: [],
-        snapshots: [],
-      });
+      return NextResponse.json({ error: "Unauthorized. Log in to view Net Worth." }, { status: 401 });
     }
 
     const [assets, debts, accounts, snapshots] = await Promise.all([
