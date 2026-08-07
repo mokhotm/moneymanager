@@ -476,7 +476,21 @@ export function BankingTransactionsCard({
 
       {/* Transaction Detail & Metadata Edit Modal */}
       {isEditingModalOpen && selectedTx && (
-        <div className="modal-overlay" onClick={() => setIsEditingModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsEditingModalOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(7, 11, 20, 0.65)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            zIndex: 1000,
+          }}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
