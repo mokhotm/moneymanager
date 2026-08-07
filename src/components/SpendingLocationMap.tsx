@@ -363,64 +363,106 @@ export function SpendingLocationMap({ locations = [] }: SpendingLocationMapProps
             transition: isDragging ? "none" : "transform 0.15s ease-out",
           }}
         >
-          {/* SVG Map Graphics & RSA Financial Hub Lines */}
+          {/* SVG Map Graphics — South Africa Landmass Vector & Coastline Outlines */}
           <svg style={{ position: "absolute", width: "100%", height: "100%", overflow: "visible" }}>
             <defs>
               <pattern id="radar-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(245, 158, 11, 0.12)" strokeWidth="0.8" />
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(245, 158, 11, 0.08)" strokeWidth="0.8" />
               </pattern>
 
+              <linearGradient id="land-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#111c35" stopOpacity="0.9" />
+                <stop offset="50%" stopColor="#0d1527" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#090e1b" stopOpacity="0.98" />
+              </linearGradient>
+
               <linearGradient id="gauteng-glow" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.35" />
                 <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
               </linearGradient>
 
               <linearGradient id="cape-glow" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
                 <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
               </linearGradient>
 
               <linearGradient id="durban-glow" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
                 <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
               </linearGradient>
             </defs>
 
-            {/* Grid Pattern */}
+            {/* Deep Water Ocean Shading */}
+            <rect width="100%" height="100%" fill="#040813" />
+
+            {/* Grid Pattern Overlay */}
             <rect width="100%" height="100%" fill="url(#radar-grid)" />
 
-            {/* Stylized RSA Geographic Boundary & Hub Connection Arteries */}
-            {/* N1 Corridor: JHB/Pretoria to Cape Town */}
+            {/* South Africa Geographic Landmass Polygon & Coastal Silhouette */}
             <path
-              d="M 68% 28% L 26% 78%"
-              fill="none"
-              stroke="rgba(245, 158, 11, 0.25)"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-            />
-            {/* N3 Corridor: JHB to Durban */}
-            <path
-              d="M 68% 28% L 78% 62%"
-              fill="none"
-              stroke="rgba(16, 185, 129, 0.25)"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
+              d="M 5% 38% 
+                 Q 6% 45% 8% 52% 
+                 Q 9% 65% 10% 75% 
+                 Q 11.5% 88% 13% 92% 
+                 Q 18% 97% 22% 98% 
+                 Q 32% 96% 42% 94% 
+                 Q 55% 90% 68% 82% 
+                 Q 78% 72% 84% 64% 
+                 Q 90% 50% 93% 40% 
+                 Q 96% 28% 98% 22% 
+                 L 94% 16% 
+                 L 80% 6% 
+                 L 68% 10% 
+                 L 55% 14% 
+                 L 42% 16% 
+                 L 28% 20% 
+                 L 15% 26% 
+                 L 8% 34% Z"
+              fill="url(#land-gradient)"
+              stroke="rgba(245, 158, 11, 0.45)"
+              strokeWidth="2.2"
+              strokeLinejoin="round"
+              filter="drop-shadow(0 0 15px rgba(245, 158, 11, 0.15))"
             />
 
+            {/* Provincial Boundaries (Dashed Lines) */}
+            <path d="M 32% 96% C 35% 82%, 36% 75%, 38% 70%" fill="none" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" strokeDasharray="3 3" />
+            <path d="M 68% 82% C 65% 72%, 68% 65%, 72% 60%" fill="none" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" strokeDasharray="3 3" />
+            <path d="M 38% 70% C 45% 55%, 52% 45%, 58% 40%" fill="none" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" strokeDasharray="3 3" />
+            
+            {/* Gauteng Economic Zone Highlight */}
+            <path d="M 62% 24% L 74% 24% L 74% 34% L 62% 34% Z" fill="rgba(245, 158, 11, 0.08)" stroke="rgba(245, 158, 11, 0.4)" strokeWidth="1.2" strokeDasharray="2 2" />
+
+            {/* Major Highway Arteries */}
+            {/* N1 Corridor: Cape Town -> JHB -> Pretoria -> Musina */}
+            <path d="M 13% 92% L 26% 78% L 48% 52% L 68% 28% L 80% 8%" fill="none" stroke="#f59e0b" strokeOpacity="0.4" strokeWidth="2" strokeDasharray="5 3" />
+            {/* N2 Coastal Corridor: Cape Town -> Gqeberha -> East London -> Durban */}
+            <path d="M 13% 92% L 22% 98% L 55% 90% L 68% 82% L 78% 62%" fill="none" stroke="#3b82f6" strokeOpacity="0.4" strokeWidth="2" strokeDasharray="5 3" />
+            {/* N3 Corridor: JHB -> Durban */}
+            <path d="M 68% 28% L 78% 62%" fill="none" stroke="#10b981" strokeOpacity="0.4" strokeWidth="2" strokeDasharray="5 3" />
+
             {/* Financial Hub Target Rings */}
-            {/* Gauteng Hub (Sandton / Pretoria / Rosebank / Mall of Africa) */}
-            <circle cx="68%" cy="28%" r="70" fill="url(#gauteng-glow)" />
-            <circle cx="68%" cy="28%" r="45" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" />
+            {/* Gauteng Hub (Sandton / Pretoria) */}
+            <circle cx="68%" cy="28%" r="75" fill="url(#gauteng-glow)" />
+            <circle cx="68%" cy="28%" r="45" fill="none" stroke="#f59e0b" strokeWidth="1.2" strokeDasharray="4 4" />
             <circle cx="68%" cy="28%" r="90" fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="6 6" />
 
             {/* Cape Town Hub (V&A Waterfront) */}
-            <circle cx="26%" cy="78%" r="55" fill="url(#cape-glow)" />
-            <circle cx="26%" cy="78%" r="35" fill="none" stroke="#3b82f6" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx="26%" cy="78%" r="60" fill="url(#cape-glow)" />
+            <circle cx="26%" cy="78%" r="35" fill="none" stroke="#3b82f6" strokeWidth="1.2" strokeDasharray="4 4" />
 
             {/* Durban Hub (Umhlanga) */}
-            <circle cx="78%" cy="62%" r="50" fill="url(#durban-glow)" />
-            <circle cx="78%" cy="62%" r="30" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx="78%" cy="62%" r="55" fill="url(#durban-glow)" />
+            <circle cx="78%" cy="62%" r="30" fill="none" stroke="#10b981" strokeWidth="1.2" strokeDasharray="4 4" />
           </svg>
+
+          {/* Ocean & Region Text Labels */}
+          <div style={{ position: "absolute", top: "70%", left: "4%", fontSize: "10px", fontWeight: 800, color: "rgba(59, 130, 246, 0.4)", fontFamily: "var(--font-mono, monospace)", letterSpacing: "2px", transform: "rotate(-75deg)" }}>
+            ATLANTIC OCEAN
+          </div>
+          <div style={{ position: "absolute", top: "85%", left: "80%", fontSize: "10px", fontWeight: 800, color: "rgba(16, 185, 129, 0.4)", fontFamily: "var(--font-mono, monospace)", letterSpacing: "2px", transform: "rotate(35deg)" }}>
+            INDIAN OCEAN
+          </div>
 
           {/* Regional Hub Labels */}
           <div
