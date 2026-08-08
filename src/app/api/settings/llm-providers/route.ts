@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { checkFeatureAccess } from "@/lib/subscriptionGate";
 import { encryptApiKey, decryptApiKey, maskApiKey, validateLLMKey, isVisionSupported } from "@/agents/llmProvider";
 
 export async function GET(req: NextRequest) {
@@ -31,6 +32,18 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized. Log in to modify LLM Provider settings." }, { status: 401 });
+    }
+
+    const featureCheck = await checkFeatureAccess(user.id, "byokLLM");
+    if (!featureCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: "FEATURE_LOCKED",
+          requiredTier: "PRO_WEALTH",
+          message: "BYOK Custom LLM Vault requires Pro Wealth Accelerator or Executive Enterprise tier.",
+        },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();

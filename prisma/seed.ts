@@ -102,6 +102,10 @@ async function main() {
       passwordHash,
       email: "Ezrom.Mokhotla@sars.gov.za",
       role: "user",
+      subscriptionTier: "PRO_WEALTH" as any,
+      subscriptionStatus: "ACTIVE",
+      billingCycle: "MONTHLY" as any,
+      subscriptionExpiresAt: new Date(Date.now() + 365 * 86400 * 1000),
     },
   });
 

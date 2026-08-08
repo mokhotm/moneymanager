@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { checkFeatureAccess } from "@/lib/subscriptionGate";
 import crypto from "crypto";
 
 const ENC_KEY = (process.env.ENCRYPTION_KEY ?? "money_manager_secret_key_32bytes!!").padEnd(32).slice(0, 32);
@@ -21,6 +22,18 @@ function decrypt(enc: string): string {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const featureCheck = await checkFeatureAccess(user.id, "windeedValuations");
+  if (!featureCheck.allowed) {
+    return NextResponse.json(
+      {
+        error: "FEATURE_LOCKED",
+        requiredTier: "EXECUTIVE_ENTERPRISE",
+        message: "Windeed & Lightstone Deed Valuations require Executive Enterprise subscription tier. Upgrade your plan in Profile settings.",
+      },
+      { status: 403 }
+    );
+  }
 
   const cfg = await prisma.propertyDataConfig.findUnique({ where: { userId: user.id } });
   if (!cfg?.lightstoneApiKeyEnc) {

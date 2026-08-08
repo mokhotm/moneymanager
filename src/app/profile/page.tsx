@@ -451,38 +451,122 @@ export default function ProfilePage() {
               borderLeft: "1px solid var(--border)",
               borderRight: "1px solid var(--border)",
               borderBottom: "1px solid var(--border)",
-              borderTop: "3px solid #10b981",
+              borderTop: "3px solid #f59e0b",
               background: "rgba(13, 20, 36, 0.9)",
               backdropFilter: "blur(24px)",
             }}
           >
             <div className="card-header mb-4">
               <div className="flex items-center gap-2">
-                <Award size={20} className="text-emerald-400" />
+                <Award size={20} className="text-amber-400" />
                 <span className="card-title" style={{ fontSize: "16px", fontWeight: 800 }}>
-                  Active Subscription Tier &amp; Billing
+                  Active Subscription Tier &amp; Feature Access
                 </span>
               </div>
-              <span className="badge badge-success font-mono text-xs">Active Subscription</span>
+              <span className="badge badge-gold font-mono text-xs">
+                {userData?.subscriptionTier === "PRO_WEALTH"
+                  ? "✓ Pro Wealth Active"
+                  : userData?.subscriptionTier === "EXECUTIVE_ENTERPRISE"
+                  ? "✓ Executive Enterprise Active"
+                  : "Starter Free Active"}
+              </span>
             </div>
 
-            <div className="flex items-center justify-between" style={{ background: "rgba(7, 11, 20, 0.8)", padding: "18px 22px", borderRadius: "14px", border: "1px solid var(--border)" }}>
-              <div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>
-                  {subTierName}
+            <div
+              style={{
+                background: "rgba(7, 11, 20, 0.8)",
+                padding: "20px 24px",
+                borderRadius: "16px",
+                border: "1px solid rgba(245, 158, 11, 0.3)",
+                marginBottom: "20px",
+              }}
+            >
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+                <div>
+                  <div style={{ fontSize: "20px", fontWeight: 900, color: "#f59e0b" }}>
+                    {subTierName}
+                  </div>
+                  <div className="text-muted text-xs mt-1">
+                    Active for user <strong className="text-slate-200">@{userData?.username}</strong> ({userData?.email})
+                  </div>
                 </div>
-                <div className="text-muted text-xs mt-1">
-                  Full BYOK multi-agent AI, dual-track waterfall calculations &amp; OpenBanking feeds active
+
+                {/* Instant Plan Switcher for Testing */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-mono">Test Tier Switch:</span>
+                  {(["STARTER_FREE", "PRO_WEALTH", "EXECUTIVE_ENTERPRISE"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={async () => {
+                        await fetch("/api/subscription/checkout", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            tier: t,
+                            billingCycle: "MONTHLY",
+                            paymentGateway: "TEST_SWITCHER",
+                            amount: t === "PRO_WEALTH" ? 199 : t === "EXECUTIVE_ENTERPRISE" ? 499 : 0,
+                          }),
+                        });
+                        loadProfile();
+                      }}
+                      style={{
+                        padding: "5px 12px",
+                        borderRadius: "8px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        border: userData?.subscriptionTier === t ? "1px solid #f59e0b" : "1px solid rgba(255,255,255,0.1)",
+                        background: userData?.subscriptionTier === t ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "rgba(255,255,255,0.05)",
+                        color: userData?.subscriptionTier === t ? "#070b14" : "#94a3b8",
+                      }}
+                      id={`switch-tier-${t.toLowerCase()}`}
+                    >
+                      {t === "PRO_WEALTH" ? "Pro (R199)" : t === "EXECUTIVE_ENTERPRISE" ? "Executive (R499)" : "Starter (Free)"}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <a
-                href="/login"
-                className="btn btn-primary btn-sm flex items-center gap-1.5"
-                style={{ fontSize: "12px" }}
-              >
-                <Sparkles size={14} /> Upgrade Tier
-              </a>
+              {/* Feature Checklist Matrix */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                {[
+                  { name: "Max Accounts & Debt Portfolio", status: "Unlimited (7 Accounts, 4 Debts Active)", active: true },
+                  { name: "Dual-Track Snowball Waterfall Engine", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
+                  { name: "GPS Geotagged Spending Location Radar", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
+                  { name: "BYOK Custom LLM Engine Key Vault", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
+                  { name: "Multi-Agent OCR Document Ingestion", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
+                  {
+                    name: "Windeed & Lightstone Deed Valuations",
+                    status: userData?.subscriptionTier === "EXECUTIVE_ENTERPRISE" ? "Unlocked (Executive)" : "Locked (Requires Executive Enterprise)",
+                    active: userData?.subscriptionTier === "EXECUTIVE_ENTERPRISE",
+                  },
+                ].map((feat, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2.5 rounded-lg"
+                    style={{
+                      background: feat.active ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
+                      border: feat.active ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid rgba(239, 68, 68, 0.25)",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <span style={{ color: feat.active ? "#f8fafc" : "#94a3b8", fontWeight: 600 }}>
+                      {feat.active ? "✓" : "🔒"} {feat.name}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono, monospace)",
+                        fontSize: "11px",
+                        color: feat.active ? "#34d399" : "#f87171",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {feat.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
