@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   MapPin,
   Navigation,
@@ -111,11 +111,23 @@ export function SpendingLocationMap({ locations = [] }: SpendingLocationMapProps
     setIsDragging(false);
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.15 : 0.15;
-    setZoom((z) => Math.min(Math.max(Number((z + delta).toFixed(2)), 0.8), 4.0));
-  };
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
+      setZoom((z) => Math.min(Math.max(Number((z + delta).toFixed(2)), 0.8), 4.0));
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, []);
 
   const getPillButtonStyle = (isActive: boolean) => ({
     padding: "6px 14px",
@@ -227,11 +239,11 @@ export function SpendingLocationMap({ locations = [] }: SpendingLocationMapProps
 
       {/* Map Canvas Outer Container */}
       <div
+        ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
         style={{
           position: "relative",
           width: "100%",
