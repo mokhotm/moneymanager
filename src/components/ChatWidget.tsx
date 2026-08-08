@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, Loader2, AlertCircle, ChevronDown, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Loader2, AlertCircle, ChevronDown, Sparkles, Volume2, VolumeX, Settings2 } from "lucide-react";
+import { speakText, stopSpeech, isSpeaking } from "@/lib/speechSynthesis";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,6 +15,9 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
+  const [speechRate, setSpeechRate] = useState<number>(0.95);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,6 +69,22 @@ export default function ChatWidget() {
     }
   };
 
+  const handleToggleSpeech = (idx: number, content: string) => {
+    if (speakingIdx === idx) {
+      stopSpeech();
+      setSpeakingIdx(null);
+    } else {
+      stopSpeech();
+      setSpeakingIdx(idx);
+      speakText(
+        content,
+        { rate: speechRate, pitch: 1.0, lang: "en-ZA" },
+        () => setSpeakingIdx(null),
+        () => setSpeakingIdx(null)
+      );
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -99,31 +119,28 @@ export default function ChatWidget() {
           transform: open ? "scale(1.05) rotate(90deg)" : "scale(1)",
         }}
       >
-        {open ? <X size={26} /> : <MessageCircle size={26} />}
+        <MessageCircle size={26} />
       </button>
 
-      {/* Chat panel - Apple Obsidian Glass with Clear 2px Borders */}
+      {/* Expanded Obsidian Glass Chat Box */}
       {open && (
         <div
-          id="chat-widget-panel"
           style={{
             position: "fixed",
-            bottom: 96,
+            bottom: 92,
             right: 24,
             width: 480,
+            maxWidth: "calc(100vw - 32px)",
             height: 640,
             maxHeight: "calc(100vh - 120px)",
-            background: "rgba(13, 20, 36, 0.96)",
-            borderLeft: "2px solid rgba(245, 158, 11, 0.6)",
-            borderRight: "2px solid rgba(245, 158, 11, 0.6)",
-            borderBottom: "2px solid rgba(245, 158, 11, 0.6)",
-            borderTop: "4px solid #f59e0b",
-            borderRadius: 20,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.85), 0 0 30px rgba(245, 158, 11, 0.35)",
-            backdropFilter: "blur(28px)",
-            zIndex: 1000,
+            background: "linear-gradient(180deg, rgba(13, 20, 36, 0.98) 0%, rgba(7, 11, 20, 0.99) 100%)",
+            border: "2px solid rgba(245, 158, 11, 0.45)",
+            borderRadius: 24,
+            boxShadow: "0 24px 60px rgba(0,0,0,0.8), 0 0 30px rgba(245, 158, 11, 0.2)",
+            backdropFilter: "blur(24px)",
             display: "flex",
             flexDirection: "column",
+            zIndex: 1000,
             overflow: "hidden",
           }}
         >
@@ -158,28 +175,97 @@ export default function ChatWidget() {
               <div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: "#f8fafc" }}>AI Financial Assistant</div>
                 <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>
-                  <Sparkles size={11} /> 4 AI Agents Connected (Extended Answers)
+                  <Sparkles size={11} /> Natural Voice Dynamics Active
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setOpen(false)}
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowVoiceSettings((v) => !v)}
+                title="Audio Voice Dynamics Settings"
+                style={{
+                  background: showVoiceSettings ? "rgba(245, 158, 11, 0.25)" : "rgba(255, 255, 255, 0.06)",
+                  border: showVoiceSettings ? "1px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  cursor: "pointer",
+                  color: showVoiceSettings ? "#fbbf24" : "#94a3b8",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                id="voice-settings-btn"
+              >
+                <Settings2 size={15} />
+              </button>
+              <button
+                onClick={() => {
+                  stopSpeech();
+                  setOpen(false);
+                }}
+                style={{
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+
+          {/* Voice Dynamics Toolbar */}
+          {showVoiceSettings && (
+            <div
               style={{
-                background: "rgba(255, 255, 255, 0.06)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "50%",
-                width: 28,
-                height: 28,
-                cursor: "pointer",
-                color: "#94a3b8",
+                padding: "10px 16px",
+                background: "rgba(7, 11, 20, 0.95)",
+                borderBottom: "1px solid rgba(245, 158, 11, 0.2)",
+                fontSize: "11.5px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "space-between",
+                color: "#94a3b8",
               }}
             >
-              <X size={15} />
-            </button>
-          </div>
+              <span className="font-mono font-bold text-amber-400 flex items-center gap-1.5">
+                <Volume2 size={13} /> Voice Pace &amp; Dynamics:
+              </span>
+              <div className="flex items-center gap-1.5">
+                {[
+                  { label: "0.85x Clear", val: 0.85 },
+                  { label: "0.95x Natural", val: 0.95 },
+                  { label: "1.1x Fast", val: 1.1 },
+                ].map((r) => (
+                  <button
+                    key={r.val}
+                    onClick={() => setSpeechRate(r.val)}
+                    style={{
+                      padding: "3px 8px",
+                      borderRadius: "99px",
+                      fontSize: "10.5px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: speechRate === r.val ? "1px solid #f59e0b" : "1px solid rgba(255,255,255,0.1)",
+                      background: speechRate === r.val ? "rgba(245, 158, 11, 0.2)" : "rgba(255,255,255,0.04)",
+                      color: speechRate === r.val ? "#fbbf24" : "#94a3b8",
+                    }}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Messages Thread */}
           <div
@@ -277,27 +363,61 @@ export default function ChatWidget() {
                   {msg.role === "user" ? <User size={15} /> : msg.error ? <AlertCircle size={15} className="text-red-400" /> : <Bot size={15} />}
                 </div>
 
-                {/* Bubble */}
-                <div
-                  style={{
-                    maxWidth: "88%",
-                    padding: "12px 16px",
-                    borderRadius: msg.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
-                    background: msg.role === "user"
-                      ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                      : msg.error
-                      ? "rgba(239, 68, 68, 0.12)"
-                      : "rgba(7, 11, 20, 0.95)",
-                    color: msg.role === "user" ? "#070b14" : msg.error ? "#f87171" : "#f8fafc",
-                    fontSize: 13.5,
-                    lineHeight: 1.6,
-                    border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(245, 158, 11, 0.3)",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    fontWeight: msg.role === "user" ? 700 : 400,
-                  }}
-                >
-                  {msg.content}
+                {/* Bubble Container */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", maxWidth: "88%" }}>
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: msg.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
+                      background: msg.role === "user"
+                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                        : msg.error
+                        ? "rgba(239, 68, 68, 0.12)"
+                        : "rgba(7, 11, 20, 0.95)",
+                      color: msg.role === "user" ? "#070b14" : msg.error ? "#f87171" : "#f8fafc",
+                      fontSize: 13.5,
+                      lineHeight: 1.6,
+                      border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(245, 158, 11, 0.3)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      fontWeight: msg.role === "user" ? 700 : 400,
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+
+                  {/* Audio Speech Button */}
+                  {msg.role === "assistant" && !msg.error && (
+                    <button
+                      onClick={() => handleToggleSpeech(i, msg.content)}
+                      title={speakingIdx === i ? "Stop Speech" : "Listen to response with natural voice dynamics"}
+                      style={{
+                        marginTop: 4,
+                        padding: "3px 10px",
+                        borderRadius: "99px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        background: speakingIdx === i ? "rgba(245, 158, 11, 0.25)" : "rgba(255, 255, 255, 0.05)",
+                        border: speakingIdx === i ? "1px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.1)",
+                        color: speakingIdx === i ? "#fbbf24" : "#94a3b8",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                      id={`audio-speech-btn-${i}`}
+                    >
+                      {speakingIdx === i ? (
+                        <>
+                          <VolumeX size={12} className="animate-pulse" /> <span>Stop Audio</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 size={12} /> <span>Listen (Natural Voice)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

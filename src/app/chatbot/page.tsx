@@ -19,7 +19,10 @@ import {
   RefreshCw,
   Zap,
   Trash2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { speakText, stopSpeech, isSpeaking } from "@/lib/speechSynthesis";
 
 interface Message {
   role: "user" | "assistant";
@@ -33,6 +36,7 @@ export default function ChatBotPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -99,6 +103,22 @@ export default function ChatBotPage() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
+    }
+  };
+
+  const handleToggleSpeech = (idx: number, content: string) => {
+    if (speakingIdx === idx) {
+      stopSpeech();
+      setSpeakingIdx(null);
+    } else {
+      stopSpeech();
+      setSpeakingIdx(idx);
+      speakText(
+        content,
+        { rate: 0.95, pitch: 1.0, lang: "en-ZA" },
+        () => setSpeakingIdx(null),
+        () => setSpeakingIdx(null)
+      );
     }
   };
 
@@ -357,26 +377,46 @@ export default function ChatBotPage() {
                 </div>
 
                 {/* Message Bubble */}
-                <div
-                  style={{
-                    maxWidth: "75%",
-                    padding: "14px 18px",
-                    borderRadius: msg.role === "user" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
-                    background: msg.role === "user"
-                      ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                      : msg.error
-                      ? "rgba(239, 68, 68, 0.12)"
-                      : "rgba(7, 11, 20, 0.85)",
-                    color: msg.role === "user" ? "#070b14" : msg.error ? "#f87171" : "var(--text-primary)",
-                    fontSize: "14px",
-                    lineHeight: 1.6,
-                    border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid var(--border)",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    fontWeight: msg.role === "user" ? 700 : 400,
-                  }}
-                >
-                  {msg.content}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", maxWidth: "75%" }}>
+                  <div
+                    style={{
+                      padding: "14px 18px",
+                      borderRadius: msg.role === "user" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+                      background: msg.role === "user"
+                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                        : msg.error
+                        ? "rgba(239, 68, 68, 0.12)"
+                        : "rgba(7, 11, 20, 0.85)",
+                      color: msg.role === "user" ? "#070b14" : msg.error ? "#f87171" : "var(--text-primary)",
+                      fontSize: "14px",
+                      lineHeight: 1.6,
+                      border: msg.role === "user" ? "none" : msg.error ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid var(--border)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      fontWeight: msg.role === "user" ? 700 : 400,
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+
+                  {msg.role === "assistant" && !msg.error && (
+                    <button
+                      onClick={() => handleToggleSpeech(i, msg.content)}
+                      style={{
+                        marginTop: 6,
+                        padding: "4px 12px",
+                        borderRadius: "99px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        background: speakingIdx === i ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        color: speakingIdx === i ? "#fbbf24" : "#94a3b8",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {speakingIdx === i ? "Stop Audio" : "Listen to Response"}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

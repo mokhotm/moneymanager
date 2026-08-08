@@ -20,7 +20,10 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { speakText, stopSpeech, isSpeaking } from "@/lib/speechSynthesis";
 
 interface Recommendation {
   id: string;
@@ -47,6 +50,23 @@ export default function AgentInboxPage() {
   const [activeAgentFilter, setActiveAgentFilter] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<"PENDING" | "REVIEWED">("PENDING");
   const [actionId, setActionId] = useState<string | null>(null);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+
+  const handleToggleSpeech = (id: string, text: string) => {
+    if (speakingId === id) {
+      stopSpeech();
+      setSpeakingId(null);
+    } else {
+      stopSpeech();
+      setSpeakingId(id);
+      speakText(
+        text,
+        { rate: 0.95, pitch: 1.0, lang: "en-ZA" },
+        () => setSpeakingId(null),
+        () => setSpeakingId(null)
+      );
+    }
+  };
 
   const loadRecs = async () => {
     try {
@@ -345,6 +365,34 @@ export default function AgentInboxPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleToggleSpeech(rec.id, `${rec.title}. ${rec.description}. Rationale: ${rec.rationale}`)}
+                        title={speakingId === rec.id ? "Stop Audio" : "Listen to Agent Briefing"}
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: "99px",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          background: speakingId === rec.id ? "rgba(245, 158, 11, 0.25)" : "rgba(255, 255, 255, 0.05)",
+                          border: speakingId === rec.id ? "1px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.1)",
+                          color: speakingId === rec.id ? "#fbbf24" : "#94a3b8",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                        id={`audio-rec-btn-${rec.id}`}
+                      >
+                        {speakingId === rec.id ? (
+                          <>
+                            <VolumeX size={12} className="animate-pulse" /> <span>Stop Audio</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 size={12} /> <span>Listen Briefing</span>
+                          </>
+                        )}
+                      </button>
                       <span className="text-muted text-xs font-mono">
                         {new Date(rec.createdAt).toLocaleDateString()} {new Date(rec.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
