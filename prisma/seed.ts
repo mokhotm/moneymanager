@@ -313,6 +313,22 @@ async function main() {
     },
   });
 
+  // Vodacom Mobile Contract
+  const accVodacom = await prisma.account.create({
+    data: {
+      userId: user.id,
+      name: "Vodacom Mobile Contract",
+      institution: "Vodacom",
+      accountNumberMasked: "I2754234-5",
+      type: "SERVICE_ACCOUNT",
+      currency: "ZAR",
+      openingBalance: 0,
+      openingBalanceDate: new Date("2026-07-01"),
+      isDebt: false,
+      notes: "Vodacom cellular contract & monthly fiber. Monthly billing: R1,499.00.",
+    },
+  });
+
   // 5. Standard Bank Credit Card
   const accCard = await prisma.account.create({
     data: {

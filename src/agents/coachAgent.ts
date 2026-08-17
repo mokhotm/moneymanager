@@ -33,10 +33,8 @@ export class CoachAgent {
       }),
       this.prisma.account.findMany({ where: { userId } }),
       this.prisma.moneyFlow.findMany({
-        where: { userId },
-        include: { sourceAccount: true, destinationAccount: true },
-        orderBy: { date: "desc" },
-        take: 20,
+        orderBy: { createdAt: "desc" },
+        take: 50,
       }),
       this.prisma.budgetLineItem.findMany({ where: { userId } }),
     ]);
