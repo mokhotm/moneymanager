@@ -202,18 +202,18 @@ async function main() {
       currency: "ZAR",
       openingBalance: -20000.0,
       isDebt: true,
-      notes: "0% interest, straight-line payoff agreement.",
+      notes: "0% interest, agreed repayment plan of R2,000.00/mo.",
     },
   });
   await prisma.debt.create({
     data: {
       accountId: accSchool.id,
       currentBalance: 20000.0,
-      balanceConfidence: "ESTIMATED",
+      balanceConfidence: "CONFIRMED",
       balanceSource: "Agreed repayment schedule",
       annualInterestRate: 0,
       interestRateConfidence: "CONFIRMED",
-      minimumPayment: 1333.33,
+      minimumPayment: 2000.0,
       paymentMode: "FIXED_TERM_LOAN",
       urgencyFlag: "NONE",
       includeInSnowball: true,
@@ -232,38 +232,7 @@ async function main() {
       currency: "ZAR",
       openingBalance: -47885.42,
       isDebt: true,
-      notes: "0% interest, 18-month payment plan.",
-    },
-  });
-
-  // 10. Vodacom Mobile Contract & Arrears
-  const accVodacom = await prisma.account.create({
-    data: {
-      userId: user.id,
-      name: "Vodacom Mobile Contract & Arrears",
-      institution: "Vodacom",
-      accountNumberMasked: "I2754234-5",
-      type: "SERVICE_ACCOUNT",
-      currency: "ZAR",
-      openingBalance: -3535.91,
-      openingBalanceDate: new Date("2026-07-15"),
-      isDebt: true,
-      notes: "Vodacom cellular contract & overdue service arrears. Monthly debit order: R722.13.",
-    },
-  });
-  await prisma.debt.create({
-    data: {
-      accountId: accVodacom.id,
-      currentBalance: 3535.91,
-      balanceConfidence: "CONFIRMED",
-      balanceSource: "Vodacom Account Statement & Debit Order Schedule",
-      annualInterestRate: 0,
-      interestRateConfidence: "CONFIRMED",
-      minimumPayment: 722.13,
-      paymentMode: "FIXED_INSTALMENT",
-      urgencyFlag: "NONE",
-      includeInSnowball: true,
-      status: "ACTIVE",
+      notes: "0% interest, active tuition payment plan of R4,000.00/mo.",
     },
   });
   await prisma.debt.create({
@@ -274,7 +243,69 @@ async function main() {
       balanceSource: "University fee statement",
       annualInterestRate: 0,
       interestRateConfidence: "CONFIRMED",
-      minimumPayment: 2660.3,
+      minimumPayment: 4000.0,
+      paymentMode: "FIXED_TERM_LOAN",
+      urgencyFlag: "NONE",
+      includeInSnowball: true,
+      status: "ACTIVE",
+    },
+  });
+
+  // WesBank Renault Clio V
+  const accWesClio = await prisma.account.create({
+    data: {
+      userId: user.id,
+      name: "WesBank Vehicle Finance (Renault Clio V)",
+      institution: "WesBank",
+      accountNumberMasked: "85361174582",
+      type: "LOAN",
+      currency: "ZAR",
+      openingBalance: -221615.41,
+      openingBalanceDate: new Date("2026-07-31"),
+      isDebt: true,
+      notes: "Renault Clio V 1.0t Zen. Monthly instalment R5,468.02.",
+    },
+  });
+  await prisma.debt.create({
+    data: {
+      accountId: accWesClio.id,
+      currentBalance: 221615.41,
+      balanceConfidence: "CONFIRMED",
+      balanceSource: "WesBank Statement 85361174582 dated 2026-07-31",
+      annualInterestRate: 0.125,
+      interestRateConfidence: "CONFIRMED",
+      minimumPayment: 5468.02,
+      paymentMode: "FIXED_TERM_LOAN",
+      urgencyFlag: "NONE",
+      includeInSnowball: true,
+      status: "ACTIVE",
+    },
+  });
+
+  // WesBank Hyundai Grand i10
+  const accWesi10 = await prisma.account.create({
+    data: {
+      userId: user.id,
+      name: "WesBank Vehicle Finance (Hyundai Grand i10)",
+      institution: "WesBank",
+      accountNumberMasked: "85401320912",
+      type: "LOAN",
+      currency: "ZAR",
+      openingBalance: -26533.30,
+      openingBalanceDate: new Date("2026-07-31"),
+      isDebt: true,
+      notes: "Hyundai Grand i10 1.0 Fluid. Monthly instalment R722.13.",
+    },
+  });
+  await prisma.debt.create({
+    data: {
+      accountId: accWesi10.id,
+      currentBalance: 26533.30,
+      balanceConfidence: "CONFIRMED",
+      balanceSource: "WesBank Statement 85401320912 dated 2026-07-31",
+      annualInterestRate: 0.125,
+      interestRateConfidence: "CONFIRMED",
+      minimumPayment: 722.13,
       paymentMode: "FIXED_TERM_LOAN",
       urgencyFlag: "NONE",
       includeInSnowball: true,
@@ -368,7 +399,7 @@ async function main() {
       balanceSource: "Standard Bank Statement & Municipal Property Valuation",
       annualInterestRate: 0.1175,
       interestRateConfidence: "CONFIRMED",
-      minimumPayment: 17459.76,
+      minimumPayment: 17786.45,
       paymentMode: "FIXED_INSTALMENT",
       debtCategory: "LONG_TERM",
       urgencyFlag: "NONE",
