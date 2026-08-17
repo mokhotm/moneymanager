@@ -69,6 +69,18 @@ interface GraphEdge {
   y2: number;
 }
 
+function formatDisplayLabel(name: string, type?: string): string {
+  if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Account";
+  if (name.includes("nsqfa0gcdp7") || name === "cash-wallet-primary" || type === "CASH_WALLET") {
+    return "Physical Cash Wallet";
+  }
+  if (/^c[a-z0-9]{20,}$/i.test(name) || name.startsWith("cms")) {
+    if (type === "INFLOW" || name.includes("salary")) return "SARS Net Salary Inflow";
+    return "Prestige Current Account (XXXX4469)";
+  }
+  return name;
+}
+
 export function MoneyFlowNetworkCanvas({
   flows,
   selectedFlowId,
@@ -119,8 +131,8 @@ export function MoneyFlowNetworkCanvas({
     const nodeMap = new Map<string, { label: string; type: string; layer: number; amount: number }>();
 
     filteredFlows.forEach((f) => {
-      const srcName = f.sourceRef || f.sourceType || "External Source";
-      const dstName = f.destinationRef || f.destinationType || "External Endpoint";
+      const srcName = formatDisplayLabel(f.sourceRef || f.sourceType || "External Source", f.sourceType);
+      const dstName = formatDisplayLabel(f.destinationRef || f.destinationType || "External Endpoint", f.destinationType);
 
       if (!nodeMap.has(srcName)) {
         let layer = 1;

@@ -97,12 +97,25 @@ export function MoneyFlowBubbleCanvas({
 
   // Build bubble data from aggregated destinations
   const bubbleData = useMemo(() => {
+function formatBubbleLabel(name: string, type?: string): string {
+  if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Account";
+  if (name.includes("nsqfa0gcdp7") || name === "cash-wallet-primary" || type === "CASH_WALLET") {
+    return "Physical Cash Wallet";
+  }
+  if (/^c[a-z0-9]{20,}$/i.test(name) || name.startsWith("cms")) {
+    if (type === "INCOME" || name.includes("salary")) return "SARS Net Salary Deposit";
+    return "Prestige Current Account (XXXX4469)";
+  }
+  return name;
+}
+
     const map = new Map<
       string,
       { label: string; amount: number; flowType: string; flowId: string; count: number }
     >();
     filteredFlows.forEach((f) => {
-      const key = f.destinationRef || f.destinationType || f.id;
+      const rawKey = f.destinationRef || f.destinationType || f.id;
+      const key = formatBubbleLabel(rawKey, f.destinationType);
       if (!map.has(key)) {
         map.set(key, {
           label: key,

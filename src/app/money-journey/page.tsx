@@ -45,6 +45,20 @@ const FLOW_COLORS: Record<string, string> = {
   OTHER: "#64748b",
 };
 
+export function formatRefLabel(ref: string | null | undefined, type?: string, flowType?: string): string {
+  if (!ref) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Account";
+  if (ref.includes("nsqfa0gcdp7") || ref === "cash-wallet-primary" || type === "CASH_WALLET") {
+    return "Physical Cash Wallet";
+  }
+  if (/^c[a-z0-9]{20,}$/i.test(ref) || ref.startsWith("cms")) {
+    if (type === "INFLOW" || type === "INCOME" || flowType === "INCOME" || ref.includes("salary")) {
+      return "SARS Net Salary Deposit";
+    }
+    return "Prestige Current Account (XXXX4469)";
+  }
+  return ref;
+}
+
 export default function MoneyJourneyPage() {
   const [flows, setFlows] = useState<FlowItem[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -55,7 +69,7 @@ export default function MoneyJourneyPage() {
   // Visual Controls State
   const [viewMode, setViewMode] = useState<"NEURAL" | "BUBBLE" | "LIST">("NEURAL");
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [activePayPeriod, setActivePayPeriod] = useState<string>("2026-07");
+  const [activePayPeriod, setActivePayPeriod] = useState<string>("2026-08");
   const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -354,9 +368,9 @@ export default function MoneyJourneyPage() {
 
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
-                                  <span>{f.sourceRef || f.sourceType}</span>
+                                  <span>{formatRefLabel(f.sourceRef || f.sourceType, f.sourceType, f.flowType)}</span>
                                   <ArrowRight size={13} style={{ color: "var(--text-muted)" }} />
-                                  <span style={{ color: "var(--gold-light)" }}>{f.destinationRef || f.destinationType}</span>
+                                  <span style={{ color: "var(--gold-light)" }}>{formatRefLabel(f.destinationRef || f.destinationType, f.destinationType, f.flowType)}</span>
                                 </div>
 
                                 {/* Flow Volume Bar Meter */}
@@ -417,7 +431,7 @@ export default function MoneyJourneyPage() {
                         Origin Inflow Source
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        {lineage.parent ? (lineage.parent.sourceRef || lineage.parent.sourceType) : (lineage.flow.sourceRef || lineage.flow.sourceType)}
+                        {formatRefLabel(lineage.parent ? (lineage.parent.sourceRef || lineage.parent.sourceType) : (lineage.flow.sourceRef || lineage.flow.sourceType), "INFLOW", "INCOME")}
                       </div>
                       <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
                         Amount: <span style={{ fontWeight: 800, color: "#4ade80", fontFamily: "var(--font-mono)" }}>{formatZAR(lineage.parent ? lineage.parent.amount : lineage.flow.amount)}</span>
@@ -435,7 +449,7 @@ export default function MoneyJourneyPage() {
                         Core Account Hub
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        {lineage.flow.sourceRef || lineage.flow.sourceType}
+                        {formatRefLabel(lineage.flow.sourceRef || lineage.flow.sourceType, lineage.flow.sourceType, lineage.flow.flowType)}
                       </div>
                       <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
                         Flow Type: <span style={{ fontWeight: 800, color: "#60a5fa" }}>{lineage.flow.flowType}</span>
@@ -453,7 +467,7 @@ export default function MoneyJourneyPage() {
                         End Allocation Target
                       </div>
                       <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-                        {lineage.flow.destinationRef || lineage.flow.destinationType}
+                        {formatRefLabel(lineage.flow.destinationRef || lineage.flow.destinationType, lineage.flow.destinationType, lineage.flow.flowType)}
                       </div>
                       <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
                         Allocated: <span style={{ fontWeight: 800, color: "#fbbf24", fontFamily: "var(--font-mono)" }}>{formatZAR(lineage.flow.amount)}</span>

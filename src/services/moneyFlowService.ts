@@ -176,12 +176,12 @@ export function buildMoneyLineage(
 
   const children = allFlows.filter((f) => f.parentFlowId === targetFlow.id);
 
-  let narrative = `${targetFlow.flowType} of R${targetFlow.amount.toLocaleString()} `;
-  narrative += `from ${targetFlow.sourceType} (${targetFlow.sourceRef ?? "External"}) `;
-  narrative += `to ${targetFlow.destinationType} (${targetFlow.destinationRef ?? "External"}).`;
+  let narrative = `${targetFlow.flowType.replace(/_/g, " ")} of R${targetFlow.amount.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} `;
+  narrative += `from ${targetFlow.sourceRef ?? "External"} `;
+  narrative += `to ${targetFlow.destinationRef ?? "External"}.`;
 
   if (parent) {
-    narrative = `Originating from parent ${parent.flowType} (R${parent.amount.toLocaleString()}): ` + narrative;
+    narrative = `Originating from parent ${parent.flowType.replace(/_/g, " ")} (R${parent.amount.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}): ` + narrative;
   }
 
   return {
