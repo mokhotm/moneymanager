@@ -957,11 +957,12 @@ select option {
   :root { --sidebar-w: 0px; }
   .sidebar { display: none; }
   .main-content { margin-left: 0; }
+}
 
-/* ─── Keyframe Animations & Utilities ────────────────────── */
+/* ─── Keyframe Animations & Global Utilities ────────────────────── */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes pulse {
@@ -977,4 +978,13 @@ select option {
   animation: pulse 1.5s ease-in-out infinite !important;
 }
 
-
+/* Hide Next.js Dev Indicator Overlay & Badge */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+div[class*="nextjs-toast"],
+div[class*="nextjs-portal"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

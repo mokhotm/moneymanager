@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow static assets, login page, registration, and auth APIs
+  // Allow static assets, login page, registration, and all API routes
+  // API routes handle their own auth (returning 401 JSON), so they must not be
+  // redirected to /login — that would break fetch() callers who expect JSON.
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/") ||
     pathname.startsWith("/favicon") ||
     pathname === "/login"
   ) {

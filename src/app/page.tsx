@@ -56,8 +56,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetch("/api/dashboard")
-      .then((r) => r.json())
+      .then((r) => {
+        console.log("[Dashboard] API status:", r.status);
+        return r.json();
+      })
       .then((d) => {
+        if (d.error) console.warn("[Dashboard] API returned error:", d.error, d.detail || "");
         setData(d);
         setLoading(false);
       })
@@ -136,9 +140,20 @@ export default function Dashboard() {
   return (
     <>
       {/* Page Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title flex items-center gap-2.5">
+      <div className="page-header" style={{ position: "relative", overflow: "hidden" }}>
+        {/* Subtle background glow for header */}
+        <div style={{ position: "absolute", top: "-50%", left: "-10%", width: "40%", height: "200%", background: "radial-gradient(ellipse at center, rgba(245, 158, 11, 0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
+        
+        <div style={{ position: "relative", zIndex: 10 }}>
+          <h1 
+            className="page-title flex items-center gap-2.5" 
+            style={{ 
+              background: "linear-gradient(to right, #f8fafc, #94a3b8)", 
+              WebkitBackgroundClip: "text", 
+              WebkitTextFillColor: "transparent",
+              textShadow: "0 4px 20px rgba(255, 255, 255, 0.1)"
+            }}
+          >
             Wealth &amp; Financial Dashboard
             <span
               style={{
@@ -162,12 +177,12 @@ export default function Dashboard() {
           <p className="page-subtitle">Overview of your Net Worth, Financial Goals, Spending Analytics &amp; Agent Insights</p>
         </div>
 
-        <div className="flex gap-3">
-          <Link href="/documents" className="btn btn-secondary">
+        <div className="flex gap-3" style={{ position: "relative", zIndex: 10, background: "rgba(10, 16, 30, 0.4)", padding: "8px", borderRadius: "20px", border: "1px solid rgba(255, 255, 255, 0.05)", backdropFilter: "blur(12px)" }}>
+          <Link href="/documents" className="btn btn-secondary" style={{ borderRadius: "14px" }}>
             <Upload size={16} />
             <span>Upload Statement</span>
           </Link>
-          <Link href="/recommendations" className="btn btn-primary">
+          <Link href="/recommendations" className="btn btn-primary" style={{ borderRadius: "14px", boxShadow: "0 8px 20px rgba(245, 158, 11, 0.3)" }}>
             <Inbox size={16} />
             <span>Agent Inbox (3)</span>
           </Link>
@@ -236,44 +251,52 @@ export default function Dashboard() {
         {/* 3-Column Grid Row with Standard 24px Gaps & Margin Bottom */}
         <div className="three-col mb-6">
           {/* AI Agents Active */}
-          <div className="card flex flex-col justify-between">
-            <div>
+          <div className="card flex flex-col justify-between" style={{ position: "relative", overflow: "hidden" }}>
+            {/* Ambient Animated Glow */}
+            <div style={{ position: "absolute", top: "-20%", right: "-20%", width: "150px", height: "150px", background: "radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)", borderRadius: "50%", animation: "pulse 4s infinite", pointerEvents: "none" }} />
+            
+            <div style={{ position: "relative", zIndex: 10 }}>
               <div className="card-header">
                 <div className="flex items-center gap-2">
-                  <Bot size={18} className="text-gold" />
-                  <span className="card-title">4 AI Agents Active</span>
+                  <div style={{ padding: "8px", background: "rgba(245, 158, 11, 0.1)", borderRadius: "12px", border: "1px solid rgba(245, 158, 11, 0.2)" }}>
+                    <Bot size={18} className="text-gold" />
+                  </div>
+                  <span className="card-title" style={{ color: "#f8fafc" }}>4 AI Agents Active</span>
                 </div>
-                <span className="badge active">Operational</span>
+                <span className="badge active" style={{ boxShadow: "0 0 12px rgba(16, 185, 129, 0.25)" }}>Operational</span>
               </div>
               <p className="text-muted text-sm mb-4 leading-relaxed">
                 Document Agent, Debt Agent, Goals Agent, and Budget Agent are cooperating to analyze your statements and recommend optimal surplus allocations.
               </p>
             </div>
-            <Link href="/recommendations" className="btn btn-primary w-full">
+            <Link href="/recommendations" className="btn btn-primary w-full" style={{ borderRadius: "14px", position: "relative", zIndex: 10 }}>
               <span>Review 3 Agent Proposals</span>
               <ArrowRight size={15} />
             </Link>
           </div>
 
           {/* Financial Goals Progress */}
-          <div className="card flex flex-col justify-between">
-            <div>
+          <div className="card flex flex-col justify-between" style={{ position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", bottom: "-20%", left: "-10%", width: "120px", height: "120px", background: "radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+            <div style={{ position: "relative", zIndex: 10 }}>
               <div className="card-header">
                 <div className="flex items-center gap-2">
-                  <Target size={18} className="text-gold" />
-                  <span className="card-title">Financial Goals Progress</span>
+                  <div style={{ padding: "8px", background: "rgba(245, 158, 11, 0.1)", borderRadius: "12px", border: "1px solid rgba(245, 158, 11, 0.2)" }}>
+                    <Target size={18} className="text-gold" />
+                  </div>
+                  <span className="card-title" style={{ color: "#f8fafc" }}>Goals Progress</span>
                 </div>
-                <span className="badge gold">3 Active Goals</span>
+                <span className="badge gold" style={{ boxShadow: "0 0 12px rgba(245, 158, 11, 0.2)" }}>3 Active Goals</span>
               </div>
-              <div className="flex justify-between text-sm font-semibold mb-2">
-                <span>3-Month Emergency Fund</span>
-                <span className="text-green">22% Funded</span>
+              <div className="flex justify-between text-sm font-semibold mb-3">
+                <span style={{ color: "#e2e8f0" }}>3-Month Emergency Fund</span>
+                <span className="text-green" style={{ textShadow: "0 0 10px rgba(16, 185, 129, 0.4)" }}>22% Funded</span>
               </div>
-              <div style={{ height: "8px", borderRadius: "99px", background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: "16px" }}>
-                <div style={{ height: "100%", width: "22%", background: "var(--gold-gradient)", borderRadius: "99px" }} />
+              <div style={{ height: "10px", borderRadius: "99px", background: "rgba(0,0,0,0.4)", overflow: "hidden", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)" }}>
+                <div style={{ height: "100%", width: "22%", background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)", borderRadius: "99px", boxShadow: "0 0 10px rgba(245, 158, 11, 0.5)", transition: "width 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }} />
               </div>
             </div>
-            <Link href="/goals" className="btn btn-secondary w-full">
+            <Link href="/goals" className="btn btn-secondary w-full" style={{ borderRadius: "14px", position: "relative", zIndex: 10, background: "rgba(255,255,255,0.03)" }}>
               <span>View All Goals</span>
               <ArrowRight size={15} />
             </Link>

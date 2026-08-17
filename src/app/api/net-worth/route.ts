@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       prisma.debt.findMany({
         where: {
           status: "ACTIVE",
+          currentBalance: { gt: 0 },
           account: { userId },
         },
         include: { account: true },
@@ -27,7 +28,9 @@ export async function GET(req: NextRequest) {
       prisma.netWorthSnapshot.findMany({ orderBy: { snapshotDate: "asc" } }),
     ]);
 
-    const assetTotal = assets.reduce((s, a) => s + Number(a.currentValue), 0);
+    // Separate physical/unlinked assets from liquid bank account balances to avoid double-counting
+    const unlinkedAssets = assets.filter((a) => !a.accountId && a.type !== "CASH");
+    const assetTotal = unlinkedAssets.reduce((s, a) => s + Number(a.currentValue), 0);
     const bankAssetsTotal = accounts.reduce((s, a) => s + Math.max(0, Number(a.openingBalance)), 0);
     const totalAssets = assetTotal + bankAssetsTotal;
 
@@ -40,7 +43,7 @@ export async function GET(req: NextRequest) {
       netWorth,
       assetTotal,
       bankAssetsTotal,
-      assets,
+      assets: unlinkedAssets,
       debts,
       snapshots,
     });

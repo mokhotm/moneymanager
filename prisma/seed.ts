@@ -102,10 +102,6 @@ async function main() {
       passwordHash,
       email: "Ezrom.Mokhotla@sars.gov.za",
       role: "user",
-      subscriptionTier: "PRO_WEALTH" as any,
-      subscriptionStatus: "ACTIVE",
-      billingCycle: "MONTHLY" as any,
-      subscriptionExpiresAt: new Date(Date.now() + 365 * 86400 * 1000),
     },
   });
 
@@ -142,68 +138,8 @@ async function main() {
     },
   });
 
-  const doc1 = await prisma.document.create({
-    data: {
-      relatedEntityType: "INCOME",
-      relatedEntityId: "TEMP_ID",
-      documentType: "PAYSLIP",
-      fileUrl: "/documents/SARS_Payslip_July2026.pdf",
-      fileHash: "8a4f91c5b8e90123456789abcdef0123456789abcdef0123456789abcdefb7e2",
-      periodStart: new Date("2026-07-01"),
-      periodEnd: new Date("2026-07-31"),
-      parsed: true,
-      parseStatus: "APPLIED",
-      parsedData: {
-        employer: "South African Revenue Service (SARS)",
-        employeeName: "Ezrom Mote Mokhotla",
-        taxNumber: "0123279143",
-        basicSalary: 95400.0,
-        groupLifeInsurance: -2061.84,
-        payeTaxDeduction: -22311.26,
-        nettPay: 71026.9,
-        backdatedRetroLumpSum: 13645.44,
-      },
-    },
-  });
 
-  const doc2 = await prisma.document.create({
-    data: {
-      relatedEntityType: "DEBT",
-      relatedEntityId: accMuni.id,
-      documentType: "MUNICIPAL_BILL",
-      fileUrl: "/documents/CityOfEkurhuleni_Invoice_June2026.pdf",
-      fileHash: "1b7f40289a0123456789abcdef0123456789abcdef0123456789abcdefe9a0",
-      periodStart: new Date("2026-06-01"),
-      periodEnd: new Date("2026-06-30"),
-      parsed: true,
-      parseStatus: "PARSED_AWAITING_REVIEW",
-      parsedData: {
-        municipality: "City of Ekurhuleni",
-        accountNumber: "201938475",
-        totalBalanceOwed: 6900.0,
-        monthlyArrearsInstalment: 650.0,
-        urgencyNotice: "PRE-TERMINATION NOTICE ISSUED — Electricity disconnection risk",
-      },
-    },
-  });
 
-  await prisma.documentEmbedding.create({
-    data: {
-      documentId: doc1.id,
-      contentChunk: "South African Revenue Service (SARS) Payslip Ezrom Mote Mokhotla Tax: 0123279143 Basic: R95,400 PAYE: -R22,311.26 Group Life: -R2,061.84 Nett Pay: R71,026.90 Backdated Retro Lump Sum: R13,645.44",
-      embeddingJson: generateEmbeddingVector("SARS Payslip Ezrom Mote Mokhotla Tax 0123279143 Basic R95,400 PAYE -R22,311.26 Nett Pay R71,026.90 Retro R13,645.44"),
-      metadataJson: { institution: "SARS", documentType: "PAYSLIP", nettPay: 71026.9 },
-    },
-  });
-
-  await prisma.documentEmbedding.create({
-    data: {
-      documentId: doc2.id,
-      contentChunk: "City of Ekurhuleni Municipal Tax Invoice Acc: 201938475 Total Balance: R6,900.00 Monthly Arrears Instalment: R650.00 PRE-TERMINATION NOTICE ISSUED Electricity disconnection risk",
-      embeddingJson: generateEmbeddingVector("City of Ekurhuleni Municipal Tax Invoice Acc 201938475 Total Balance R6,900 Monthly Arrears R650 PRE-TERMINATION NOTICE Electricity disconnection"),
-      metadataJson: { institution: "City of Ekurhuleni", documentType: "MUNICIPAL_BILL", totalBalance: 6900.0 },
-    },
-  });
 
   await prisma.debt.create({
     data: {
@@ -261,8 +197,8 @@ async function main() {
       userId: user.id,
       name: "School Fees Arrears",
       institution: "School Admin",
-      accountNumberMasked: null,
-      type: "SERVICE_ACCOUNT",
+      accountNumberMasked: "SCH-2026-881",
+      type: "EDUCATION",
       currency: "ZAR",
       openingBalance: -20000.0,
       isDebt: true,
@@ -289,14 +225,45 @@ async function main() {
   const accUni = await prisma.account.create({
     data: {
       userId: user.id,
-      name: "University Tuition Fees",
+      name: "University Tuition Fees (Tertiary)",
       institution: "University Finance",
-      accountNumberMasked: null,
-      type: "SERVICE_ACCOUNT",
+      accountNumberMasked: "UNI-2026-992",
+      type: "EDUCATION",
       currency: "ZAR",
       openingBalance: -47885.42,
       isDebt: true,
       notes: "0% interest, 18-month payment plan.",
+    },
+  });
+
+  // 10. Vodacom Mobile Contract & Arrears
+  const accVodacom = await prisma.account.create({
+    data: {
+      userId: user.id,
+      name: "Vodacom Mobile Contract & Arrears",
+      institution: "Vodacom",
+      accountNumberMasked: "I2754234-5",
+      type: "SERVICE_ACCOUNT",
+      currency: "ZAR",
+      openingBalance: -3535.91,
+      openingBalanceDate: new Date("2026-07-15"),
+      isDebt: true,
+      notes: "Vodacom cellular contract & overdue service arrears. Monthly debit order: R722.13.",
+    },
+  });
+  await prisma.debt.create({
+    data: {
+      accountId: accVodacom.id,
+      currentBalance: 3535.91,
+      balanceConfidence: "CONFIRMED",
+      balanceSource: "Vodacom Account Statement & Debit Order Schedule",
+      annualInterestRate: 0,
+      interestRateConfidence: "CONFIRMED",
+      minimumPayment: 722.13,
+      paymentMode: "FIXED_INSTALMENT",
+      urgencyFlag: "NONE",
+      includeInSnowball: true,
+      status: "ACTIVE",
     },
   });
   await prisma.debt.create({
@@ -529,9 +496,9 @@ async function main() {
   await prisma.netWorthSnapshot.create({
     data: {
       snapshotDate: new Date("2026-07-15"),
-      totalAssets: 2101135.15,
-      totalDebts: 434776.11,
-      netWorth: 1666359.04,
+      totalAssets: 2431135.15,
+      totalDebts: 2218311.94,
+      netWorth: 212823.21,
       generatedBy: "SCHEDULED",
     },
   });
@@ -609,36 +576,474 @@ async function main() {
     },
   });
 
+  // ─── DOCUMENTS (ALL 24 UPLOADED PDFs FROM Artifacts FOLDER) ─────────────────
+
+  // --- SARS Payslips (2 PDFs) ---
+  const docPayslipJul = await prisma.document.create({
+    data: {
+      relatedEntityType: "INCOME",
+      relatedEntityId: incSARS.id,
+      documentType: "PAYSLIP",
+      fileUrl: "Artifacts/SARS/Paystub_202706.pdf",
+      fileHash: "8a4f91c5b8e90123456789abcdef0123456789abcdef0123456789abcdefb7e2",
+      periodStart: new Date("2026-06-01"),
+      periodEnd: new Date("2026-06-30"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        employer: "South African Revenue Service (SARS)",
+        employeeName: "Ezrom Mote Mokhotla",
+        taxNumber: "0123279143",
+        basicSalary: 95400.0,
+        groupLifeInsurance: -2061.84,
+        payeTaxDeduction: -22311.26,
+        nettPay: 71026.9,
+        backdatedRetroLumpSum: 13645.44,
+      },
+    },
+  });
+  const docPayslipMay = await prisma.document.create({
+    data: {
+      relatedEntityType: "INCOME",
+      relatedEntityId: incSARS.id,
+      documentType: "PAYSLIP",
+      fileUrl: "Artifacts/SARS/Paystub_202705.pdf",
+      fileHash: "c2a8bf1d3e4f5678901234567890abcdef1234567890abcdef1234567890ab01",
+      periodStart: new Date("2026-05-01"),
+      periodEnd: new Date("2026-05-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        employer: "South African Revenue Service (SARS)",
+        employeeName: "Ezrom Mote Mokhotla",
+        taxNumber: "0123279143",
+        basicSalary: 89900.0,
+        nettPay: 65436.34,
+      },
+    },
+  });
+
+  // --- Ekurhuleni Municipality (2 PDFs) ---
+  const docMuniBill = await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accMuni.id,
+      documentType: "MUNICIPAL_BILL",
+      fileUrl: "Artifacts/EkurhuleniMunicipality/2026-06_3505137295_Statement.pdf",
+      fileHash: "1b7f40289a0123456789abcdef0123456789abcdef0123456789abcdefe9a0",
+      periodStart: new Date("2026-06-01"),
+      periodEnd: new Date("2026-06-30"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        municipality: "City of Ekurhuleni",
+        accountNumber: "3505137295",
+        totalBalanceOwed: 6900.0,
+        monthlyArrearsInstalment: 650.0,
+        urgencyNotice: "PRE-TERMINATION NOTICE ISSUED — Electricity disconnection risk",
+      },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accMuni.id,
+      documentType: "MUNICIPAL_BILL",
+      fileUrl: "Artifacts/EkurhuleniMunicipality/GenerateBill.pdf",
+      fileHash: "3d9e2f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d",
+      periodStart: new Date("2026-05-01"),
+      periodEnd: new Date("2026-05-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        municipality: "City of Ekurhuleni",
+        accountNumber: "3505137295",
+        propertyValuation: 1780000.0,
+        erfNumber: "X28 004 00000287",
+      },
+    },
+  });
+
+  // --- Telkom Invoices (2 PDFs) ---
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accTelkom.id,
+      documentType: "INVOICE",
+      fileUrl: "Artifacts/Telkom/Telkom_Invoice_345669338.pdf",
+      fileHash: "4e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e",
+      periodStart: new Date("2026-07-01"),
+      periodEnd: new Date("2026-07-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        provider: "Telkom SA SOC Ltd",
+        invoiceNumber: "345669338",
+        totalAmountDue: 21745.9,
+        terminationPenalty: 14000.0,
+        ageAnalysisArrears: 7632.97,
+      },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accTelkom.id,
+      documentType: "INVOICE",
+      fileUrl: "Artifacts/Telkom/Telkom_Invoice_345612241.pdf",
+      fileHash: "5f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+      periodStart: new Date("2026-06-01"),
+      periodEnd: new Date("2026-06-30"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        provider: "Telkom SA SOC Ltd",
+        invoiceNumber: "345612241",
+        totalAmountDue: 19845.9,
+      },
+    },
+  });
+
+  // --- Vodacom (3 PDFs) ---
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accVodacom.id,
+      documentType: "INVOICE",
+      fileUrl: "Artifacts/Vodacom/inv-I2754234-27798682053-2026-07-01_509.PDF",
+      fileHash: "6a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a",
+      periodStart: new Date("2026-07-01"),
+      periodEnd: new Date("2026-07-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        provider: "Vodacom (Pty) Ltd",
+        accountNumber: "I2754234-5",
+        totalAmountDue: 3535.91,
+        monthlySubscription: 722.13,
+      },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accVodacom.id,
+      documentType: "INVOICE",
+      fileUrl: "Artifacts/Vodacom/sta-I2754234-2026-07-03_014.PDF",
+      fileHash: "7b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+      periodStart: new Date("2026-07-01"),
+      periodEnd: new Date("2026-07-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        provider: "Vodacom (Pty) Ltd",
+        accountNumber: "I2754234-5",
+        documentSubtype: "Account Statement",
+      },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accVodacom.id,
+      documentType: "INVOICE",
+      fileUrl: "Artifacts/Vodacom/vbi-I2754234-VC1-14TY-2026-07-01_809.PDF",
+      fileHash: "8c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
+      periodStart: new Date("2026-07-01"),
+      periodEnd: new Date("2026-07-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        provider: "Vodacom (Pty) Ltd",
+        accountNumber: "I2754234-5",
+        documentSubtype: "Value Bundle Invoice",
+      },
+    },
+  });
+
+  // --- Nedbank Personal Loan (3 PDFs) ---
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accNedbank.id,
+      documentType: "OTHER",
+      fileUrl: "Artifacts/Nedbank/PLN_ANNIVERSARY_LETTER_PLN_152327766_03-21-2026.pdf",
+      fileHash: "9d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+      periodStart: new Date("2026-03-21"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        institution: "Nedbank Ltd",
+        policyNumber: "P000057737399",
+        documentSubtype: "Anniversary Letter",
+        loanBalance: 39751.99,
+      },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accNedbank.id,
+      documentType: "OTHER",
+      fileUrl: "Artifacts/Nedbank/PLN_POLICY_SCHEDULE_PLN_A_152327767_03-21-2026.pdf",
+      fileHash: "ae6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e",
+      periodStart: new Date("2026-03-21"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        institution: "Nedbank Ltd",
+        policyNumber: "P000057737399",
+        documentSubtype: "Policy Schedule",
+        monthlyInstalment: 2010.03,
+      },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accNedbank.id,
+      documentType: "OTHER",
+      fileUrl: "Artifacts/Nedbank/Policy_Wording_PLN_03-21-2026.pdf",
+      fileHash: "bf7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
+      periodStart: new Date("2026-03-21"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: {
+        institution: "Nedbank Ltd",
+        documentSubtype: "Policy Wording (Terms & Conditions)",
+      },
+    },
+  });
+
+  // --- Standard Bank Statements — July 2026 Batch (5 PDFs) ---
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accPrestige.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260715/XXXX4469.pdf",
+      fileHash: "ca8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a",
+      periodStart: new Date("2026-06-16"),
+      periodEnd: new Date("2026-07-15"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "4469", batchDate: "2026-07-15" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accMyMo.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260715/XXXX6506.pdf",
+      fileHash: "db9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+      periodStart: new Date("2026-06-16"),
+      periodEnd: new Date("2026-07-15"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "6506", batchDate: "2026-07-15" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accRev.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260715/XXXX7592.pdf",
+      fileHash: "ec0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c",
+      periodStart: new Date("2026-06-16"),
+      periodEnd: new Date("2026-07-15"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "7592", accountType: "Revolving Credit Plan", batchDate: "2026-07-15" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accHomeLoan.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260715/XXXXX5510.pdf",
+      fileHash: "fd1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d",
+      periodStart: new Date("2026-06-16"),
+      periodEnd: new Date("2026-07-15"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "5510", accountType: "Home Loan (Mortgage Bond)", batchDate: "2026-07-15" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accCard.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260715/XXXXXXXXXXXX3529.pdf",
+      fileHash: "0e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e",
+      periodStart: new Date("2026-06-16"),
+      periodEnd: new Date("2026-07-15"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "3529", accountType: "Titanium Prestige Credit Card", batchDate: "2026-07-15" },
+    },
+  });
+
+  // --- Standard Bank Statements — August 2026 Batch (5 PDFs) ---
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accPrestige.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260813/XXXX4469.pdf",
+      fileHash: "1f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f",
+      periodStart: new Date("2026-07-16"),
+      periodEnd: new Date("2026-08-13"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "4469", batchDate: "2026-08-13" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accMyMo.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260813/XXXX6506.pdf",
+      fileHash: "2a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a",
+      periodStart: new Date("2026-07-16"),
+      periodEnd: new Date("2026-08-13"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "6506", batchDate: "2026-08-13" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accRev.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260813/XXXX7592.pdf",
+      fileHash: "3b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b",
+      periodStart: new Date("2026-07-16"),
+      periodEnd: new Date("2026-08-13"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "7592", accountType: "Revolving Credit Plan", batchDate: "2026-08-13" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accHomeLoan.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260813/XXXXX5510.pdf",
+      fileHash: "4c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c",
+      periodStart: new Date("2026-07-16"),
+      periodEnd: new Date("2026-08-13"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "5510", accountType: "Home Loan (Mortgage Bond)", batchDate: "2026-08-13" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accCard.id,
+      documentType: "BANK_STATEMENT",
+      fileUrl: "Artifacts/StandardBank/20260813/XXXXXXXXXXXX3529.pdf",
+      fileHash: "5d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      periodStart: new Date("2026-07-16"),
+      periodEnd: new Date("2026-08-13"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "Standard Bank", accountSuffix: "3529", accountType: "Titanium Prestige Credit Card", batchDate: "2026-08-13" },
+    },
+  });
+
+  // --- WesBank Vehicle Finance (2 PDFs) ---
+  // WesBank statements — no WesBank account in seed, link to Prestige as source of debit orders
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accPrestige.id,
+      documentType: "OTHER",
+      fileUrl: "Artifacts/WesBank/stmnn_sp_rstm003wbamh20260731_85361174582e_155900004_36.pdf",
+      fileHash: "6e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+      periodStart: new Date("2026-07-01"),
+      periodEnd: new Date("2026-07-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "WesBank (FirstRand)", documentSubtype: "Vehicle Finance Statement" },
+    },
+  });
+  await prisma.document.create({
+    data: {
+      relatedEntityType: "ACCOUNT",
+      relatedEntityId: accPrestige.id,
+      documentType: "OTHER",
+      fileUrl: "Artifacts/WesBank/stmnn_sp_rstm003wbwbm20260731_85401320912e_155900005_11.pdf",
+      fileHash: "7f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+      periodStart: new Date("2026-07-01"),
+      periodEnd: new Date("2026-07-31"),
+      parsed: true,
+      parseStatus: "APPLIED",
+      parsedData: { institution: "WesBank (FirstRand)", documentSubtype: "Vehicle Finance Statement (WBM)" },
+    },
+  });
+
+  // --- Document Embeddings (key text chunks for RAG search) ---
+  await prisma.documentEmbedding.create({
+    data: {
+      documentId: docPayslipJul.id,
+      contentChunk: "South African Revenue Service (SARS) Payslip Ezrom Mote Mokhotla Tax: 0123279143 Basic: R95,400 PAYE: -R22,311.26 Group Life: -R2,061.84 Nett Pay: R71,026.90 Backdated Retro Lump Sum: R13,645.44",
+      embeddingJson: generateEmbeddingVector("SARS Payslip Ezrom Mote Mokhotla Tax 0123279143 Basic R95,400 PAYE -R22,311.26 Nett Pay R71,026.90 Retro R13,645.44"),
+      metadataJson: { institution: "SARS", documentType: "PAYSLIP", nettPay: 71026.9 },
+    },
+  });
+  await prisma.documentEmbedding.create({
+    data: {
+      documentId: docMuniBill.id,
+      contentChunk: "City of Ekurhuleni Municipal Tax Invoice Acc: 3505137295 Total Balance: R6,900.00 Monthly Arrears Instalment: R650.00 PRE-TERMINATION NOTICE ISSUED Electricity disconnection risk",
+      embeddingJson: generateEmbeddingVector("City of Ekurhuleni Municipal Tax Invoice Acc 3505137295 Total Balance R6,900 Monthly Arrears R650 PRE-TERMINATION NOTICE Electricity disconnection"),
+      metadataJson: { institution: "City of Ekurhuleni", documentType: "MUNICIPAL_BILL", totalBalance: 6900.0 },
+    },
+  });
+
+
   // ─── BUDGET LINE ITEMS (100% COMPLETE STATEMENT & DEBIT ORDER BREAKDOWN) ───
 
-  const currentMonth = "2026-07";
+  const currentMonth = "2026-08";
 
   const budgetItems = [
-    // 1. Fixed Household Obligations (Bank Account Outflows)
-    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Standard Bank Home Loan (Bond Repayment)", amount: 17459.76, confidence: "CONFIRMED" },
-    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Primary Insurance Premium (Short Term & Asset Cover)", amount: 5390.80, confidence: "CONFIRMED" },
-    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Secondary Insurance Premium (Personal Protection)", amount: 1697.28, confidence: "CONFIRMED" },
-    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Municipal Rates, Water & Refuse Base", amount: 3423.83, confidence: "CONFIRMED" },
-    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Banking Account Fees & Overdraft Service Charges", amount: 593.49, confidence: "CONFIRMED" },
+    // 1. Fixed Household Obligations & Subscriptions (Bank & Cash Wallet Outflows)
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Ekurhuleni Property Rates, Water & Refuse", amount: 3423.83, confidence: "CONFIRMED", note: "City of Ekurhuleni property rates, refuse removal, water & sanitation (Acc: 3505137295)", sourceRef: "account:municipal" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Domestic Worker Cash Wage (Cleaning & Housekeeping)", amount: 2200.00, confidence: "CONFIRMED", note: "Monthly recurring cash wage for domestic cleaning and housekeeping", sourceRef: "cash_wallet:domestic_worker" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Household Electricity (Prepaid Tokens)", amount: 2000.00, confidence: "ESTIMATED", note: "Monthly estimated prepaid electricity token purchases", sourceRef: "utility:electricity" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Vodacom Mobile Fibre & Cellular", amount: 1499.00, confidence: "CONFIRMED", note: "Vodacom mobile contracts (071 282 1432 & 077 986 82053) & home fibre (Acc: I2754234-5)", sourceRef: "account:vodacom" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Banking Account Fees & Overdraft Service Charges", amount: 593.49, confidence: "CONFIRMED", note: "Prestige account fee (R260), overdraft service fee (R69) & transaction fees", sourceRef: "statement:XXXX4469:fees" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Garden Services & Grounds Maintenance", amount: 550.00, confidence: "CONFIRMED", note: "Monthly recurring cash service fee for garden and lawn maintenance", sourceRef: "cash_wallet:garden_services" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Google Workspace & AI Premium (Antigravity)", amount: 450.00, confidence: "CONFIRMED", note: "Developer cloud and AI platform subscription", sourceRef: "statement:google_cloud" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Vehicle Tracking & Telematics (Cartrack & Tracker)", amount: 403.49, confidence: "CONFIRMED", note: "Cartrack (R204.49) + Tracker (R199.00) vehicle security recovery units", sourceRef: "statement:XXXX4469:tracking" },
+    { category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Netflix ZA Subscription", amount: 229.00, confidence: "CONFIRMED", note: "Monthly streaming entertainment debit on Titanium Credit Card", sourceRef: "statement:XXXX3529:netflix" },
 
-    // 2. Debt Acceleration Plan (DebiCheck & Debt Repayments)
-    { category: "DEBT_ACCELERATION_PLAN", label: "Revolving Credit Plan Minimum (Standard Bank)", amount: 7457.66, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "University Fees Payment Plan", amount: 2660.30, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "Nedbank Personal Loan Instalment", amount: 2010.03, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "Telkom SA Broadband / Line Payment", amount: 2000.00, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "School Fees Arrears Payment", amount: 1333.33, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "Vehicle Finance (DebiCheck)", amount: 722.13, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "Standard Bank Credit Card Minimum", amount: 700.00, isComputed: true },
-    { category: "DEBT_ACCELERATION_PLAN", label: "Municipal Arrears Arrangement", amount: 650.00, isComputed: true },
+    // 2. Debt Acceleration Plan (DebiCheck & Contractual Debt Repayments)
+    { category: "DEBT_ACCELERATION_PLAN", label: "Standard Bank Home Loan (Bond Repayment)", amount: 17786.45, isComputed: true, confidence: "CONFIRMED", note: "Primary mortgage bond repayment debit order (Account: SBSA HOMEL 534812597)", sourceRef: "statement:XXXX4469:sbsa_homel" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "Standard Bank Revolving Credit Plan Minimum", amount: 7457.66, isComputed: true, confidence: "CONFIRMED", note: "Revolving credit facility contractual minimum DebiCheck (Acc: 22043551000022)", sourceRef: "statement:XXXX4469:sbsa_rcp" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "WesBank Vehicle Finance (Renault Clio V)", amount: 5468.02, isComputed: true, confidence: "CONFIRMED", note: "Renault Clio V 1.0t Zen DebiCheck debit order (Acc: 85361174582)", sourceRef: "statement:XXXX4469:wesbank_clio" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "University Fees Payment Plan", amount: 4000.00, isComputed: true, confidence: "CONFIRMED", note: "Accelerated tertiary tuition repayment (cleared in 12 months by Aug 2027)", sourceRef: "debt:university" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "Nedbank Personal Loan Instalment", amount: 2010.03, isComputed: true, confidence: "CONFIRMED", note: "Fixed personal loan instalment DebiCheck debit order (Acc: PLN 152327766)", sourceRef: "statement:XXXX4469:nedbank_loan" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "Telkom Debt Settlement Arrangement", amount: 2000.00, isComputed: true, confidence: "CONFIRMED", note: "Agreed structured settlement monthly repayment for overdue lines", sourceRef: "debt:telkom" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "School Fees Arrears Payment Plan", amount: 2000.00, isComputed: true, confidence: "CONFIRMED", note: "Accelerated school fees arrears repayment (cleared in 10 months by Jun 2027)", sourceRef: "debt:schoolfees" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "WesBank Vehicle Finance (Hyundai Grand i10)", amount: 722.13, isComputed: true, confidence: "CONFIRMED", note: "Hyundai Grand i10 1.0 Fluid DebiCheck debit order (Acc: 85401320912)", sourceRef: "statement:XXXX4469:wesbank_i10" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "Standard Bank Titanium Credit Card Minimum", amount: 700.00, isComputed: true, confidence: "CONFIRMED", note: "Titanium Prestige credit card contractual minimum payment (5239-xxxx-xxxx-3529)", sourceRef: "statement:XXXX3529:min" },
+    { category: "DEBT_ACCELERATION_PLAN", label: "Municipal Arrears Arrangement", amount: 650.00, isComputed: true, confidence: "CONFIRMED", note: "Structured municipal arrears repayment arrangement", sourceRef: "debt:municipal_arrears" },
 
     // 3. Goal Contributions
-    { category: "GOAL_CONTRIBUTIONS", label: "3-Month Emergency Fund Contribution", amount: 3500.00, isComputed: true },
-    { category: "GOAL_CONTRIBUTIONS", label: "Property & Investment Deposit Contribution", amount: 1500.00, isComputed: true },
+    { category: "GOAL_CONTRIBUTIONS", label: "Car Transmission Repair Sinking Fund", amount: 10095.16, isComputed: true, confidence: "CONFIRMED", note: "Target: R 40,000.00 transmission overhaul fund (Allocating full liquid surplus R 10,095.16/mo · Target: Dec 2026)", sourceRef: "goal:car_transmission_repair" },
 
     // 4. Family & Discretionary Monthly Spend
-    { category: "FAMILY_AND_DISCRETIONARY", label: "Groceries & Household Expenses", amount: 12000.00, confidence: "CONFIRMED" },
-    { category: "FAMILY_AND_DISCRETIONARY", label: "Transport & Fuel", amount: 4500.00, confidence: "CONFIRMED" },
-    { category: "FAMILY_AND_DISCRETIONARY", label: "Family Allowances & Support", amount: 3500.00, confidence: "CONFIRMED" },
+    { category: "FAMILY_AND_DISCRETIONARY", label: "Groceries & Household Supplies", amount: 6500.00, confidence: "ESTIMATED", note: "SuperSpar, Woolworths & Pick n Pay monthly allocation" },
+    { category: "FAMILY_AND_DISCRETIONARY", label: "Fuel & Transportation", amount: 1200.00, confidence: "ESTIMATED", note: "WFH schedule: 3-4 office trips/month @ R250/trip + local errands (R1,200 total)" },
+    { category: "FAMILY_AND_DISCRETIONARY", label: "Family Discretionary & Dining", amount: 2500.00, confidence: "ESTIMATED", note: "Family allowances, weekend dining & leisure" },
   ];
 
   for (const b of budgetItems) {
@@ -650,6 +1055,8 @@ async function main() {
         amount: b.amount,
         isComputed: b.isComputed ?? false,
         confidence: (b.confidence as any) ?? "CONFIRMED",
+        note: b.note ?? null,
+        sourceRef: (b as any).sourceRef ?? null,
         month: currentMonth,
       },
     });

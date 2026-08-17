@@ -18,3 +18,6 @@ graphify-out/
 *.gz
 tsconfig.tsbuildinfo
 Artifacts/
+scratch/
+cookies.txt
+transactions_db.json

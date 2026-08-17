@@ -15,13 +15,51 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const month = searchParams.get("month") ?? await getActiveCycleMonthKey();
 
-    const items = await prisma.budgetLineItem.findMany({
+    let items = await prisma.budgetLineItem.findMany({
       where: {
         userId,
         month,
       },
       orderBy: [{ category: "asc" }, { createdAt: "asc" }],
     });
+
+    if (items.length === 0) {
+      // Find the most recent month with items
+      const previousItems = await prisma.budgetLineItem.findMany({
+        where: { userId },
+        orderBy: { month: "desc" },
+      });
+
+      if (previousItems.length > 0) {
+        const lastMonth = previousItems[0].month;
+        const itemsToCopy = previousItems.filter(
+          (i) => i.month === lastMonth && i.category !== "ONE_OFF_UNEXPECTED"
+        );
+
+        if (itemsToCopy.length > 0) {
+          await prisma.budgetLineItem.createMany({
+            data: itemsToCopy.map((i) => ({
+              userId,
+              month,
+              category: i.category,
+              label: i.label,
+              amount: i.amount,
+              isComputed: i.isComputed,
+              sourceRef: i.sourceRef,
+              confidence: i.confidence,
+              note: i.note,
+            })),
+          });
+
+          // Fetch them again to get the generated IDs
+          items = await prisma.budgetLineItem.findMany({
+            where: { userId, month },
+            orderBy: [{ category: "asc" }, { createdAt: "asc" }],
+          });
+        }
+      }
+    }
+
     return NextResponse.json({ month, items });
   } catch {
     return NextResponse.json({ error: "Failed to fetch budget" }, { status: 500 });
@@ -62,19 +100,27 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
     const body = await req.json();
+    const id = body.id || searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
+    }
+
     const item = await prisma.budgetLineItem.update({
-      where: { id: body.id },
+      where: { id },
       data: {
         label: body.label,
-        amount: body.amount,
+        amount: typeof body.amount === "string" ? parseFloat(body.amount) : body.amount,
         category: body.category,
         confidence: body.confidence,
         note: body.note,
       },
     });
     return NextResponse.json(item);
-  } catch {
+  } catch (error) {
+    console.error("Failed to update budget item:", error);
     return NextResponse.json({ error: "Failed to update budget item" }, { status: 500 });
   }
 }

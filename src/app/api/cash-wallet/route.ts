@@ -1,77 +1,202 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/session";
 import {
-  recordATMWithdrawal,
-  recordCashSpend,
-  reconcileCashWallet,
-} from "@/services/cashWalletService";
+  AccountType,
+  FlowType,
+  FlowEndpointType,
+  FlowConfidence,
+  FlowStatus,
+} from "@prisma/client";
 
-let currentWallet = {
-  cashWalletAccountId: "cash-wallet-primary",
-  accountName: "Physical Cash Wallet",
-  trackedBalance: 1550,
-  lastReconciledAt: new Date("2026-08-01"),
-  recentFlows: [
-    { id: "cf-1", date: "2026-08-01", type: "CASH_WITHDRAWAL", description: "ATM Autobank Withdrawal", amount: 2000 },
-    { id: "cf-2", date: "2026-08-03", type: "CASH_SPENDING", description: "Groceries & Fresh Market", amount: 450 },
-  ],
-};
+export async function GET(req: NextRequest) {
+  try {
+    const sessionUserId = await getEffectiveUserId(req);
+    const userId = sessionUserId || "cmss0o4qk000agythu0bm5hxf"; // default mokhotm
 
-export async function GET() {
-  return NextResponse.json(currentWallet);
+    let cashAccount = await prisma.account.findFirst({
+      where: { userId, type: AccountType.CASH_WALLET },
+    });
+
+    if (!cashAccount) {
+      cashAccount = await prisma.account.create({
+        data: {
+          user: { connect: { id: userId } },
+          name: "Physical Cash Wallet",
+          institution: "Physical Cash",
+          accountNumberMasked: "CASH-WALLET-01",
+          type: AccountType.CASH_WALLET,
+          currency: "ZAR",
+          openingBalance: 850.0,
+          isAsset: true,
+          isDebt: false,
+          notes: "Physical cash on hand for domestic worker, garden services, and cash expenses",
+        },
+      });
+    }
+
+    // Fetch live money flows for this cash wallet
+    const flows = await prisma.moneyFlow.findMany({
+      where: {
+        OR: [
+          { destinationRef: cashAccount.id },
+          { sourceRef: cashAccount.id },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Compute live balance: Sum of inflows - Sum of outflows
+    let trackedBalance = 0;
+    const recentFlows = flows.map((f) => {
+      const isIncoming = f.destinationRef === cashAccount.id;
+      const amt = Number(f.amount);
+      if (isIncoming) {
+        trackedBalance += amt;
+      } else {
+        trackedBalance -= amt;
+      }
+
+      return {
+        id: f.id,
+        date: f.createdAt.toISOString().split("T")[0],
+        type: f.flowType,
+        description: f.destinationRef?.startsWith("Domestic") || f.destinationRef?.startsWith("Garden")
+          ? f.destinationRef
+          : isIncoming
+          ? "ATM Cash Withdrawal"
+          : f.destinationRef || "Cash Expense",
+        amount: isIncoming ? amt : -amt,
+      };
+    });
+
+    return NextResponse.json({
+      cashWalletAccountId: cashAccount.id,
+      accountName: cashAccount.name,
+      trackedBalance: Math.max(0, trackedBalance),
+      lastReconciledAt: cashAccount.updatedAt,
+      recentFlows,
+    });
+  } catch (error: any) {
+    console.error("Cash wallet GET error:", error);
+    return NextResponse.json({ error: "Failed to load cash wallet" }, { status: 500 });
+  }
 }
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { action, amount, category, description, actualCountedBalance } = body;
+export async function POST(req: NextRequest) {
+  try {
+    const sessionUserId = await getEffectiveUserId(req);
+    const userId = sessionUserId || "cmss0o4qk000agythu0bm5hxf";
 
-  if (action === "WITHDRAWAL") {
-    const { flow } = recordATMWithdrawal("cheque-account", currentWallet.cashWalletAccountId, amount);
-    currentWallet.trackedBalance += amount;
-    currentWallet.recentFlows.unshift({
-      id: flow.id,
-      date: new Date().toISOString().split("T")[0],
-      type: "CASH_WITHDRAWAL",
-      description: description || "ATM Cash Withdrawal",
-      amount,
+    const body = await req.json();
+    const { action, amount, category, description, actualCountedBalance } = body;
+
+    let cashAccount = await prisma.account.findFirst({
+      where: { userId, type: AccountType.CASH_WALLET },
     });
-    return NextResponse.json({ success: true, currentWallet });
+
+    if (!cashAccount) {
+      cashAccount = await prisma.account.create({
+        data: {
+          user: { connect: { id: userId } },
+          name: "Physical Cash Wallet",
+          institution: "Physical Cash",
+          accountNumberMasked: "CASH-WALLET-01",
+          type: AccountType.CASH_WALLET,
+          currency: "ZAR",
+          openingBalance: 0,
+          isAsset: true,
+          isDebt: false,
+        },
+      });
+    }
+
+    const chequeAccount = await prisma.account.findFirst({
+      where: { userId, type: AccountType.CURRENT },
+    });
+
+    if (action === "WITHDRAWAL") {
+      const numAmount = parseFloat(amount);
+      await prisma.moneyFlow.create({
+        data: {
+          sourceType: FlowEndpointType.ACCOUNT,
+          sourceRef: chequeAccount?.id || "cheque-account",
+          destinationType: FlowEndpointType.CASH_WALLET,
+          destinationRef: cashAccount.id,
+          amount: numAmount,
+          currentAmount: numAmount,
+          flowType: FlowType.CASH_WITHDRAWAL,
+          confidence: FlowConfidence.CONFIRMED,
+        },
+      });
+
+      return GET(req);
+    }
+
+    if (action === "SPEND") {
+      const numAmount = parseFloat(amount);
+      const targetLabel = description ? `${category}: ${description}` : category;
+      await prisma.moneyFlow.create({
+        data: {
+          sourceType: FlowEndpointType.CASH_WALLET,
+          sourceRef: cashAccount.id,
+          destinationType: FlowEndpointType.EXTERNAL,
+          destinationRef: targetLabel,
+          amount: numAmount,
+          currentAmount: numAmount,
+          flowType: FlowType.CASH_SPENDING,
+          confidence: FlowConfidence.CONFIRMED,
+        },
+      });
+
+      return GET(req);
+    }
+
+    if (action === "RECONCILE") {
+      const counted = parseFloat(actualCountedBalance);
+      // Fetch current flows to calculate delta
+      const flows = await prisma.moneyFlow.findMany({
+        where: {
+          OR: [
+            { destinationRef: cashAccount.id },
+            { sourceRef: cashAccount.id },
+          ],
+        },
+      });
+
+      let currentBalance = 0;
+      for (const f of flows) {
+        if (f.destinationRef === cashAccount.id) currentBalance += Number(f.amount);
+        else currentBalance -= Number(f.amount);
+      }
+
+      const adjustment = counted - currentBalance;
+      if (Math.abs(adjustment) > 0.01) {
+        await prisma.moneyFlow.create({
+          data: {
+            sourceType: adjustment < 0 ? FlowEndpointType.CASH_WALLET : FlowEndpointType.EXTERNAL,
+            sourceRef: adjustment < 0 ? cashAccount.id : "RECONCILIATION_ADJUSTMENT",
+            destinationType: adjustment < 0 ? FlowEndpointType.EXTERNAL : FlowEndpointType.CASH_WALLET,
+            destinationRef: adjustment < 0 ? `Reconciliation Adjustment (${adjustment >= 0 ? "+" : ""}${adjustment})` : cashAccount.id,
+            amount: Math.abs(adjustment),
+            currentAmount: Math.abs(adjustment),
+            flowType: FlowType.OTHER,
+            confidence: FlowConfidence.CONFIRMED,
+          },
+        });
+      }
+
+      await prisma.account.update({
+        where: { id: cashAccount.id },
+        data: { updatedAt: new Date() },
+      });
+
+      return GET(req);
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (error: any) {
+    console.error("Cash wallet POST error:", error);
+    return NextResponse.json({ error: error.message || "Failed to process cash wallet action" }, { status: 500 });
   }
-
-  if (action === "SPEND") {
-    const { flow } = recordCashSpend({
-      cashWalletAccountId: currentWallet.cashWalletAccountId,
-      amount,
-      category: category || "General Cash Spend",
-      description: description || "Cash Expense",
-    });
-    currentWallet.trackedBalance = Math.max(0, currentWallet.trackedBalance - amount);
-    currentWallet.recentFlows.unshift({
-      id: flow.id,
-      date: new Date().toISOString().split("T")[0],
-      type: "CASH_SPENDING",
-      description: `${category}: ${description}`,
-      amount: -amount,
-    });
-    return NextResponse.json({ success: true, currentWallet });
-  }
-
-  if (action === "RECONCILE") {
-    const rec = reconcileCashWallet(
-      currentWallet.cashWalletAccountId,
-      currentWallet.trackedBalance,
-      actualCountedBalance
-    );
-    currentWallet.trackedBalance = rec.newTrackedBalance;
-    currentWallet.lastReconciledAt = new Date();
-    currentWallet.recentFlows.unshift({
-      id: rec.reconciliationFlow.id,
-      date: new Date().toISOString().split("T")[0],
-      type: "OTHER",
-      description: `Reconciliation Adjustment (${rec.reconciliationAdjustment >= 0 ? "+" : ""}${rec.reconciliationAdjustment})`,
-      amount: rec.reconciliationAdjustment,
-    });
-    return NextResponse.json({ success: true, reconciliation: rec, currentWallet });
-  }
-
-  return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 }

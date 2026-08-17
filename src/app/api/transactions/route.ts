@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const query = searchParams.get("query")?.toLowerCase();
+    const payPeriod = searchParams.get("payPeriod");
+    const periodType = searchParams.get("periodType") || "SALARY";
 
     // Fetch DB flows & reference accounts/debts
     const [flows, accounts, debts] = await Promise.all([
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (f.flowType === "INCOME") {
-        merchantName = f.sourceRef || f.destinationRef || "SARS Employer Salary";
+        merchantName = (srcAcc ? srcAcc.name : null) || (destAcc ? destAcc.name : null) || "SARS Employer Salary";
         direction = "INFLOW";
         categoryName = "Income & Payroll";
         if (destAcc) {
@@ -84,16 +86,16 @@ export async function GET(request: NextRequest) {
           accountType = destAcc.type;
         }
       } else if (f.flowType === "TRANSFER") {
-        merchantName = f.destinationRef || `Transfer to ${destAcc ? destAcc.name : "Savings"}`;
+        merchantName = `Transfer to ${destAcc ? destAcc.name : "Savings"}`;
         categoryName = "Internal Transfer";
       } else if (f.flowType === "DEBT_PAYMENT") {
-        merchantName = f.destinationRef || (destDebt ? destDebt.account.name : "Debt Paydown");
+        merchantName = destDebt ? destDebt.account.name : (f.destinationType === "EXTERNAL" && f.destinationRef ? f.destinationRef : "Debt Paydown");
         categoryName = "Debt Service";
       } else if (f.flowType === "CASH_WITHDRAWAL") {
-        merchantName = f.destinationRef || "ATM Cash Withdrawal";
+        merchantName = "ATM Cash Withdrawal";
         categoryName = "Cash Withdrawal";
       } else if (f.flowType === "CASH_SPENDING") {
-        merchantName = f.destinationRef || "Daily Cash Purchase";
+        merchantName = (f.destinationType === "EXTERNAL" && f.destinationRef) ? f.destinationRef : "Daily Cash Purchase";
         categoryName = "Cash Spending";
       }
 
@@ -139,6 +141,33 @@ export async function GET(request: NextRequest) {
           t.category.toLowerCase().includes(query) ||
           t.referenceNumber.toLowerCase().includes(query)
       );
+    }
+
+    if (payPeriod && payPeriod !== "ALL") {
+      const year = parseInt(payPeriod.split("-")[0]);
+      const month = parseInt(payPeriod.split("-")[1]);
+      
+      let startDate: Date;
+      let endDate: Date;
+
+      if (periodType === "CALENDAR") {
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+      } else {
+        startDate = new Date(year, month - 1, 15);
+        let nextMonth = month;
+        let nextYear = year;
+        if (nextMonth === 12) {
+           nextMonth = 0;
+           nextYear++;
+        }
+        endDate = new Date(nextYear, nextMonth, 14, 23, 59, 59);
+      }
+
+      filtered = filtered.filter((t) => {
+         const d = new Date(t.date);
+         return d >= startDate && d <= endDate;
+      });
     }
 
     const totalInflow = filtered

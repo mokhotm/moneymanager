@@ -23,11 +23,13 @@ import {
   Sparkles,
   ArrowLeftRight,
   Bot,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/net-worth", icon: Gem, label: "Net Worth" },
+  { href: "/reports", icon: BarChart3, label: "Reports & Leakages" },
   { href: "/money-journey", icon: GitCommit, label: "Money Journey" },
   { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet" },
   { href: "/goals", icon: Target, label: "Goals & Wealth" },
@@ -41,6 +43,7 @@ const navItems = [
   { href: "/documents", icon: FolderOpen, label: "Documents" },
   { href: "/scenario", icon: FlaskConical, label: "Scenario Planner" },
   { href: "/settings", icon: Settings, label: "Settings & BYOK" },
+  { href: "/billing", icon: Sparkles, label: "Billing & Plans" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 
@@ -52,7 +55,10 @@ interface UserSession {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserSession>({
+    username: "mokhotm",
+    jobTitle: "Wealth Manager",
+  });
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -60,11 +66,9 @@ export default function Sidebar() {
       .then((data) => {
         if (data && data.authenticated && data.user) {
           setCurrentUser(data.user);
-        } else {
-          setCurrentUser(null);
         }
       })
-      .catch(() => setCurrentUser(null));
+      .catch(() => {});
   }, []);
 
   if (pathname === "/login") {

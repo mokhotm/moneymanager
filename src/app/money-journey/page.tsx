@@ -55,11 +55,17 @@ export default function MoneyJourneyPage() {
   // Visual Controls State
   const [viewMode, setViewMode] = useState<"NEURAL" | "BUBBLE" | "LIST">("NEURAL");
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [activePayPeriod, setActivePayPeriod] = useState<string>("2026-07");
+  const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
-    fetch("/api/money-flow")
+    let url = "/api/money-flow";
+    if (activePayPeriod !== "ALL") {
+       url += `?payPeriod=${activePayPeriod}&periodType=${periodType}`;
+    }
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         const flowItems = data.flows || [];
@@ -71,7 +77,7 @@ export default function MoneyJourneyPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [activePayPeriod, periodType]);
 
   useEffect(() => {
     if (!selectedFlowId) return;
@@ -213,6 +219,35 @@ export default function MoneyJourneyPage() {
                       {cat === "ALL" ? "All Flows" : cat}
                     </button>
                   ))}
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <select
+                    value={periodType}
+                    onChange={(e) => setPeriodType(e.target.value as any)}
+                    className="form-select"
+                    style={{ width: "auto", fontSize: "12px", padding: "4px 24px 4px 12px", marginLeft: "12px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)", outline: "none", cursor: "pointer", appearance: "none" }}
+                  >
+                    <option value="SALARY">Salary Cycle</option>
+                    <option value="CALENDAR">Calendar Month</option>
+                  </select>
+
+                  <select
+                    value={activePayPeriod}
+                    onChange={(e) => setActivePayPeriod(e.target.value)}
+                    className="form-select"
+                    style={{ width: "auto", fontSize: "12px", padding: "4px 24px 4px 12px", marginLeft: "6px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)", outline: "none", cursor: "pointer", appearance: "none" }}
+                  >
+                    <option value="ALL">All Time</option>
+                    <option value="2026-08">August 2026 {periodType === "SALARY" ? "(15 Aug - 14 Sep)" : "(1 Aug - 31 Aug)"}</option>
+                    <option value="2026-07">July 2026 {periodType === "SALARY" ? "(15 Jul - 14 Aug)" : "(1 Jul - 31 Jul)"}</option>
+                    <option value="2026-06">June 2026 {periodType === "SALARY" ? "(15 Jun - 14 Jul)" : "(1 Jun - 30 Jun)"}</option>
+                    <option value="2026-05">May 2026 {periodType === "SALARY" ? "(15 May - 14 Jun)" : "(1 May - 31 May)"}</option>
+                    <option value="2026-04">April 2026 {periodType === "SALARY" ? "(15 Apr - 14 May)" : "(1 Apr - 30 Apr)"}</option>
+                    <option value="2026-03">March 2026 {periodType === "SALARY" ? "(15 Mar - 14 Apr)" : "(1 Mar - 31 Mar)"}</option>
+                    <option value="2026-02">February 2026 {periodType === "SALARY" ? "(15 Feb - 14 Mar)" : "(1 Feb - 28 Feb)"}</option>
+                    <option value="2026-01">January 2026 {periodType === "SALARY" ? "(15 Jan - 14 Feb)" : "(1 Jan - 31 Jan)"}</option>
+                  </select>
+                </div>
                 </div>
 
                 {/* Zoom Toolbar Controls */}

@@ -48,6 +48,9 @@ const ACCOUNT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   LOAN: { label: "Term Loan / Mortgage", color: "#ef4444" },
   MUNICIPAL: { label: "Municipal Services", color: "#64748b" },
   SERVICE_ACCOUNT: { label: "Service Provider / Telco", color: "#a855f7" },
+  EDUCATION: { label: "Education / School Fees", color: "#f472b6" },
+  INSURANCE: { label: "Insurance Policy", color: "#14b8a6" },
+  SUBSCRIPTION: { label: "Subscription / Membership", color: "#8b5cf6" },
   SAVINGS: { label: "Savings & Deposit", color: "#10b981" },
   INVESTMENT: { label: "Investment & ETF", color: "#06b6d4" },
   CASH_WALLET: { label: "Physical Cash Wallet", color: "#ec4899" },
@@ -227,8 +230,8 @@ export default function AccountsPage() {
       <>
         <div className="page-header">
           <div>
-            <h1 className="page-title">Accounts &amp; Banking Register</h1>
-            <p className="page-subtitle">List and manage all bank accounts, cards, loans &amp; municipal service accounts</p>
+            <h1 className="page-title">Accounts &amp; Financial Register</h1>
+            <p className="page-subtitle">List and manage all financial accounts — banks, credit cards, municipal, telco, school fees &amp; more</p>
           </div>
         </div>
 
@@ -264,7 +267,7 @@ export default function AccountsPage() {
               Authentication Required
             </h2>
             <p style={{ fontSize: "14px", color: "#94a3b8", maxWidth: "480px", margin: "0 auto 24px auto" }}>
-              Please sign in to your MoneyManager account to view your linked banking accounts and credit balances.
+              Please sign in to your MoneyManager account to view your linked financial accounts and balances.
             </p>
             <a href="/login" className="btn btn-primary btn-lg inline-flex items-center gap-2">
               <LogIn size={18} />
@@ -281,11 +284,11 @@ export default function AccountsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title flex items-center gap-2">
-            Accounts &amp; Banking Register
+            Accounts &amp; Financial Register
             <span className="badge badge-gold text-xs font-mono">v4.0 Obsidian</span>
           </h1>
           <p className="page-subtitle">
-            List and manage all bank accounts, credit cards, loans &amp; municipal service accounts with OpenBanking feeds
+            List and manage all financial accounts — banks, credit cards, municipal, telco, school fees &amp; service providers
           </p>
         </div>
         <div className="flex gap-3">
@@ -594,16 +597,16 @@ export default function AccountsPage() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">{editAccount ? "Edit Account Details" : "Add Banking Account"}</h2>
+              <h2 className="modal-title">{editAccount ? "Edit Account Details" : "Add Account"}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label className="form-label required">Bank / Institution</label>
+                  <label className="form-label required">Institution / Service Provider</label>
                   <input
                     className="form-input"
-                    placeholder="e.g. Standard Bank, FNB, Capitec, City of Ekurhuleni"
+                    placeholder="e.g. Standard Bank, City of Ekurhuleni, Telkom, School Admin"
                     value={form.institution}
                     onChange={(e) => setForm({ ...form, institution: e.target.value })}
                     required
@@ -615,7 +618,7 @@ export default function AccountsPage() {
                   <label className="form-label required">Account Name</label>
                   <input
                     className="form-input"
-                    placeholder="e.g. Prestige Current Account, Revolving Credit"
+                    placeholder="e.g. Prestige Current Account, Rates & Taxes, Mobile Contract"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     required

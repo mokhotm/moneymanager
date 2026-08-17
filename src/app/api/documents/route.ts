@@ -10,13 +10,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [accountIds, incomeIds] = await Promise.all([
+    const [accountIds, incomeIds, assetIds, debtIds] = await Promise.all([
       prisma.account.findMany({ where: { userId }, select: { id: true } }).then((rows) => rows.map((r) => r.id)),
       prisma.income.findMany({ where: { userId }, select: { id: true } }).then((rows) => rows.map((r) => r.id)),
+      prisma.asset.findMany({ where: { userId }, select: { id: true } }).then((rows) => rows.map((r) => r.id)),
+      prisma.debt.findMany({ where: { account: { userId } }, select: { id: true } }).then((rows) => rows.map((r) => r.id)),
     ]);
 
+    const allEntityIds = [...new Set([...accountIds, ...incomeIds, ...assetIds, ...debtIds])];
+
     const documents = await prisma.document.findMany({
-      where: { relatedEntityId: { in: [...accountIds, ...incomeIds] } },
+      where: { relatedEntityId: { in: allEntityIds } },
       orderBy: { uploadedAt: "desc" },
     });
 

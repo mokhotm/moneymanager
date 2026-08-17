@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const flowId = searchParams.get("flowId");
     const accountRef = searchParams.get("accountRef");
+    const payPeriod = searchParams.get("payPeriod");
+    const periodType = searchParams.get("periodType") || "SALARY";
 
     // Fetch all DB flows & reference entities (accounts & debts for mokhotm)
     const [dbFlows, accounts, debts] = await Promise.all([
@@ -77,27 +79,55 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ conservation });
     }
 
+    let filteredFlows = formattedFlows;
+    if (payPeriod && payPeriod !== "ALL") {
+      const year = parseInt(payPeriod.split("-")[0]);
+      const month = parseInt(payPeriod.split("-")[1]);
+      
+      let startDate: Date;
+      let endDate: Date;
+
+      if (periodType === "CALENDAR") {
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+      } else {
+        startDate = new Date(year, month - 1, 15);
+        let nextMonth = month;
+        let nextYear = year;
+        if (nextMonth === 12) {
+           nextMonth = 0;
+           nextYear++;
+        }
+        endDate = new Date(nextYear, nextMonth, 14, 23, 59, 59);
+      }
+
+      filteredFlows = filteredFlows.filter((t) => {
+         const d = new Date(t.createdAt);
+         return d >= startDate && d <= endDate;
+      });
+    }
+
     // Compute summary metrics from real flows
-    const totalIncome = formattedFlows
+    const totalIncome = filteredFlows
       .filter((f) => f.flowType === "INCOME")
       .reduce((sum, f) => sum + f.amount, 0);
 
-    const totalTransfers = formattedFlows
+    const totalTransfers = filteredFlows
       .filter((f) => f.flowType === "TRANSFER")
       .reduce((sum, f) => sum + f.amount, 0);
 
-    const totalInvestments = formattedFlows
+    const totalInvestments = filteredFlows
       .filter((f) => f.flowType === "INVESTMENT" || f.flowType === "GOAL_CONTRIBUTION")
       .reduce((sum, f) => sum + f.amount, 0);
 
-    const totalDebtPaid = formattedFlows
+    const totalDebtPaid = filteredFlows
       .filter((f) => f.flowType === "DEBT_PAYMENT")
       .reduce((sum, f) => sum + f.amount, 0);
 
     return NextResponse.json({
-      flows: formattedFlows,
+      flows: filteredFlows,
       summary: {
-        totalFlows: formattedFlows.length,
+        totalFlows: filteredFlows.length,
         totalIncome,
         totalTransfers,
         totalInvestments,

@@ -3,12 +3,42 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User, Loader2, AlertCircle, ChevronDown, Sparkles, Volume2, VolumeX, Settings2 } from "lucide-react";
 import { speakText, stopSpeech, isSpeaking } from "@/lib/speechSynthesis";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   error?: boolean;
 }
+
+const markdownRenderers: any = {
+  h3: (props: any) => <h3 style={{ fontSize: '14.5px', fontWeight: 800, marginTop: '14px', marginBottom: '6px', color: '#fbbf24', letterSpacing: '0.2px' }} {...props} />,
+  h2: (props: any) => <h2 style={{ fontSize: '16px', fontWeight: 800, marginTop: '16px', marginBottom: '8px', color: '#fbbf24', letterSpacing: '0.3px' }} {...props} />,
+  h1: (props: any) => <h1 style={{ fontSize: '18px', fontWeight: 800, marginTop: '20px', marginBottom: '10px', color: '#fbbf24', letterSpacing: '0.5px' }} {...props} />,
+  p: (props: any) => <p style={{ marginBottom: '10px', lineHeight: 1.55, opacity: 0.95 }} {...props} />,
+  ul: (props: any) => <ul style={{ marginBottom: '12px', paddingLeft: '20px', listStyleType: 'disc' }} {...props} />,
+  ol: (props: any) => <ol style={{ marginBottom: '12px', paddingLeft: '20px', listStyleType: 'decimal' }} {...props} />,
+  li: (props: any) => <li style={{ marginBottom: '6px', lineHeight: 1.5 }} {...props} />,
+  strong: (props: any) => <strong style={{ fontWeight: 800, color: '#fcd34d' }} {...props} />,
+  em: (props: any) => <em style={{ fontStyle: 'italic', color: '#cbd5e1' }} {...props} />,
+  hr: (props: any) => <hr style={{ border: 'none', borderTop: '1px solid rgba(245, 158, 11, 0.2)', margin: '14px 0' }} {...props} />,
+  table: (props: any) => (
+    <div style={{ overflowX: 'auto', marginBottom: '14px', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }} {...props} />
+    </div>
+  ),
+  th: (props: any) => <th style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#fbbf24', borderBottom: '1px solid rgba(245,158,11,0.2)' }} {...props} />,
+  td: (props: any) => <td style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }} {...props} />,
+  a: (props: any) => <a style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: 600 }} {...props} />,
+  blockquote: (props: any) => <blockquote style={{ borderLeft: '3px solid #f59e0b', paddingLeft: '12px', color: '#94a3b8', fontStyle: 'italic', margin: '10px 0' }} {...props} />,
+  pre: (props: any) => <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '10px', borderRadius: '8px', overflowX: 'auto', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '10px' }} {...props} />,
+  code: (props: any) => {
+    // If it's an inline code block, don't inherit pre formatting
+    const inline = props.node?.position?.start?.line === props.node?.position?.end?.line;
+    return <code style={{ background: inline ? 'rgba(255,255,255,0.1)' : 'transparent', padding: inline ? '2px 4px' : '0', borderRadius: '4px', fontFamily: 'monospace', fontSize: '11.5px', color: '#f8fafc' }} {...props} />;
+  },
+};
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -383,7 +413,16 @@ export default function ChatWidget() {
                       fontWeight: msg.role === "user" ? 700 : 400,
                     }}
                   >
-                    {msg.content}
+                    {msg.role === "assistant" && !msg.error ? (
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]} 
+                        components={markdownRenderers}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
                   </div>
 
                   {/* Audio Speech Button */}
@@ -424,10 +463,15 @@ export default function ChatWidget() {
 
             {loading && (
               <div className="flex items-center gap-2.5 p-3 rounded-xl" style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.35)", margin: "4px 0" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" className="animate-spin" style={{ color: "#f59e0b", flexShrink: 0 }}>
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
-                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
+                <Loader2
+                  size={20}
+                  className="animate-spin text-amber-400"
+                  style={{
+                    color: "#f59e0b",
+                    flexShrink: 0,
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
                 <span style={{ fontSize: "12.5px", color: "#f59e0b", fontWeight: 700, fontFamily: "var(--font-mono, monospace)" }}>
                   AI Multi-Agent Engine is analyzing finances…
                 </span>

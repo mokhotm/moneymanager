@@ -1,5 +1,3 @@
-// MoneyManagement App — Prisma Schema (v3 with Vector Embeddings)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,7 +7,468 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
+model User {
+  id                 String              @id @default(cuid())
+  username           String              @unique
+  passwordHash       String
+  email              String?             @unique
+  role               String              @default("user")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  accounts           Account[]
+  assets             Asset[]
+  budgetItems        BudgetLineItem[]
+  goals              Goal[]
+  incomes            Income[]
+  propertyDataConfig PropertyDataConfig?
+  profile            UserProfile?
+}
+
+model UserProfile {
+  id                 String            @id @default(cuid())
+  userId             String            @unique
+  firstName          String?
+  lastName           String?
+  fullName           String?
+  jobTitle           String?
+  employerName       String?
+  idNumber           String?
+  taxReference       String?
+  preferredCurrency  String            @default("ZAR")
+  avatarUrl          String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  subscriptionTierId String?
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSubscription   UserSubscription?
+}
+
+model Account {
+  id                  String          @id @default(cuid())
+  name                String
+  institution         String
+  accountNumberMasked String?
+  type                AccountType
+  currency            String          @default("ZAR")
+  openingBalance      Decimal         @default(0)
+  openingBalanceDate  DateTime?
+  isDebt              Boolean         @default(false)
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  userId              String?
+  isAsset             Boolean         @default(false)
+  user                User?           @relation(fields: [userId], references: [id])
+  assets              Asset[]
+  bankConnection      BankConnection?
+  debt                Debt?
+
+  @@index([userId])
+  @@index([type])
+}
+
+model Asset {
+  id              String            @id @default(cuid())
+  userId          String?
+  accountId       String?
+  name            String
+  type            AssetType
+  currentValue    Decimal
+  valueConfidence BalanceConfidence @default(ESTIMATED)
+  valueSource     String?
+  linkedDebtId    String?
+  lastValuedDate  DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  account         Account?          @relation(fields: [accountId], references: [id])
+  user            User?             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([accountId])
+}
+
+model NetWorthSnapshot {
+  id           String              @id @default(cuid())
+  snapshotDate DateTime
+  totalAssets  Decimal
+  totalDebts   Decimal
+  netWorth     Decimal
+  generatedBy  SnapshotGeneratedBy @default(SCHEDULED)
+  createdAt    DateTime            @default(now())
+
+  @@index([snapshotDate])
+}
+
+model Debt {
+  id                     String            @id @default(cuid())
+  accountId              String            @unique
+  currentBalance         Decimal
+  balanceConfidence      BalanceConfidence @default(UNKNOWN)
+  balanceSource          String?
+  annualInterestRate     Decimal?
+  interestRateConfidence BalanceConfidence @default(UNKNOWN)
+  interestCompounding    String            @default("MONTHLY")
+  minimumPayment         Decimal
+  paymentMode            PaymentMode       @default(MINIMUM_ONLY)
+  originationDate        DateTime?
+  originalPrincipal      Decimal?
+  originalTermMonths     Int?
+  urgencyFlag            UrgencyFlag       @default(NONE)
+  urgencyNote            String?
+  includeInSnowball      Boolean           @default(true)
+  priorityOverride       Int?
+  status                 DebtStatus        @default(ACTIVE)
+  settledAmount          Decimal?
+  settledDate            DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  debtCategory           DebtCategory      @default(SHORT_TERM)
+  account                Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  settlementEvents       SettlementEvent[]
+
+  @@index([status])
+  @@index([debtCategory])
+}
+
+model Goal {
+  id                      String     @id @default(cuid())
+  userId                  String?
+  name                    String
+  type                    GoalType
+  targetAmount            Decimal?
+  targetFormula           String?
+  targetDate              DateTime?
+  linkedAccountId         String?
+  currentAmount           Decimal    @default(0)
+  monthlyContribution     Decimal    @default(0)
+  priority                Int        @default(1)
+  status                  GoalStatus @default(ACTIVE)
+  projectedCompletionDate DateTime?
+  note                    String?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  user                    User?      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Income {
+  id                        String           @id @default(cuid())
+  sourceName                String
+  recurringAmount           Decimal
+  recurringAmountConfidence IncomeConfidence @default(ESTIMATED)
+  payDayOfMonth             Int              @default(25)
+  lastConfirmedDate         DateTime?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  userId                    String?
+  user                      User?            @relation(fields: [userId], references: [id])
+  incomeEvents              IncomeEvent[]
+
+  @@index([userId])
+}
+
+model IncomeEvent {
+  id              String         @id @default(cuid())
+  incomeId        String?
+  description     String
+  amount          Decimal
+  dateReceived    DateTime
+  recommendedUse  RecommendedUse @default(UNALLOCATED)
+  applied         Boolean        @default(false)
+  appliedToDebtId String?
+  createdAt       DateTime       @default(now())
+  appliedToGoalId String?
+  income          Income?        @relation(fields: [incomeId], references: [id])
+}
+
+model BudgetLineItem {
+  id         String            @id @default(cuid())
+  category   BudgetCategory
+  label      String
+  amount     Decimal
+  isComputed Boolean           @default(false)
+  sourceRef  String?
+  confidence BalanceConfidence @default(ESTIMATED)
+  note       String?
+  month      String
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  userId     String?
+  user       User?             @relation(fields: [userId], references: [id])
+
+  @@index([userId, month])
+  @@index([category])
+}
+
+model SettlementEvent {
+  id                         String   @id @default(cuid())
+  debtId                     String
+  description                String
+  amount                     Decimal
+  date                       DateTime
+  resultingNewMinimumPayment Decimal?
+  createdAt                  DateTime @default(now())
+  debt                       Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id                     String              @id @default(cuid())
+  relatedEntityType      RelatedEntityType
+  relatedEntityId        String
+  documentType           DocumentType
+  fileUrl                String
+  periodStart            DateTime?
+  periodEnd              DateTime?
+  uploadedAt             DateTime            @default(now())
+  parsed                 Boolean             @default(false)
+  parsedData             Json?
+  fileHash               String?
+  parseStatus            ParseStatus         @default(PENDING)
+  supersededByDocumentId String?
+  embeddings             DocumentEmbedding[]
+
+  @@index([documentType])
+  @@index([relatedEntityId])
+  @@index([uploadedAt])
+}
+
+model DocumentEmbedding {
+  id            String   @id @default(cuid())
+  documentId    String
+  contentChunk  String
+  embeddingJson Json
+  metadataJson  Json?
+  createdAt     DateTime @default(now())
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model AgentRecommendation {
+  id          String               @id @default(cuid())
+  agent       AgentType
+  title       String
+  description String
+  rationale   String
+  payload     Json
+  status      RecommendationStatus @default(PENDING)
+  createdAt   DateTime             @default(now())
+  reviewedAt  DateTime?
+}
+
+model LLMProviderConfig {
+  id               String                 @id @default(cuid())
+  provider         LLMProvider
+  displayName      String
+  apiKeyEncrypted  String
+  baseUrl          String?
+  modelName        String
+  supportsVision   Boolean                @default(false)
+  status           LLMConfigStatus        @default(UNVERIFIED)
+  lastValidatedAt  DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  agentAssignments AgentModelAssignment[]
+}
+
+model AgentModelAssignment {
+  id                  String            @id @default(cuid())
+  agent               AgentType         @unique
+  llmProviderConfigId String
+  isDefault           Boolean           @default(false)
+  updatedAt           DateTime          @updatedAt
+  llmProviderConfig   LLMProviderConfig @relation(fields: [llmProviderConfigId], references: [id], onDelete: Cascade)
+}
+
+model AuditLogEntry {
+  id           String   @id @default(cuid())
+  entityType   String
+  entityId     String
+  fieldChanged String
+  oldValue     String?
+  newValue     String?
+  reason       String?
+  changedAt    DateTime @default(now())
+  changedBy    String   @default("user")
+  actor        String   @default("USER")
+
+  @@index([entityType, entityId])
+  @@index([changedAt])
+}
+
+model AppSettings {
+  id               String           @id @default("singleton")
+  snowballStrategy SnowballStrategy @default(SNOWBALL)
+  currency         String           @default("ZAR")
+  updatedAt        DateTime         @updatedAt
+}
+
+model PropertyDataConfig {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  windeedUsername     String?
+  windeedPasswordEnc  String?
+  windeedStatus       String   @default("UNVERIFIED")
+  lightstoneApiKeyEnc String?
+  lightstoneStatus    String   @default("UNVERIFIED")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BankConnection {
+  id                   String                      @id @default(cuid())
+  accountId            String                      @unique
+  providerType         BankConnectionProviderType
+  providerName         String
+  consentStatus        BankConnectionConsentStatus @default(ACTIVE)
+  consentGrantedAt     DateTime                    @default(now())
+  consentExpiresAt     DateTime?
+  accessTokenEncrypted String
+  lastSyncedAt         DateTime?
+  syncFrequency        SyncFrequency               @default(ON_DEMAND)
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  account              Account                     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model MoneyFlow {
+  id                  String           @id @default(cuid())
+  parentFlowId        String?
+  originTransactionId String?
+  sourceType          FlowEndpointType
+  sourceRef           String?
+  destinationType     FlowEndpointType
+  destinationRef      String?
+  amount              Decimal
+  currentAmount       Decimal
+  flowType            FlowType
+  status              FlowStatus       @default(ACTIVE)
+  confidence          FlowConfidence   @default(CONFIRMED)
+  createdAt           DateTime         @default(now())
+  parentFlow          MoneyFlow?       @relation("FlowChain", fields: [parentFlowId], references: [id])
+  childFlows          MoneyFlow[]      @relation("FlowChain")
+
+  @@index([parentFlowId])
+  @@index([sourceRef])
+  @@index([destinationRef])
+  @@index([flowType])
+}
+
+model DebtPayoffPlan {
+  id                 String                @id @default(cuid())
+  createdDate        DateTime              @default(now())
+  strategy           SnowballStrategy      @default(SNOWBALL)
+  isActive           Boolean               @default(true)
+  supersededByPlanId String?
+  createdAt          DateTime              @default(now())
+  supersededByPlan   DebtPayoffPlan?       @relation("PlanSupersession", fields: [supersededByPlanId], references: [id])
+  supersedesPlans    DebtPayoffPlan[]      @relation("PlanSupersession")
+  months             DebtPayoffPlanMonth[]
+}
+
+model DebtPayoffPlanMonth {
+  id               String         @id @default(cuid())
+  planId           String
+  monthNumber      Int
+  calendarDate     DateTime
+  debtId           String
+  projectedBalance Decimal
+  projectedPayment Decimal
+  plan             DebtPayoffPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, monthNumber])
+  @@index([debtId])
+}
+
+model FinancialHealthScore {
+  id                  String     @id @default(cuid())
+  snapshotDate        DateTime   @default(now())
+  score               Int
+  tier                HealthTier @default(ROOKIE)
+  contributingFactors Json
+  badges              Json
+  streakCount         Int        @default(0)
+  createdAt           DateTime   @default(now())
+}
+
+model TransactionRule {
+  id                       String   @id @default(cuid())
+  matchType                String
+  matchValue               String
+  actionType               String
+  actionValue              String
+  createdFromTransactionId String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+model DocumentChunk {
+  id                    String   @id @default(cuid())
+  documentId            String
+  chunkText             String
+  chunkIndex            Int
+  embeddingJson         Json
+  embeddingModelVersion String   @default("v1")
+  createdAt             DateTime @default(now())
+}
+
+model SubscriptionTier {
+  id            String             @id @default(cuid())
+  name          String
+  priceMonthly  Decimal            @default(0)
+  priceAnnual   Decimal?
+  entitlements  Json
+  isActive      Boolean            @default(true)
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id                 String             @id @default(cuid())
+  userProfileId      String             @unique
+  tierId             String
+  status             SubscriptionStatus @default(ACTIVE)
+  billingPeriod      BillingPeriod      @default(MONTHLY)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  autoRenew          Boolean            @default(true)
+  paymentMethodToken String?
+  tier               SubscriptionTier   @relation(fields: [tierId], references: [id])
+  userProfile        UserProfile        @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+}
+
+model PaymentGatewayConfig {
+  id                           String                 @id @default(cuid())
+  provider                     PaymentGatewayProvider
+  mode                         GatewayMode            @default(SANDBOX)
+  merchantCredentialsEncrypted String
+  supportsCards                Boolean                @default(true)
+  supportsEft                  Boolean                @default(false)
+  supportsRecurringBilling     Boolean                @default(true)
+  settlementAccountId          String
+  status                       GatewayConfigStatus    @default(ACTIVE)
+  settlementAccount            SettlementAccount      @relation(fields: [settlementAccountId], references: [id])
+}
+
+model SettlementAccount {
+  id                    String                 @id @default(cuid())
+  institution           String
+  accountNumberMasked   String
+  accountType           String
+  isPrimary             Boolean                @default(false)
+  paymentGatewayConfigs PaymentGatewayConfig[]
+}
+
+model PendingPayment {
+  id             String        @id @default(cuid())
+  userId         String
+  tierId         String
+  amount         Decimal
+  idempotencyKey String        @unique
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
 
 enum AccountType {
   CURRENT
@@ -17,6 +476,9 @@ enum AccountType {
   LOAN
   MUNICIPAL
   SERVICE_ACCOUNT
+  EDUCATION
+  INSURANCE
+  SUBSCRIPTION
   SAVINGS
   INVESTMENT
   RETIREMENT
@@ -67,9 +529,9 @@ enum IncomeConfidence {
 
 enum RecommendedUse {
   DEBT_PAYDOWN
-  GOAL_CONTRIBUTION
   EMERGENCY_FUND
   UNALLOCATED
+  GOAL_CONTRIBUTION
 }
 
 enum BudgetCategory {
@@ -85,10 +547,10 @@ enum DocumentType {
   PAYSLIP
   INVOICE
   MUNICIPAL_BILL
+  OTHER
   INVESTMENT_STATEMENT
   RECEIPT
   CREDIT_REPORT
-  OTHER
 }
 
 enum RelatedEntityType {
@@ -235,500 +697,42 @@ enum HealthTier {
   ELITE
 }
 
-enum SubscriptionTier {
-  STARTER_FREE
-  PRO_WEALTH
-  EXECUTIVE_ENTERPRISE
-}
-
 enum SubscriptionStatus {
   ACTIVE
   CANCELED
   PAST_DUE
   TRIALING
+  EXPIRED
 }
 
-enum BillingCycle {
+enum BillingPeriod {
   MONTHLY
   ANNUAL
 }
 
-enum PaymentGateway {
-  CARD
-  INSTANT_EFT
-  APPLE_PAY
+enum PaymentGatewayProvider {
+  PAYFAST
+  PEACH_PAYMENTS
+  OZOW
+  PAYGATE
+  PAYSTACK
+  YOCO
+  CUSTOM
 }
 
-// ─── User & Profile Models ───────────────────────────────────────────────────
-
-model User {
-  id                    String             @id @default(cuid())
-  username              String             @unique
-  passwordHash          String
-  email                 String?            @unique
-  role                  String             @default("user")
-  subscriptionTier      SubscriptionTier   @default(STARTER_FREE)
-  subscriptionStatus    SubscriptionStatus @default(ACTIVE)
-  billingCycle          BillingCycle       @default(MONTHLY)
-  subscriptionExpiresAt DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-
-  profile               UserProfile?
-  accounts              Account[]
-  incomes               Income[]
-  budgetItems           BudgetLineItem[]
-  assets                Asset[]
-  goals                 Goal[]
-  propertyDataConfig    PropertyDataConfig?
-  subscriptions         SubscriptionRecord[]
+enum GatewayMode {
+  SANDBOX
+  LIVE
 }
 
-model SubscriptionRecord {
-  id             String             @id @default(cuid())
-  userId         String
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tier           SubscriptionTier
-  billingCycle   BillingCycle
-  amount         Float
-  currency       String             @default("ZAR")
-  paymentGateway PaymentGateway
-  transactionRef String             @unique
-  status         String             @default("SUCCESS")
-  paidAt         DateTime           @default(now())
-  expiresAt      DateTime
-  createdAt      DateTime           @default(now())
-
-  @@index([userId])
+enum GatewayConfigStatus {
+  ACTIVE
+  INVALID_CREDENTIALS
+  DISABLED
 }
 
-model UserProfile {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName         String?
-  lastName          String?
-  fullName          String?
-  jobTitle          String?
-  employerName      String?
-  idNumber          String?
-  taxReference      String?
-  preferredCurrency String   @default("ZAR")
-  avatarUrl         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
-
-// ─── Domain Models ────────────────────────────────────────────────────────────
-
-model Account {
-  id                   String      @id @default(cuid())
-  userId               String?
-  user                 User?       @relation(fields: [userId], references: [id])
-  name                 String
-  institution          String
-  accountNumberMasked  String?
-  type                 AccountType
-  currency             String      @default("ZAR")
-  openingBalance       Decimal     @default(0)
-  openingBalanceDate   DateTime?
-  isDebt               Boolean     @default(false)
-  isAsset              Boolean     @default(false)
-  notes                String?
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
-
-  debt                 Debt?
-  assets               Asset[]
-  bankConnection       BankConnection?
-
-  @@index([userId])
-  @@index([type])
-}
-
-model Asset {
-  id              String            @id @default(cuid())
-  userId          String?
-  user            User?             @relation(fields: [userId], references: [id])
-  accountId       String?
-  account         Account?          @relation(fields: [accountId], references: [id])
-  name            String
-  type            AssetType
-  currentValue    Decimal
-  valueConfidence BalanceConfidence @default(ESTIMATED)
-  valueSource     String?
-  linkedDebtId    String?
-  lastValuedDate  DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-
-  @@index([userId])
-  @@index([accountId])
-}
-
-model NetWorthSnapshot {
-  id           String              @id @default(cuid())
-  snapshotDate DateTime
-  totalAssets  Decimal
-  totalDebts   Decimal
-  netWorth     Decimal
-  generatedBy  SnapshotGeneratedBy @default(SCHEDULED)
-  createdAt    DateTime            @default(now())
-
-  @@index([snapshotDate])
-}
-
-model Debt {
-  id                       String            @id @default(cuid())
-  accountId                String            @unique
-  account                  Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
-
-  currentBalance           Decimal
-  balanceConfidence        BalanceConfidence @default(UNKNOWN)
-  balanceSource            String?
-
-  annualInterestRate       Decimal?
-  interestRateConfidence   BalanceConfidence @default(UNKNOWN)
-  interestCompounding      String            @default("MONTHLY")
-
-  minimumPayment           Decimal
-  paymentMode              PaymentMode       @default(MINIMUM_ONLY)
-
-  originationDate          DateTime?
-  originalPrincipal        Decimal?
-  originalTermMonths       Int?
-
-  urgencyFlag              UrgencyFlag       @default(NONE)
-  urgencyNote              String?
-
-  includeInSnowball        Boolean           @default(true)
-  priorityOverride         Int?
-  debtCategory             DebtCategory      @default(SHORT_TERM)
-
-  status                   DebtStatus        @default(ACTIVE)
-  settledAmount            Decimal?
-  settledDate              DateTime?
-
-  createdAt                DateTime          @default(now())
-  updatedAt                DateTime          @updatedAt
-
-  settlementEvents         SettlementEvent[]
-
-  @@index([status])
-  @@index([debtCategory])
-}
-
-model Goal {
-  id                     String     @id @default(cuid())
-  userId                 String?
-  user                   User?      @relation(fields: [userId], references: [id])
-  name                   String
-  type                   GoalType
-  targetAmount           Decimal?
-  targetFormula          String?
-  targetDate             DateTime?
-  linkedAccountId        String?
-  currentAmount          Decimal    @default(0)
-  monthlyContribution    Decimal    @default(0)
-  priority               Int        @default(1)
-  status                 GoalStatus @default(ACTIVE)
-  projectedCompletionDate DateTime?
-  note                   String?
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-
-  @@index([userId])
-  @@index([status])
-}
-
-model Income {
-  id                          String           @id @default(cuid())
-  userId                      String?
-  user                        User?            @relation(fields: [userId], references: [id])
-  sourceName                  String
-  recurringAmount             Decimal
-  recurringAmountConfidence   IncomeConfidence @default(ESTIMATED)
-  payDayOfMonth               Int              @default(25)
-  lastConfirmedDate           DateTime?
-  createdAt                   DateTime         @default(now())
-  updatedAt                   DateTime         @updatedAt
-
-  incomeEvents                IncomeEvent[]
-
-  @@index([userId])
-}
-
-model IncomeEvent {
-  id              String          @id @default(cuid())
-  incomeId        String?
-  income          Income?         @relation(fields: [incomeId], references: [id])
-  description     String
-  amount          Decimal
-  dateReceived    DateTime
-  recommendedUse  RecommendedUse  @default(UNALLOCATED)
-  applied         Boolean         @default(false)
-  appliedToDebtId String?
-  appliedToGoalId String?
-  createdAt       DateTime        @default(now())
-}
-
-model BudgetLineItem {
-  id          String            @id @default(cuid())
-  userId      String?
-  user        User?             @relation(fields: [userId], references: [id])
-  category    BudgetCategory
-  label       String
-  amount      Decimal
-  isComputed  Boolean           @default(false)
-  sourceRef   String?
-  confidence  BalanceConfidence @default(ESTIMATED)
-  note        String?
-  month       String            // "YYYY-MM"
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  @@index([userId, month])
-  @@index([category])
-}
-
-model SettlementEvent {
-  id                         String    @id @default(cuid())
-  debtId                     String
-  debt                       Debt      @relation(fields: [debtId], references: [id], onDelete: Cascade)
-  description                String
-  amount                     Decimal
-  date                       DateTime
-  resultingNewMinimumPayment Decimal?
-  createdAt                  DateTime  @default(now())
-}
-
-model Document {
-  id                      String              @id @default(cuid())
-  relatedEntityType       RelatedEntityType
-  relatedEntityId         String
-  documentType            DocumentType
-  fileUrl                 String
-  fileHash                String?
-  periodStart             DateTime?
-  periodEnd               DateTime?
-  uploadedAt              DateTime            @default(now())
-  parsed                  Boolean             @default(false)
-  parseStatus             ParseStatus         @default(PENDING)
-  parsedData              Json?
-  supersededByDocumentId String?
-
-  embeddings              DocumentEmbedding[]
-
-  @@index([documentType])
-  @@index([relatedEntityId])
-  @@index([uploadedAt])
-}
-
-// ─── Vector Embeddings Model (NEW) ──────────────────────────────────────────
-
-model DocumentEmbedding {
-  id            String   @id @default(cuid())
-  documentId    String
-  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  contentChunk  String
-  embeddingJson Json     // Store array of float numbers e.g. [0.012, -0.045, ...]
-  metadataJson  Json?    // Context metadata e.g. { institution: "SARS", amount: 8092.33 }
-  createdAt     DateTime @default(now())
-}
-
-model AgentRecommendation {
-  id          String               @id @default(cuid())
-  agent       AgentType
-  title       String
-  description String
-  rationale   String
-  payload     Json
-  status      RecommendationStatus @default(PENDING)
-  createdAt   DateTime             @default(now())
-  reviewedAt  DateTime?
-}
-
-// ─── LLM Provider BYOK Models ─────────────────────────────────────────────────
-
-model LLMProviderConfig {
-  id               String          @id @default(cuid())
-  provider         LLMProvider
-  displayName      String
-  apiKeyEncrypted  String
-  baseUrl          String?
-  modelName        String
-  supportsVision   Boolean         @default(false)
-  status           LLMConfigStatus @default(UNVERIFIED)
-  lastValidatedAt  DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-
-  agentAssignments AgentModelAssignment[]
-}
-
-model AgentModelAssignment {
-  id                   String            @id @default(cuid())
-  agent                AgentType         @unique
-  llmProviderConfigId  String
-  llmProviderConfig    LLMProviderConfig @relation(fields: [llmProviderConfigId], references: [id], onDelete: Cascade)
-  isDefault            Boolean           @default(false)
-  updatedAt            DateTime          @updatedAt
-}
-
-model AuditLogEntry {
-  id            String   @id @default(cuid())
-  entityType    String
-  entityId      String
-  fieldChanged  String
-  oldValue      String?
-  newValue      String?
-  reason        String?
-  actor         String   @default("USER")
-  changedAt     DateTime @default(now())
-  changedBy     String   @default("user")
-
-  @@index([entityType, entityId])
-  @@index([changedAt])
-}
-
-model AppSettings {
-  id               String           @id @default("singleton")
-  snowballStrategy SnowballStrategy @default(SNOWBALL)
-  currency         String           @default("ZAR")
-  updatedAt        DateTime         @updatedAt
-}
-
-// ─── Property Data Services (Windeed / Lightstone) ───────────────────────────
-
-model PropertyDataConfig {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  windeedUsername      String?
-  windeedPasswordEnc   String?
-  windeedStatus        String   @default("UNVERIFIED") // ACTIVE | INVALID_CREDENTIALS | UNVERIFIED | DISABLED
-
-  lightstoneApiKeyEnc  String?
-  lightstoneStatus     String   @default("UNVERIFIED")
-
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-}
-
-// ─── Bank Account Aggregation (Phase 5) ─────────────────────────────────────
-// Consent-based tokens only — never a user's banking password (see §10).
-
-model BankConnection {
-  id                    String                        @id @default(cuid())
-  accountId             String                        @unique
-  account               Account                       @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  providerType          BankConnectionProviderType
-  providerName          String
-  consentStatus         BankConnectionConsentStatus   @default(ACTIVE)
-  consentGrantedAt      DateTime                      @default(now())
-  consentExpiresAt      DateTime?
-  accessTokenEncrypted  String
-  lastSyncedAt          DateTime?
-  syncFrequency         SyncFrequency                 @default(ON_DEMAND)
-  createdAt             DateTime                      @default(now())
-  updatedAt             DateTime                      @updatedAt
-}
-
-// ─── Money Flow Engine Models (v4 — §12) ────────────────────────────────────
-
-model MoneyFlow {
-  id                   String           @id @default(cuid())
-  parentFlowId         String?
-  parentFlow           MoneyFlow?       @relation("FlowChain", fields: [parentFlowId], references: [id])
-  childFlows           MoneyFlow[]      @relation("FlowChain")
-
-  originTransactionId String?
-
-  sourceType           FlowEndpointType
-  sourceRef            String?
-
-  destinationType      FlowEndpointType
-  destinationRef       String?
-
-  amount               Decimal
-  currentAmount        Decimal
-  flowType             FlowType
-  status               FlowStatus       @default(ACTIVE)
-  confidence           FlowConfidence   @default(CONFIRMED)
-
-  createdAt            DateTime         @default(now())
-
-  @@index([parentFlowId])
-  @@index([sourceRef])
-  @@index([destinationRef])
-  @@index([flowType])
-}
-
-// ─── Debt Payoff Position Tracking Models (v4 — §13) ──────────────────────────
-
-model DebtPayoffPlan {
-  id                 String               @id @default(cuid())
-  createdDate        DateTime             @default(now())
-  strategy           SnowballStrategy     @default(SNOWBALL)
-  isActive           Boolean              @default(true)
-  supersededByPlanId String?
-  supersededByPlan   DebtPayoffPlan?      @relation("PlanSupersession", fields: [supersededByPlanId], references: [id])
-  supersedesPlans    DebtPayoffPlan[]     @relation("PlanSupersession")
-
-  months             DebtPayoffPlanMonth[]
-  createdAt          DateTime             @default(now())
-}
-
-model DebtPayoffPlanMonth {
-  id               String         @id @default(cuid())
-  planId           String
-  plan             DebtPayoffPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  monthNumber      Int
-  calendarDate     DateTime
-  debtId           String
-  projectedBalance Decimal
-  projectedPayment Decimal
-
-  @@index([planId, monthNumber])
-  @@index([debtId])
-}
-
-// ─── Financial Health Score Model (v4 — §2.12) ───────────────────────────────
-
-model FinancialHealthScore {
-  id                   String     @id @default(cuid())
-  snapshotDate         DateTime   @default(now())
-  score                Int
-  tier                 HealthTier @default(ROOKIE)
-  contributingFactors  Json
-  badges               Json       // string[]
-  streakCount          Int        @default(0)
-  createdAt            DateTime   @default(now())
-}
-
-// ─── Transaction Rules Model (v4 — §11.2) ────────────────────────────────────
-
-model TransactionRule {
-  id                         String   @id @default(cuid())
-  matchType                  String   // MERCHANT_EXACT | MERCHANT_CONTAINS | DESCRIPTION_PATTERN
-  matchValue                 String
-  actionType                 String   // SET_CATEGORY | SET_ACCOUNT_LINK | MARK_TAX_DEDUCTIBLE | SUPPRESS_UNUSUAL_ALERT
-  actionValue                String
-  createdFromTransactionId   String?
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
-}
-
-// ─── RAG Document Passages Model (v4 — §11.6) ────────────────────────────────
-
-model DocumentChunk {
-  id                     String   @id @default(cuid())
-  documentId             String
-  chunkText              String
-  chunkIndex             Int
-  embeddingJson          Json     // Array of float numbers
-  embeddingModelVersion  String   @default("v1")
-  createdAt              DateTime @default(now())
-}
-

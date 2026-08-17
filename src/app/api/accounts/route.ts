@@ -49,3 +49,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const userId = await getEffectiveUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { id, openingBalance, name, institution, notes, isDebt } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Account ID is required" }, { status: 400 });
+    }
+
+    const updatedAccount = await prisma.account.update({
+      where: { id },
+      data: {
+        ...(openingBalance !== undefined && { openingBalance }),
+        ...(name && { name }),
+        ...(institution && { institution }),
+        ...(notes !== undefined && { notes }),
+        ...(isDebt !== undefined && { isDebt }),
+      },
+    });
+
+    return NextResponse.json(updatedAccount);
+  } catch (error: any) {
+    console.error("PUT /api/accounts error:", error);
+    return NextResponse.json({ error: error.message || "Failed to update account" }, { status: 500 });
+  }
+}

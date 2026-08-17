@@ -160,9 +160,12 @@ export default function LoginPage() {
   };
 
   const openSubscriptionModal = (planName: string, monthly: number, annual: number) => {
-    setSelectedPlan({ name: planName, priceMonthly: monthly, priceAnnual: annual });
-    setPaymentSuccess(false);
-    setIsCheckoutModalOpen(true);
+    setError("Please sign in or create an account to select a subscription tier.");
+    setMode("REGISTER");
+    const formEl = document.getElementById("auth-form-card");
+    if (formEl) {
+      formEl.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   const handleProcessPayment = async (e: React.FormEvent) => {
@@ -639,6 +642,58 @@ export default function LoginPage() {
           </div>
         </div>
       </section>
+
+      {/* Features Section */}
+      <section id="features" style={{ padding: "60px 24px", maxWidth: "1280px", margin: "0 auto", textAlign: "center" }}>
+        <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#f8fafc", marginBottom: "40px" }}>Core Features</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", textAlign: "left" }}>
+          <div style={{ background: "rgba(10,16,30,0.6)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h3 style={{ color: "#fbbf24", fontWeight: 700, marginBottom: "8px" }}>Dual-Track Debt Waterfall</h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 }}>Automatically allocate extra cash to debts to accelerate payoff, considering both snowball and avalanche strategies.</p>
+          </div>
+          <div style={{ background: "rgba(10,16,30,0.6)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h3 style={{ color: "#fbbf24", fontWeight: 700, marginBottom: "8px" }}>Money Flow & Reconciliation</h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 }}>Track every Rand with our "Money Journey Explorer". Understand exactly where your money comes from and goes.</p>
+          </div>
+          <div style={{ background: "rgba(10,16,30,0.6)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h3 style={{ color: "#fbbf24", fontWeight: 700, marginBottom: "8px" }}>Goal Planning</h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 }}>Set financial goals (emergency funds, holidays, home deposits) and track completion accurately against your budget.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Agents Section */}
+      <section id="ai-agents" style={{ padding: "60px 24px", background: "rgba(7, 11, 20, 0.6)", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
+        <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+          <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#f8fafc", marginBottom: "20px" }}>Cooperative AI Agents</h2>
+          <p style={{ color: "#94a3b8", fontSize: "16px", maxWidth: "700px", margin: "0 auto 40px auto" }}>Our platform runs on four cooperative AI agents that actively manage your finances and provide explainable recommendations, instead of acting as a passive calculator.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "24px", textAlign: "left" }}>
+            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+              <strong style={{ color: "#f8fafc" }}>Document Agent:</strong> Ingests bank statements and automatically categorizes line items.
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+              <strong style={{ color: "#f8fafc" }}>Budget Agent:</strong> Balances your recurring and one-off expenses dynamically.
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+              <strong style={{ color: "#f8fafc" }}>Debt Agent:</strong> Calculates optimal payoff paths based on your true margin.
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
+              <strong style={{ color: "#f8fafc" }}>Goals Agent:</strong> Allocates surplus cash to your wealth-building goals.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security Section */}
+      <section id="security" style={{ padding: "60px 24px", maxWidth: "1280px", margin: "0 auto", textAlign: "center" }}>
+        <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#f8fafc", marginBottom: "20px" }}>Bank-Grade Security</h2>
+        <p style={{ color: "#94a3b8", fontSize: "16px", maxWidth: "600px", margin: "0 auto" }}>
+          We utilize AES-256 encryption at rest, PostgreSQL tenant isolation, and a BYOK (Bring Your Own Key) model for LLM integrations to ensure your financial data is completely secure.
+        </p>
+      </section>
+
+      {/* Terms Section (dummy for the footer link) */}
+      <div id="terms" style={{ height: "1px" }}></div>
 
       {/* Pricing & Subscription Tiers Section */}
       <section id="pricing" style={{ padding: "80px 24px", background: "rgba(7, 11, 20, 0.6)", borderTop: "1px solid rgba(255, 255, 255, 0.08)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>

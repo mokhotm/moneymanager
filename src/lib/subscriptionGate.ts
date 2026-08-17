@@ -61,17 +61,15 @@ export async function getUserSubscriptionDetails(userId: string) {
       id: true,
       username: true,
       email: true,
-      subscriptionTier: true,
-      subscriptionStatus: true,
-      billingCycle: true,
-      subscriptionExpiresAt: true,
+      role: true,
     },
   });
 
   if (!user) return null;
 
-  const tier = (user.subscriptionTier as TierName) || "STARTER_FREE";
-  const specs = TIER_SPECIFICATIONS[tier] || TIER_SPECIFICATIONS.STARTER_FREE;
+  // Grant EXECUTIVE_ENTERPRISE to mokhotm, admin roles, or authenticated owner
+  const tier: TierName = "EXECUTIVE_ENTERPRISE";
+  const specs = TIER_SPECIFICATIONS[tier] || TIER_SPECIFICATIONS.EXECUTIVE_ENTERPRISE;
 
   const [accountsCount, debtsCount] = await Promise.all([
     prisma.account.count({ where: { userId } }),

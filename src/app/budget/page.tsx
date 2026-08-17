@@ -25,30 +25,38 @@ import {
 } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  FIXED_HOUSEHOLD_OBLIGATIONS: "Fixed Household Obligations",
-  DEBT_ACCELERATION_PLAN: "Debt Acceleration Plan",
+  FIXED_HOUSEHOLD_OBLIGATIONS: "Fixed Household Obligations & Subscriptions",
+  DEBT_ACCELERATION_PLAN: "Debt Acceleration Plan (Contractual Debts)",
+  GOAL_CONTRIBUTIONS: "Goal Contributions & Emergency Reserves",
   FAMILY_AND_DISCRETIONARY: "Family & Discretionary",
-  SAVINGS_GOALS: "Savings Goals",
   ONE_OFF_UNEXPECTED: "One-Off / Unexpected",
 };
 
 const CATEGORY_ICONS: Record<string, any> = {
   FIXED_HOUSEHOLD_OBLIGATIONS: Home,
   DEBT_ACCELERATION_PLAN: CreditCard,
-  FAMILY_AND_DISCRETIONARY: ShoppingCart,
+  GOAL_CONTRIBUTIONS: PiggyBank,
   SAVINGS_GOALS: PiggyBank,
+  FAMILY_AND_DISCRETIONARY: ShoppingCart,
   ONE_OFF_UNEXPECTED: Zap,
 };
 
 const CATEGORY_ACCENTS: Record<string, string> = {
   FIXED_HOUSEHOLD_OBLIGATIONS: "#3b82f6",
   DEBT_ACCELERATION_PLAN: "#f59e0b",
-  FAMILY_AND_DISCRETIONARY: "#8b5cf6",
+  GOAL_CONTRIBUTIONS: "#10b981",
   SAVINGS_GOALS: "#10b981",
+  FAMILY_AND_DISCRETIONARY: "#8b5cf6",
   ONE_OFF_UNEXPECTED: "#f43f5e",
 };
 
-const CATEGORIES = Object.keys(CATEGORY_LABELS);
+const CATEGORIES = [
+  "FIXED_HOUSEHOLD_OBLIGATIONS",
+  "DEBT_ACCELERATION_PLAN",
+  "GOAL_CONTRIBUTIONS",
+  "FAMILY_AND_DISCRETIONARY",
+  "ONE_OFF_UNEXPECTED",
+];
 
 interface LineItem {
   id: string;
@@ -57,6 +65,7 @@ interface LineItem {
   amount: string;
   confidence: string;
   note: string | null;
+  sourceRef: string | null;
   isComputed: boolean;
 }
 
@@ -90,6 +99,7 @@ export default function BudgetPage() {
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(currentMonthKey());
   const [monthResolved, setMonthResolved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<LineItem | null>(null);
   const [form, setForm] = useState({
@@ -160,22 +170,34 @@ export default function BudgetPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, amount: parseFloat(form.amount) || 0, month };
-    if (editItem) {
-      await fetch(`/api/budget?id=${editItem.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/budget", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    setSaving(true);
+    try {
+      const payload = {
+        id: editItem?.id,
+        ...form,
+        amount: parseFloat(form.amount) || 0,
+        month,
+      };
+      if (editItem) {
+        await fetch(`/api/budget?id=${editItem.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetch("/api/budget", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      setShowModal(false);
+      await loadData();
+    } catch (err) {
+      console.error("Failed to save budget item:", err);
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
-    loadData();
   };
 
   const handleDelete = async (id: string) => {
@@ -467,7 +489,7 @@ export default function BudgetPage() {
           </div>
         ) : (
           CATEGORIES.map((cat) => {
-            const catItems = items.filter((i) => i.category === cat);
+            const catItems = items.filter((i) => i.category === cat || (cat === "GOAL_CONTRIBUTIONS" && i.category === "SAVINGS_GOALS"));
             const catTotal = catItems.reduce((s, i) => s + Number(i.amount), 0);
             const percentOfIncome = totalIncome > 0 ? ((catTotal / totalIncome) * 100).toFixed(1) : "0.0";
             const accentColor = CATEGORY_ACCENTS[cat] ?? "#f59e0b";
@@ -495,10 +517,10 @@ export default function BudgetPage() {
                     </div>
                     <div>
                       <div style={{ fontSize: "15px", fontWeight: 700, color: "#f8fafc" }}>
-                        {CATEGORY_LABELS[cat]}
+                        {CATEGORY_LABELS[cat] ?? cat}
                       </div>
                       <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
-                        {percentOfIncome}% of total monthly take-home income
+                        {percentOfIncome}% of total monthly take-home income ({catItems.length} items)
                       </div>
                     </div>
                   </div>
@@ -556,8 +578,8 @@ export default function BudgetPage() {
                           transition: "all 0.2s ease",
                         }}
                       >
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ flex: 1, marginRight: "16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                             <span style={{ fontWeight: 700, color: "#f8fafc", fontSize: "14px" }}>{item.label}</span>
                             {item.isComputed && (
                               <span className="badge blue" style={{ fontSize: "10px" }}>
@@ -574,14 +596,31 @@ export default function BudgetPage() {
                                 confirmed
                               </span>
                             )}
+                            {item.sourceRef && (
+                              <span
+                                style={{
+                                  fontSize: "10px",
+                                  fontFamily: "var(--font-mono, monospace)",
+                                  color: "#64748b",
+                                  background: "rgba(255, 255, 255, 0.03)",
+                                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                                  padding: "1px 6px",
+                                  borderRadius: "4px",
+                                }}
+                              >
+                                {item.sourceRef}
+                              </span>
+                            )}
                           </div>
                           {item.note && (
-                            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "3px" }}>{item.note}</div>
+                            <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px", lineHeight: "1.4" }}>
+                              {item.note}
+                            </div>
                           )}
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                          <span style={{ fontSize: "15px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "#f8fafc" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexShrink: 0 }}>
+                          <span style={{ fontSize: "16px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "#f8fafc" }}>
                             {formatZAR(Number(item.amount))}
                           </span>
                           {!item.isComputed && (
@@ -711,8 +750,8 @@ export default function BudgetPage() {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editItem ? "Save Changes" : "Create Item"}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? "Saving..." : editItem ? "Save Changes" : "Create Item"}
                 </button>
               </div>
             </form>

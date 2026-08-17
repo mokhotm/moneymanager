@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getPayCycleBounds, BudgetCycleMode } from "@/lib/payrollCalendar";
+import { getPayCycleBounds, BudgetCycleMode, parseSafeDate } from "@/lib/payrollCalendar";
 
 // In-memory runtime cache for demonstration / user session cycle preference
 let runtimeCyclePreference: {
@@ -24,11 +24,11 @@ export async function GET(request: NextRequest) {
       orderBy: { uploadedAt: "desc" },
     });
 
-    let payDate = new Date("2026-07-15"); // Fallback SARS Pay Date
+    let payDate = new Date("2026-08-15"); // Fallback SARS Pay Date
     if (latestPayslip && latestPayslip.parsedData && (latestPayslip.parsedData as any).mainPayDate) {
-      payDate = new Date((latestPayslip.parsedData as any).mainPayDate);
+      payDate = parseSafeDate((latestPayslip.parsedData as any).mainPayDate);
     } else if (latestPayslip && latestPayslip.periodStart) {
-      payDate = new Date(latestPayslip.periodStart);
+      payDate = parseSafeDate(latestPayslip.periodStart);
       // Default to 15th if available
       payDate.setDate(15);
     }
@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
       orderBy: { uploadedAt: "desc" },
     });
 
-    let payDate = new Date("2026-07-15");
+    let payDate = new Date("2026-08-15");
     if (latestPayslip && latestPayslip.parsedData && (latestPayslip.parsedData as any).mainPayDate) {
-      payDate = new Date((latestPayslip.parsedData as any).mainPayDate);
+      payDate = parseSafeDate((latestPayslip.parsedData as any).mainPayDate);
     }
 
     const bounds = getPayCycleBounds(

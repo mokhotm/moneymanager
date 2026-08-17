@@ -5,7 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { currentMonthKey } from "@/lib/formatters";
-import { getPayCycleBounds } from "@/lib/payrollCalendar";
+import { getPayCycleBounds, parseSafeDate } from "@/lib/payrollCalendar";
 
 let _cachedCycleMonthKey: string | undefined;
 let _cachedCycleKeyExpiry = 0;
@@ -30,9 +30,12 @@ export async function getActiveCycleMonthKey(): Promise<string> {
       select: { parsedData: true, periodStart: true },
     });
 
-    let payDate = new Date("2026-07-15");
+    let payDate = new Date("2026-08-15");
     if (payslip?.parsedData && (payslip.parsedData as any).mainPayDate) {
-      payDate = new Date((payslip.parsedData as any).mainPayDate);
+      payDate = parseSafeDate((payslip.parsedData as any).mainPayDate);
+    } else if (payslip?.periodStart) {
+      payDate = parseSafeDate(payslip.periodStart);
+      payDate.setDate(15);
     }
 
     _cachedCycleMonthKey = getPayCycleBounds(payDate, "PAYSLIP_AUTO").cycleMonthKey;

@@ -117,6 +117,36 @@ export interface PayCycleBounds {
 }
 
 /**
+ * Parse date strings robustly, correctly handling South African DD.MM.YYYY, DD/MM/YYYY, ISO YYYY-MM-DD, and Date objects.
+ */
+export function parseSafeDate(input: Date | string | undefined | null): Date {
+  if (!input) return new Date();
+  if (input instanceof Date && !isNaN(input.getTime())) return input;
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    // DD.MM.YYYY or DD/MM/YYYY or DD-MM-YYYY
+    const dmyMatch = trimmed.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10);
+      const month = parseInt(dmyMatch[2], 10) - 1;
+      const year = parseInt(dmyMatch[3], 10);
+      return new Date(year, month, day);
+    }
+    // YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+    const ymdMatch = trimmed.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+    if (ymdMatch) {
+      const year = parseInt(ymdMatch[1], 10);
+      const month = parseInt(ymdMatch[2], 10) - 1;
+      const day = parseInt(ymdMatch[3], 10);
+      return new Date(year, month, day);
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
+/**
  * Calculates exact budget cycle bounds based on mode and pay date.
  */
 export function getPayCycleBounds(
@@ -125,11 +155,11 @@ export function getPayCycleBounds(
   customStartDate?: Date | string,
   customEndDate?: Date | string
 ): PayCycleBounds {
-  const targetDate = typeof payDateInput === "string" ? new Date(payDateInput) : new Date(payDateInput);
+  const targetDate = parseSafeDate(payDateInput);
 
   if (mode === "CUSTOM_RANGE" && customStartDate && customEndDate) {
-    const start = typeof customStartDate === "string" ? new Date(customStartDate) : new Date(customStartDate);
-    const end = typeof customEndDate === "string" ? new Date(customEndDate) : new Date(customEndDate);
+    const start = parseSafeDate(customStartDate);
+    const end = parseSafeDate(customEndDate);
     return {
       mode: "CUSTOM_RANGE",
       startDate: start,
@@ -137,7 +167,9 @@ export function getPayCycleBounds(
       payDate: targetDate,
       actualPayDate: targetDate,
       wasShifted: false,
-      formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,    };
+      formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
+      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+    };
   }
 
   if (mode === "CALENDAR_MONTH") {
@@ -150,7 +182,9 @@ export function getPayCycleBounds(
       payDate: targetDate,
       actualPayDate: targetDate,
       wasShifted: false,
-      formattedRange: `1 ${start.toLocaleDateString("en-ZA", { month: "short" })} – ${end.getDate()} ${end.toLocaleDateString("en-ZA", { month: "short", year: "numeric" })}`,      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,    };
+      formattedRange: `1 ${start.toLocaleDateString("en-ZA", { month: "short" })} – ${end.getDate()} ${end.toLocaleDateString("en-ZA", { month: "short", year: "numeric" })}`,
+      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+    };
   }
 
   // PAYSLIP_AUTO mode
@@ -173,5 +207,7 @@ export function getPayCycleBounds(
     actualPayDate,
     wasShifted,
     shiftReason,
-    formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,    cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,  };
+    formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
+    cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+  };
 }

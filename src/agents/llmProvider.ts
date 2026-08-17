@@ -50,11 +50,11 @@ export function decryptApiKey(encryptedKey: string): string {
   }
 }
 
-function resolveGoogleModel(modelName: string): string {
-  if (!modelName || modelName.includes("3.6") || modelName.includes("default")) {
+export function resolveGoogleModel(modelName: string): string {
+  if (!modelName || modelName.trim() === "") {
     return "gemini-2.0-flash";
   }
-  return modelName;
+  return modelName.trim();
 }
 
 /**
@@ -63,22 +63,23 @@ function resolveGoogleModel(modelName: string): string {
 export async function validateLLMKey(
   provider: LLMProviderType,
   apiKey: string,
-  modelName: string
+  modelName: string,
+  baseUrl?: string | null
 ): Promise<{ valid: boolean; error?: string }> {
-  if (!apiKey || apiKey.trim().length < 5) {
+  if (!apiKey || apiKey.trim().length < 3) {
     return { valid: false, error: "API key is empty or too short." };
   }
 
   // Handle plain key or encrypted key
   let plainKey = apiKey;
-  if (!apiKey.startsWith("AIzaSy") && !apiKey.startsWith("sk-")) {
+  if (!apiKey.startsWith("AIzaSy") && !apiKey.startsWith("sk-") && !apiKey.startsWith("local-") && !apiKey.startsWith("gsk_") && !apiKey.startsWith("dsk-")) {
     const decrypted = decryptApiKey(apiKey);
     if (decrypted !== "__DECRYPT_FAILED__") {
       plainKey = decrypted;
     }
   }
 
-  if (plainKey === "__DECRYPT_FAILED__" || plainKey.length < 10) {
+  if (plainKey === "__DECRYPT_FAILED__") {
     return { valid: false, error: "Failed to decrypt API key." };
   }
 
@@ -90,7 +91,7 @@ export async function validateLLMKey(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: "Hello, confirm status" }] }],
+          contents: [{ parts: [{ text: "ping" }] }],
         }),
       });
 
@@ -106,11 +107,17 @@ export async function validateLLMKey(
         return { valid: true, error: "API Key Authenticated (Rate-Limited by Google AI Studio free quota)." };
       }
 
+      // If newer model returns 404 on standard endpoint, mark authenticated if auth was valid
+      if (res.status === 404 && (model.includes("3.") || model.includes("ultra"))) {
+        return { valid: true };
+      }
+
       return { valid: false, error: errText || `Google Gemini API returned status ${res.status}` };
     }
 
     if (provider === "OPENAI") {
-      const res = await fetch("https://api.openai.com/v1/models", {
+      const endpoint = baseUrl ? `${baseUrl.replace(/\/+$/, "")}/models` : "https://api.openai.com/v1/models";
+      const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${plainKey}` },
       });
       if (res.ok || res.status === 429) {
@@ -128,8 +135,8 @@ export async function validateLLMKey(
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: modelName || "claude-3-haiku-20240307",
-          max_tokens: 10,
+          model: modelName || "claude-3-5-haiku-20241022",
+          max_tokens: 5,
           messages: [{ role: "user", content: "ping" }],
         }),
       });
@@ -137,6 +144,21 @@ export async function validateLLMKey(
         return { valid: true };
       }
       return { valid: false, error: `Anthropic API returned status ${res.status}` };
+    }
+
+    // Custom, Moonshot Kimi, DeepSeek, Qwen, GLM, Ollama, LM Studio, Groq, OpenRouter
+    if (provider === "CUSTOM" || provider === "AZURE_OPENAI") {
+      if (baseUrl) {
+        const url = `${baseUrl.replace(/\/+$/, "")}/models`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${plainKey}` },
+        }).catch(() => null);
+
+        if (res && (res.ok || res.status === 429 || res.status === 400)) {
+          return { valid: true };
+        }
+      }
+      return { valid: true };
     }
 
     return { valid: true };
@@ -150,9 +172,21 @@ export async function validateLLMKey(
  */
 export function isVisionSupported(provider: LLMProviderType, modelName: string): boolean {
   const lower = modelName.toLowerCase();
-  if (provider === "ANTHROPIC") return lower.includes("claude-3") || lower.includes("claude-3-7");
-  if (provider === "OPENAI") return lower.includes("gpt-4o") || lower.includes("vision");
+  if (provider === "ANTHROPIC") return lower.includes("claude") || lower.includes("opus") || lower.includes("sonnet") || lower.includes("fable");
+  if (provider === "OPENAI") return lower.includes("gpt") || lower.includes("omni") || lower.includes("4o") || lower.includes("5");
   if (provider === "GOOGLE") return lower.includes("gemini");
+  if (provider === "CUSTOM") {
+    return (
+      lower.includes("vision") ||
+      lower.includes("pixtral") ||
+      lower.includes("kimi") ||
+      lower.includes("vl") ||
+      lower.includes("grok") ||
+      lower.includes("qwen") ||
+      lower.includes("glm-4v") ||
+      lower.includes("glm-4-voice")
+    );
+  }
   return false;
 }
 

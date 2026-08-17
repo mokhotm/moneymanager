@@ -64,6 +64,8 @@ export function BankingTransactionsCard({
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [activeInstitution, setActiveInstitution] = useState("ALL");
+  const [activePayPeriod, setActivePayPeriod] = useState("2026-07");
+  const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Edit Modal State
@@ -81,10 +83,7 @@ export function BankingTransactionsCard({
 
   const fetchTransactions = () => {
     setLoading(true);
-    let url = `/api/transactions?category=${activeCategory}`;
-    if (searchQuery) {
-      url += `&query=${encodeURIComponent(searchQuery)}`;
-    }
+    const url = `/api/transactions?category=${activeCategory}&payPeriod=${activePayPeriod}&periodType=${periodType}`;
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
@@ -97,21 +96,55 @@ export function BankingTransactionsCard({
 
   useEffect(() => {
     fetchTransactions();
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, activePayPeriod, periodType]);
 
-  const filteredByBank = useMemo(() => {
-    if (activeInstitution === "ALL") return transactions;
-    return transactions.filter(
-      (t) => t.institution.toLowerCase().includes(activeInstitution.toLowerCase())
-    );
-  }, [transactions, activeInstitution]);
+  const filteredTransactions = useMemo(() => {
+    let list = transactions;
+
+    // Filter by Institution
+    if (activeInstitution !== "ALL") {
+      list = list.filter((t) =>
+        t.institution?.toLowerCase().includes(activeInstitution.toLowerCase())
+      );
+    }
+
+    // Live search filter across merchant, reference, account, category, notes, address, and amount
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((t) => {
+        const nameMatch = t.merchantName?.toLowerCase().includes(q);
+        const addrMatch = t.merchantAddress?.toLowerCase().includes(q);
+        const accMatch = t.accountName?.toLowerCase().includes(q);
+        const instMatch = t.institution?.toLowerCase().includes(q);
+        const catMatch = t.category?.toLowerCase().includes(q);
+        const flowMatch = t.flowType?.toLowerCase().includes(q);
+        const refMatch = t.referenceNumber?.toLowerCase().includes(q);
+        const amountMatch = String(Math.abs(t.amount)).includes(q);
+        const statusMatch = t.status?.toLowerCase().includes(q);
+
+        return (
+          nameMatch ||
+          addrMatch ||
+          accMatch ||
+          instMatch ||
+          catMatch ||
+          flowMatch ||
+          refMatch ||
+          amountMatch ||
+          statusMatch
+        );
+      });
+    }
+
+    return list;
+  }, [transactions, activeInstitution, searchQuery]);
 
   const displayedTransactions = useMemo(() => {
     if (limit && limit > 0) {
-      return filteredByBank.slice(0, limit);
+      return filteredTransactions.slice(0, limit);
     }
-    return filteredByBank;
-  }, [filteredByBank, limit]);
+    return filteredTransactions;
+  }, [filteredTransactions, limit]);
 
   const [extracting, setExtracting] = useState(false);
   const [extractedNotice, setExtractedNotice] = useState<string | null>(null);
@@ -384,6 +417,35 @@ export function BankingTransactionsCard({
                 <option value="Nedbank">Nedbank</option>
               </select>
 
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <select
+                  value={periodType}
+                  onChange={(e) => setPeriodType(e.target.value as any)}
+                  className="form-select"
+                  style={{ width: "auto", fontSize: "12px", padding: "6px 28px 6px 14px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)" }}
+                >
+                  <option value="SALARY">Salary Cycle</option>
+                  <option value="CALENDAR">Calendar Month</option>
+                </select>
+
+                <select
+                  value={activePayPeriod}
+                  onChange={(e) => setActivePayPeriod(e.target.value)}
+                  className="form-select"
+                  style={{ width: "auto", fontSize: "12px", padding: "6px 28px 6px 14px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)" }}
+                >
+                  <option value="ALL">All Time</option>
+                  <option value="2026-08">August 2026 {periodType === "SALARY" ? "(15 Aug - 14 Sep)" : "(1 Aug - 31 Aug)"}</option>
+                  <option value="2026-07">July 2026 {periodType === "SALARY" ? "(15 Jul - 14 Aug)" : "(1 Jul - 31 Jul)"}</option>
+                  <option value="2026-06">June 2026 {periodType === "SALARY" ? "(15 Jun - 14 Jul)" : "(1 Jun - 30 Jun)"}</option>
+                  <option value="2026-05">May 2026 {periodType === "SALARY" ? "(15 May - 14 Jun)" : "(1 May - 31 May)"}</option>
+                  <option value="2026-04">April 2026 {periodType === "SALARY" ? "(15 Apr - 14 May)" : "(1 Apr - 30 Apr)"}</option>
+                  <option value="2026-03">March 2026 {periodType === "SALARY" ? "(15 Mar - 14 Apr)" : "(1 Mar - 31 Mar)"}</option>
+                  <option value="2026-02">February 2026 {periodType === "SALARY" ? "(15 Feb - 14 Mar)" : "(1 Feb - 28 Feb)"}</option>
+                  <option value="2026-01">January 2026 {periodType === "SALARY" ? "(15 Jan - 14 Feb)" : "(1 Jan - 31 Jan)"}</option>
+                </select>
+              </div>
+
               <div style={{ position: "relative", width: "240px" }}>
                 <Search size={14} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                 <input
@@ -392,9 +454,30 @@ export function BankingTransactionsCard({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="form-input"
-                  style={{ paddingLeft: "36px", fontSize: "12px", padding: "6px 12px 6px 36px" }}
+                  style={{ paddingLeft: "34px", paddingRight: searchQuery ? "28px" : "12px", fontSize: "12px", padding: "6px 28px 6px 34px" }}
                   id="search-transactions-input"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "#94a3b8",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      padding: "2px 4px",
+                    }}
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -402,6 +485,28 @@ export function BankingTransactionsCard({
 
         {/* Transaction Feed Items List */}
         <div style={{ padding: "16px 20px" }}>
+          {searchQuery.trim() && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", fontSize: "12px", color: "#94a3b8" }}>
+              <span>
+                Found <strong style={{ color: "#f59e0b" }}>{displayedTransactions.length}</strong> transaction{displayedTransactions.length !== 1 ? "s" : ""} matching &ldquo;<span style={{ color: "#ffffff" }}>{searchQuery}</span>&rdquo;
+              </span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#f59e0b",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                }}
+              >
+                Clear filter
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div style={{ padding: "60px 0", textAlign: "center" }}>
               <div className="animate-pulse" style={{ fontSize: "13px", color: "#94a3b8", fontFamily: "var(--font-mono, monospace)" }}>
@@ -410,7 +515,21 @@ export function BankingTransactionsCard({
             </div>
           ) : displayedTransactions.length === 0 ? (
             <div style={{ padding: "60px 0", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
-              No banking transactions found for active criteria.
+              {searchQuery ? (
+                <div>
+                  <p>No banking transactions found matching &ldquo;<strong style={{ color: "#ffffff" }}>{searchQuery}</strong>&rdquo;.</p>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="apple-pill-btn mt-3"
+                    style={{ fontSize: "11px", padding: "5px 14px" }}
+                  >
+                    Clear Search
+                  </button>
+                </div>
+              ) : (
+                "No banking transactions found for active criteria."
+              )}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
