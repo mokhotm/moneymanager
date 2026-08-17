@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { formatZAR } from "@/lib/formatters";
 import {
   Landmark,
@@ -13,6 +13,13 @@ import {
   Zap,
   RotateCcw,
   Move,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  Target,
+  Layers,
+  Eye,
 } from "lucide-react";
 
 export interface FlowItem {
@@ -32,7 +39,10 @@ interface MoneyFlowNetworkCanvasProps {
   selectedFlowId: string | null;
   onSelectFlow: (id: string) => void;
   activeFilter: string;
-  zoomLevel: number;
+  zoomLevel?: number;
+  onZoomChange?: (zoom: number) => void;
+  isExpandedExternal?: boolean;
+  onToggleExpandExternal?: () => void;
 }
 
 const FLOW_COLORS: Record<string, string> = {
@@ -69,15 +79,37 @@ interface GraphEdge {
   y2: number;
 }
 
-function formatDisplayLabel(name: string, type?: string): string {
-  if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Account";
-  if (name.includes("nsqfa0gcdp7") || name === "cash-wallet-primary" || type === "CASH_WALLET") {
+function formatDisplayLabel(name: string, type?: string, flowType?: string): string {
+  if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Prestige Current Account (XXXX4469)";
+  
+  const lower = name.toLowerCase();
+
+  // Cash Wallet
+  if (type === "CASH_WALLET" || lower.includes("cash-wallet") || lower.includes("nsqfa0gcdp7") || lower.includes("physical cash")) {
     return "Physical Cash Wallet";
   }
-  if (/^c[a-z0-9]{20,}$/i.test(name) || name.startsWith("cms")) {
-    if (type === "INFLOW" || name.includes("salary")) return "SARS Net Salary Inflow";
+
+  // SARS / Salary Inflow
+  if (type === "INFLOW" || flowType === "INCOME" || lower.includes("salary") || lower.includes("sars") || lower.includes("inflow")) {
+    return "SARS Net Salary Inflow";
+  }
+
+  // Credit Card
+  if (lower.includes("titanium") || lower.includes("credit card") || lower.includes("3529")) {
+    return "Titanium Prestige Credit Card (XXXX3529)";
+  }
+
+  // Current / Cheque Account (Consolidate all variations into one single clean node)
+  if (
+    lower.includes("prestige current") ||
+    lower.includes("4469") ||
+    lower.includes("cheque") ||
+    /^c[a-z0-9]{20,}$/i.test(name) ||
+    name.startsWith("cms")
+  ) {
     return "Prestige Current Account (XXXX4469)";
   }
+
   return name;
 }
 
@@ -86,10 +118,18 @@ export function MoneyFlowNetworkCanvas({
   selectedFlowId,
   onSelectFlow,
   activeFilter,
-  zoomLevel,
+  zoomLevel: externalZoom,
+  onZoomChange,
+  isExpandedExternal,
+  onToggleExpandExternal,
 }: MoneyFlowNetworkCanvasProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
+
+  // Local Expand State fallback
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const isExpanded = isExpandedExternal !== undefined ? isExpandedExternal : localExpanded;
+  const toggleExpand = onToggleExpandExternal || (() => setLocalExpanded((e) => !e));
 
   // Dragging state for custom node positions & canvas viewport panning
   const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -101,8 +141,9 @@ export function MoneyFlowNetworkCanvas({
     nodeY: 0,
   });
 
-  // Canvas Viewport Panning State
+  // Canvas Viewport Panning & Scale State
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [internalScale, setInternalScale] = useState(1.0);
   const [isPanningCanvas, setIsPanningCanvas] = useState(false);
   const canvasPanStart = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number }>({
     mouseX: 0,
@@ -112,6 +153,7 @@ export function MoneyFlowNetworkCanvas({
   });
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const effectiveZoom = externalZoom !== undefined ? externalZoom * internalScale : internalScale;
 
   // Filter flows
   const filteredFlows = useMemo(() => {
@@ -126,44 +168,63 @@ export function MoneyFlowNetworkCanvas({
     });
   }, [flows, activeFilter]);
 
-  // Construct DAG layout with custom position overrides and uniform node dimensions
+  // Construct DAG layout with consolidated nodes and accurate pay-cycle amounts
   const { nodes, edges, width, height } = useMemo(() => {
-    const nodeMap = new Map<string, { label: string; type: string; layer: number; amount: number }>();
+    const nodeMap = new Map<
+      string,
+      { label: string; type: string; layer: number; amount: number; inAmount: number; outAmount: number }
+    >();
 
     filteredFlows.forEach((f) => {
-      const srcName = formatDisplayLabel(f.sourceRef || f.sourceType || "External Source", f.sourceType);
-      const dstName = formatDisplayLabel(f.destinationRef || f.destinationType || "External Endpoint", f.destinationType);
+      const srcName = formatDisplayLabel(f.sourceRef || f.sourceType || "External Source", f.sourceType, f.flowType);
+      const dstName = formatDisplayLabel(f.destinationRef || f.destinationType || "External Endpoint", f.destinationType, f.flowType);
 
       if (!nodeMap.has(srcName)) {
         let layer = 1;
         let type = "ACCOUNT";
-        if (f.flowType === "INCOME" || f.sourceType === "EXTERNAL") {
+        if (f.flowType === "INCOME" || f.sourceType === "EXTERNAL" || srcName === "SARS Net Salary Inflow") {
           layer = 0;
           type = "INFLOW";
         }
-        nodeMap.set(srcName, { label: srcName, type, layer, amount: 0 });
+        nodeMap.set(srcName, { label: srcName, type, layer, amount: 0, inAmount: 0, outAmount: 0 });
       }
 
       if (!nodeMap.has(dstName)) {
         let layer = 3;
         let type = "TERMINAL";
-        if (f.destinationType === "ACCOUNT" || f.destinationType === "CASH_WALLET") {
+        if (
+          dstName === "Prestige Current Account (XXXX4469)" ||
+          dstName === "Physical Cash Wallet" ||
+          dstName.includes("Credit Card")
+        ) {
           layer = 1;
           type = "ACCOUNT";
         } else if (f.flowType === "TRANSFER" || f.flowType === "INVESTMENT") {
           layer = 2;
           type = "ALLOCATION";
         }
-        nodeMap.set(dstName, { label: dstName, type, layer, amount: 0 });
+        nodeMap.set(dstName, { label: dstName, type, layer, amount: 0, inAmount: 0, outAmount: 0 });
       }
 
       const srcNode = nodeMap.get(srcName)!;
       const dstNode = nodeMap.get(dstName)!;
-      srcNode.amount += f.amount;
-      dstNode.amount += f.amount;
+      srcNode.outAmount += f.amount;
+      dstNode.inAmount += f.amount;
     });
 
-    // Group nodes into 4 layers
+    // Determine clean, unambiguous amount for each node
+    nodeMap.forEach((n) => {
+      if (n.layer === 0) {
+        n.amount = n.outAmount; // Inflows generated
+      } else if (n.layer === 3 || n.layer === 2) {
+        n.amount = n.inAmount; // Spend/allocation received
+      } else {
+        // Core account: show total inflow deposited (e.g. R71k salary) or total routed through it
+        n.amount = n.inAmount > 0 ? n.inAmount : n.outAmount;
+      }
+    });
+
+    // Group nodes into 4 distinct DAG layers
     const layerNodes: Array<Array<{ label: string; type: string; layer: number; amount: number; id: string }>> = [
       [],
       [],
@@ -177,13 +238,13 @@ export function MoneyFlowNetworkCanvas({
     });
 
     const canvasWidth = 1200;
-    const paddingX = 150;
+    const paddingX = 140;
     const availableWidth = canvasWidth - paddingX * 2;
     const layerSpacingX = availableWidth / 3;
 
     const maxInLayer = Math.max(...layerNodes.map((l) => l.length), 1);
-    const nodeHeightStep = 72;
-    const canvasHeight = Math.max(540, maxInLayer * nodeHeightStep + 120);
+    const nodeHeightStep = 68;
+    const canvasHeight = Math.max(540, maxInLayer * nodeHeightStep + 100);
 
     const calculatedNodes: GraphNode[] = [];
 
@@ -205,8 +266,8 @@ export function MoneyFlowNetworkCanvas({
         else if (lbl.includes("cash") || lbl.includes("wallet")) iconName = "wallet";
         else if (lbl.includes("card") || lbl.includes("credit") || lbl.includes("loan")) iconName = "credit-card";
         else if (lbl.includes("home") || lbl.includes("bond") || lbl.includes("mortgage")) iconName = "building";
-        else if (lbl.includes("spending") || lbl.includes("groceries") || lbl.includes("fees")) iconName = "receipt";
-        else if (lbl.includes("savings") || lbl.includes("etf") || lbl.includes("invest")) iconName = "sparkles";
+        else if (lbl.includes("spending") || lbl.includes("groceries") || lbl.includes("fees") || lbl.includes("wage")) iconName = "receipt";
+        else if (lbl.includes("savings") || lbl.includes("etf") || lbl.includes("invest") || lbl.includes("trust")) iconName = "sparkles";
 
         calculatedNodes.push({
           id: n.id,
@@ -226,8 +287,8 @@ export function MoneyFlowNetworkCanvas({
 
     const calculatedEdges: GraphEdge[] = [];
     filteredFlows.forEach((f) => {
-      const srcName = f.sourceRef || f.sourceType || "External Source";
-      const dstName = f.destinationRef || f.destinationType || "External Endpoint";
+      const srcName = formatDisplayLabel(f.sourceRef || f.sourceType || "External Source", f.sourceType, f.flowType);
+      const dstName = formatDisplayLabel(f.destinationRef || f.destinationType || "External Endpoint", f.destinationType, f.flowType);
 
       const srcNode = nodePosMap.get(srcName);
       const dstNode = nodePosMap.get(dstName);
@@ -240,9 +301,9 @@ export function MoneyFlowNetworkCanvas({
           targetNodeId: dstNode.id,
           color: FLOW_COLORS[f.flowType] || "#64748b",
           amount: f.amount,
-          x1: srcNode.x + 105, // Exactly right-center edge of 210px capsule
+          x1: srcNode.x + 105, // Right edge of 210px capsule
           y1: srcNode.y,
-          x2: dstNode.x - 105, // Exactly left-center edge of 210px capsule
+          x2: dstNode.x - 105, // Left edge of 210px capsule
           y2: dstNode.y,
         });
       }
@@ -256,10 +317,53 @@ export function MoneyFlowNetworkCanvas({
     };
   }, [filteredFlows, customPositions]);
 
+  // Auto-Fit Function: Automatically scales and centers ALL nodes into the viewport
+  const fitToView = useCallback(() => {
+    if (!canvasRef.current || nodes.length === 0) return;
+    const containerRect = canvasRef.current.getBoundingClientRect();
+    const containerW = containerRect.width || 1100;
+    const containerH = isExpanded ? Math.max(760, height + 40) : (containerRect.height || 600);
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    nodes.forEach((n) => {
+      minX = Math.min(minX, n.x - 110);
+      maxX = Math.max(maxX, n.x + 110);
+      minY = Math.min(minY, n.y - 32);
+      maxY = Math.max(maxY, n.y + 32);
+    });
+
+    const graphW = Math.max(maxX - minX + 60, 400);
+    const graphH = Math.max(maxY - minY + 60, 300);
+
+    const scaleX = (containerW - 60) / graphW;
+    const scaleY = (containerH - 60) / graphH;
+    const optimalScale = Math.min(1.0, Math.max(0.48, Math.min(scaleX, scaleY)));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    const panX = containerW / 2 - centerX * optimalScale;
+    const panY = containerH / 2 - centerY * optimalScale;
+
+    setPan({ x: panX, y: panY });
+    setInternalScale(optimalScale);
+  }, [nodes, height, isExpanded]);
+
+  // Trigger auto-fit whenever nodes, filter, or expanded state changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitToView();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [activeFilter, isExpanded, flows.length]);
+
   // Canvas Mouse Down: Start Canvas Panning when clicking background
   const handleCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // If user clicked directly on canvas background (not on a node or interactive button)
       if (draggingNodeId) return;
       setIsPanningCanvas(true);
       canvasPanStart.current = {
@@ -287,8 +391,8 @@ export function MoneyFlowNetworkCanvas({
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (draggingNodeId) {
-        const deltaX = (e.clientX - dragStartPos.current.mouseX) / zoomLevel;
-        const deltaY = (e.clientY - dragStartPos.current.mouseY) / zoomLevel;
+        const deltaX = (e.clientX - dragStartPos.current.mouseX) / effectiveZoom;
+        const deltaY = (e.clientY - dragStartPos.current.mouseY) / effectiveZoom;
 
         const newX = dragStartPos.current.nodeX + deltaX;
         const newY = dragStartPos.current.nodeY + deltaY;
@@ -307,7 +411,7 @@ export function MoneyFlowNetworkCanvas({
         });
       }
     },
-    [draggingNodeId, isPanningCanvas, zoomLevel]
+    [draggingNodeId, isPanningCanvas, effectiveZoom]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -315,10 +419,17 @@ export function MoneyFlowNetworkCanvas({
     setIsPanningCanvas(false);
   }, []);
 
-  const resetView = useCallback(() => {
-    setPan({ x: 0, y: 0 });
-    setCustomPositions({});
+  // Mouse wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+    setInternalScale((prev) => Math.min(1.8, Math.max(0.4, prev * zoomFactor)));
   }, []);
+
+  const resetView = useCallback(() => {
+    setCustomPositions({});
+    fitToView();
+  }, [fitToView]);
 
   const activeFlow = useMemo(() => {
     if (!selectedFlowId) return null;
@@ -328,12 +439,15 @@ export function MoneyFlowNetworkCanvas({
   const activeNodesSet = useMemo(() => {
     const set = new Set<string>();
     if (!activeFlow) return set;
-    const srcName = activeFlow.sourceRef || activeFlow.sourceType;
-    const dstName = activeFlow.destinationRef || activeFlow.destinationType;
+    const srcName = formatDisplayLabel(activeFlow.sourceRef || activeFlow.sourceType, activeFlow.sourceType, activeFlow.flowType);
+    const dstName = formatDisplayLabel(activeFlow.destinationRef || activeFlow.destinationType, activeFlow.destinationType, activeFlow.flowType);
     if (srcName) set.add(srcName);
     if (dstName) set.add(dstName);
     return set;
   }, [activeFlow]);
+
+  // Determine dynamic container height
+  const containerHeight = isExpanded ? Math.max(760, height + 40) : "600px";
 
   return (
     <div
@@ -342,29 +456,159 @@ export function MoneyFlowNetworkCanvas({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
       style={{
         position: "relative",
         width: "100%",
-        height: "640px",
+        height: typeof containerHeight === "number" ? `${containerHeight}px` : containerHeight,
         overflow: "hidden",
-        borderRadius: "20px",
-        border: "1px solid var(--border)",
-        background: "radial-gradient(ellipse at 50% 20%, rgba(17, 24, 39, 0.98) 0%, rgba(7, 11, 20, 0.98) 100%)",
-        padding: "16px",
+        borderBottomLeftRadius: "24px",
+        borderBottomRightRadius: "24px",
+        border: "none",
+        background: "radial-gradient(ellipse at 50% 25%, rgba(17, 24, 39, 0.98) 0%, rgba(7, 11, 20, 0.99) 100%)",
+        padding: 0,
+        margin: 0,
+        isolation: "isolate",
+        WebkitMaskImage: "-webkit-radial-gradient(white, black)",
         cursor: draggingNodeId || isPanningCanvas ? "grabbing" : "grab",
-        boxShadow: "var(--shadow-card)",
         userSelect: "none",
+        transition: "height 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
+      {/* Floating Canvas Control Overlay (Top Right) */}
+      <div
+        style={{
+          position: "absolute",
+          top: "16px",
+          right: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          zIndex: 60,
+          background: "rgba(10, 16, 30, 0.88)",
+          padding: "6px 12px",
+          borderRadius: "99px",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          backdropFilter: "blur(16px)",
+          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={fitToView}
+          style={{
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "99px",
+            padding: "4px 10px",
+            color: "#38bdf8",
+            fontSize: "11px",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+          }}
+          title="Auto-Fit all neural network nodes into view"
+        >
+          <Target size={13} />
+          <span>Fit View</span>
+        </button>
+
+        <button
+          onClick={toggleExpand}
+          style={{
+            background: isExpanded ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.08)",
+            border: isExpanded ? "1px solid rgba(245, 158, 11, 0.5)" : "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "99px",
+            padding: "4px 10px",
+            color: isExpanded ? "#fbbf24" : "#e2e8f0",
+            fontSize: "11px",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+          }}
+          title={isExpanded ? "Collapse Canvas View" : "Expand Canvas to full height"}
+        >
+          {isExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          <span>{isExpanded ? "Collapse View" : "Expand View"}</span>
+        </button>
+
+        <div style={{ width: "1px", height: "14px", background: "rgba(255,255,255,0.15)" }} />
+
+        <button
+          onClick={() => setInternalScale((s) => Math.max(0.4, s - 0.12))}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#94a3b8",
+            cursor: "pointer",
+            padding: "2px",
+            display: "flex",
+            alignItems: "center",
+          }}
+          title="Zoom Out"
+        >
+          <ZoomOut size={14} />
+        </button>
+
+        <span
+          style={{
+            fontSize: "11px",
+            fontFamily: "var(--font-mono, monospace)",
+            color: "#cbd5e1",
+            minWidth: "36px",
+            textAlign: "center",
+            fontWeight: 700,
+          }}
+        >
+          {Math.round(effectiveZoom * 100)}%
+        </span>
+
+        <button
+          onClick={() => setInternalScale((s) => Math.min(1.8, s + 0.12))}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#94a3b8",
+            cursor: "pointer",
+            padding: "2px",
+            display: "flex",
+            alignItems: "center",
+          }}
+          title="Zoom In"
+        >
+          <ZoomIn size={14} />
+        </button>
+
+        <button
+          onClick={resetView}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#94a3b8",
+            cursor: "pointer",
+            padding: "2px",
+            display: "flex",
+            alignItems: "center",
+          }}
+          title="Reset View & Node Drags"
+        >
+          <RotateCcw size={13} />
+        </button>
+      </div>
+
       {/* Pan & Zoom Transform Layer */}
       <div
         style={{
           position: "relative",
           width: `${width}px`,
           height: `${height}px`,
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`,
-          transformOrigin: "top left",
-          transition: draggingNodeId || isPanningCanvas ? "none" : "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${effectiveZoom})`,
+          transformOrigin: "0 0",
+          transition: draggingNodeId || isPanningCanvas ? "none" : "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
         <svg
@@ -375,6 +619,10 @@ export function MoneyFlowNetworkCanvas({
           <defs>
             <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="glow-flow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
@@ -417,7 +665,7 @@ export function MoneyFlowNetworkCanvas({
                 />
 
                 {(isSelected || isHovered || opacity > 0.5) && (
-                  <circle r={isSelected ? 4 : 3} fill={edge.color}>
+                  <circle r={isSelected ? 4 : 3} fill={edge.color} filter="url(#glow-flow)">
                     <animateMotion
                       path={pathD}
                       dur={`${Math.max(2, 6 - Math.log10(edge.amount))}s`}
@@ -466,8 +714,8 @@ export function MoneyFlowNetworkCanvas({
               onClick={() => {
                 const matchingFlow = flows.find(
                   (f) =>
-                    (f.sourceRef || f.sourceType) === node.id ||
-                    (f.destinationRef || f.destinationType) === node.id
+                    formatDisplayLabel(f.sourceRef || f.sourceType, f.sourceType, f.flowType) === node.id ||
+                    formatDisplayLabel(f.destinationRef || f.destinationType, f.destinationType, f.flowType) === node.id
                 );
                 if (matchingFlow) onSelectFlow(matchingFlow.id);
               }}
@@ -564,7 +812,7 @@ export function MoneyFlowNetworkCanvas({
                 >
                   {node.label}
                 </div>
-                <div style={{ fontSize: "12px", fontWeight: 800, color: textColor, fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: "12px", fontWeight: 800, color: textColor, fontFamily: "var(--font-mono, monospace)" }}>
                   {formatZAR(node.amount)}
                 </div>
               </div>
@@ -573,9 +821,29 @@ export function MoneyFlowNetworkCanvas({
         })}
       </div>
 
-      {/* Canvas Layer Markers & Reset Control */}
-      <div style={{ marginTop: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: "12px", fontSize: "12px", color: "var(--text-muted)", flexWrap: "wrap", gap: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+      {/* Floating Bottom Canvas Legend & Instructions */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "16px",
+          left: "20px",
+          right: "20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "11px",
+          color: "#94a3b8",
+          flexWrap: "wrap",
+          gap: "12px",
+          background: "rgba(10, 16, 30, 0.88)",
+          padding: "8px 16px",
+          borderRadius: "14px",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          backdropFilter: "blur(12px)",
+          pointerEvents: "none",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "#4ade80", fontWeight: 600 }}>
             ● Layer 1: Inflows
           </span>
@@ -590,30 +858,9 @@ export function MoneyFlowNetworkCanvas({
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto" }}>
-          {(pan.x !== 0 || pan.y !== 0 || Object.keys(customPositions).length > 0) && (
-            <button
-              onClick={resetView}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "4px 12px",
-                borderRadius: "99px",
-                background: "rgba(245, 158, 11, 0.15)",
-                border: "1px solid rgba(245, 158, 11, 0.4)",
-                color: "#fbbf24",
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: 600,
-              }}
-            >
-              <RotateCcw size={13} /> Reset View &amp; Positions
-            </button>
-          )}
-          <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-muted)" }}>
-            <Move size={14} style={{ color: "var(--gold)" }} /> Click &amp; drag canvas to pan • Drag nodes 360° anywhere
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
+          <Move size={13} style={{ color: "#f59e0b" }} />
+          <span>Click &amp; drag canvas to pan • Drag nodes to customize • Scroll to zoom</span>
         </div>
       </div>
     </div>

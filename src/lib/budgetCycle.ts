@@ -30,15 +30,16 @@ export async function getActiveCycleMonthKey(): Promise<string> {
       select: { parsedData: true, periodStart: true },
     });
 
-    let payDate = new Date("2026-08-15");
-    if (payslip?.parsedData && (payslip.parsedData as any).mainPayDate) {
-      payDate = parseSafeDate((payslip.parsedData as any).mainPayDate);
-    } else if (payslip?.periodStart) {
-      payDate = parseSafeDate(payslip.periodStart);
-      payDate.setDate(15);
+    let targetYear = 2026;
+    let targetMonth = 8;
+    if (payslip?.periodStart) {
+      const d = parseSafeDate(payslip.periodStart);
+      targetYear = d.getUTCFullYear();
+      targetMonth = d.getUTCMonth() + 1;
     }
 
-    _cachedCycleMonthKey = getPayCycleBounds(payDate, "PAYSLIP_AUTO").cycleMonthKey;
+    const basePayDate = new Date(Date.UTC(targetYear, targetMonth - 1, 15));
+    _cachedCycleMonthKey = getPayCycleBounds(basePayDate, "PAYSLIP_AUTO").cycleMonthKey;
     _cachedCycleKeyExpiry = now + CYCLE_KEY_CACHE_TTL_MS;
     return _cachedCycleMonthKey;
   } catch {

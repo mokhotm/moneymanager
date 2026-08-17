@@ -18,22 +18,24 @@ export async function GET(request: NextRequest) {
     const startParam = searchParams.get("startDate") || runtimeCyclePreference.customStartDate;
     const endParam = searchParams.get("endDate") || runtimeCyclePreference.customEndDate;
 
-    // Fetch latest parsed payslip to get main pay date
+    // Fetch latest parsed payslip
     const latestPayslip = await prisma.document.findFirst({
       where: { documentType: "PAYSLIP" },
       orderBy: { uploadedAt: "desc" },
     });
 
-    let payDate = new Date("2026-08-15"); // Fallback SARS Pay Date
-    if (latestPayslip && latestPayslip.parsedData && (latestPayslip.parsedData as any).mainPayDate) {
-      payDate = parseSafeDate((latestPayslip.parsedData as any).mainPayDate);
-    } else if (latestPayslip && latestPayslip.periodStart) {
-      payDate = parseSafeDate(latestPayslip.periodStart);
-      // Default to 15th if available
-      payDate.setDate(15);
+    // Derive the target pay month (statutory 15th base pay date in South Africa)
+    let targetYear = 2026;
+    let targetMonth = 8;
+
+    if (latestPayslip?.periodStart) {
+      const d = parseSafeDate(latestPayslip.periodStart);
+      targetYear = d.getUTCFullYear();
+      targetMonth = d.getUTCMonth() + 1;
     }
 
-    const bounds = getPayCycleBounds(payDate, modeParam, startParam, endParam);
+    const basePayDate = new Date(Date.UTC(targetYear, targetMonth - 1, 15));
+    const bounds = getPayCycleBounds(basePayDate, modeParam, startParam, endParam);
 
     return NextResponse.json({
       success: true,
@@ -62,13 +64,17 @@ export async function POST(request: NextRequest) {
       orderBy: { uploadedAt: "desc" },
     });
 
-    let payDate = new Date("2026-08-15");
-    if (latestPayslip && latestPayslip.parsedData && (latestPayslip.parsedData as any).mainPayDate) {
-      payDate = parseSafeDate((latestPayslip.parsedData as any).mainPayDate);
+    let targetYear = 2026;
+    let targetMonth = 8;
+    if (latestPayslip?.periodStart) {
+      const d = parseSafeDate(latestPayslip.periodStart);
+      targetYear = d.getUTCFullYear();
+      targetMonth = d.getUTCMonth() + 1;
     }
 
+    const basePayDate = new Date(Date.UTC(targetYear, targetMonth - 1, 15));
     const bounds = getPayCycleBounds(
-      payDate,
+      basePayDate,
       runtimeCyclePreference.mode,
       runtimeCyclePreference.customStartDate,
       runtimeCyclePreference.customEndDate

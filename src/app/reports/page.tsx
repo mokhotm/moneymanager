@@ -233,13 +233,28 @@ export default function ReportsPage() {
               }}
             >
               <option value="2026-08" style={{ background: "#0d1424", color: "#fff" }}>
-                August 2026 Pay Cycle (12 Aug – 11 Sep)
+                August 2026 Pay Cycle (14 Aug – 14 Sep)
               </option>
-              <option value="2026-09" style={{ background: "#0d1424", color: "#fff" }}>
-                September 2026 Pay Cycle (12 Sep – 11 Oct)
+              <option value="2026-07" style={{ background: "#0d1424", color: "#fff" }}>
+                July 2026 Pay Cycle (15 Jul – 13 Aug)
               </option>
-              <option value="2026-12" style={{ background: "#0d1424", color: "#fff" }}>
-                December 2026 Pay Cycle (12 Dec – 11 Jan)
+              <option value="2026-06" style={{ background: "#0d1424", color: "#fff" }}>
+                June 2026 Pay Cycle (15 Jun – 14 Jul)
+              </option>
+              <option value="2026-05" style={{ background: "#0d1424", color: "#fff" }}>
+                May 2026 Pay Cycle (15 May – 14 Jun)
+              </option>
+              <option value="2026-04" style={{ background: "#0d1424", color: "#fff" }}>
+                April 2026 Pay Cycle (15 Apr – 14 May)
+              </option>
+              <option value="2026-03" style={{ background: "#0d1424", color: "#fff" }}>
+                March 2026 Pay Cycle (16 Mar – 14 Apr)
+              </option>
+              <option value="2026-02" style={{ background: "#0d1424", color: "#fff" }}>
+                February 2026 Pay Cycle (16 Feb – 15 Mar)
+              </option>
+              <option value="2026-01" style={{ background: "#0d1424", color: "#fff" }}>
+                January 2026 Pay Cycle (15 Jan – 15 Feb)
               </option>
             </select>
           </div>
@@ -439,7 +454,7 @@ export default function ReportsPage() {
             {formatZAR(summary.totalIncome)}
           </div>
           <div style={{ fontSize: "12px", color: "#10b981", marginTop: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <CheckCircle2 size={13} /> SARS Net Payslip Confirmed (Aug 2026)
+            <CheckCircle2 size={13} /> {summary.salarySourceLabel || "SARS Net Payslip Confirmed"}
           </div>
         </div>
 
@@ -476,8 +491,8 @@ export default function ReportsPage() {
             {formatZAR(summary.totalActualOutflows)}
           </div>
           <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
-            <span>Debts: {formatZAR(42794.29)}</span>
-            <span>Living: {formatZAR(21548.81)}</span>
+            <span>Debts: {formatZAR(summary.debtsOutflow || 42794.29)}</span>
+            <span>Living: {formatZAR(summary.livingOutflow || 21548.81)}</span>
           </div>
         </div>
 
@@ -514,7 +529,7 @@ export default function ReportsPage() {
             +{formatZAR(summary.netSurplus)}
           </div>
           <div style={{ fontSize: "12px", color: "#60a5fa", marginTop: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <Zap size={13} /> 100% Directed to Car Repair Sinking Fund
+            <Zap size={13} /> {summary.netSurplus > 0 ? "100% Directed to Surplus & Sinking Funds" : "Balanced Operating Cash"}
           </div>
         </div>
 
@@ -1032,7 +1047,7 @@ export default function ReportsPage() {
                   30-Day Pay Cycle Cash Runway & Burn Rate
                 </h2>
                 <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px", margin: 0 }}>
-                  Weekly spend burn rate across your pay cycle (`12 Aug – 11 Sep`) ensuring positive balances before payday.
+                  Weekly spend burn rate across your pay cycle ({data?.cycleBounds?.formattedRange ?? "14 Aug – 14 Sep"}) ensuring positive balances before payday.
                 </p>
               </div>
 

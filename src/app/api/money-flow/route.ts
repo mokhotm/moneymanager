@@ -6,6 +6,7 @@ import {
   buildMoneyLineage,
   MoneyFlowItem,
 } from "@/services/moneyFlowService";
+import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,34 +93,26 @@ export async function GET(request: NextRequest) {
 
     let filteredFlows = formattedFlows;
     if (payPeriod && payPeriod !== "ALL") {
-      const year = parseInt(payPeriod.split("-")[0]);
-      const month = parseInt(payPeriod.split("-")[1]);
-      
       let startDate: Date;
       let endDate: Date;
 
       if (periodType === "CALENDAR") {
-        startDate = new Date(year, month - 1, 1);
-        endDate = new Date(year, month, 0, 23, 59, 59);
+        const [yearStr, monthStr] = payPeriod.split("-");
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+        endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
       } else {
-        startDate = new Date(year, month - 1, 15);
-        let nextMonth = month;
-        let nextYear = year;
-        if (nextMonth === 12) {
-           nextMonth = 0;
-           nextYear++;
-        }
-        endDate = new Date(nextYear, nextMonth, 14, 23, 59, 59);
+        // South African statutory payroll adjustment (Friday 14th if Sat 15th, Mon 16th if Sun 15th, preceding if holiday)
+        const cycleBounds = resolveSalaryCycleRange(payPeriod);
+        startDate = cycleBounds.startDate;
+        endDate = cycleBounds.endDate;
       }
 
-      const filtered = filteredFlows.filter((t) => {
-         const d = new Date(t.createdAt);
-         return d >= startDate && d <= endDate;
+      filteredFlows = formattedFlows.filter((t) => {
+        const d = new Date(t.createdAt);
+        return d >= startDate && d <= endDate;
       });
-
-      if (filtered.length > 0) {
-        filteredFlows = filtered;
-      }
     }
 
     // Compute summary metrics from real flows

@@ -33,6 +33,8 @@ import {
   Wallet,
   Activity,
   BarChart3,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 const FLOW_COLORS: Record<string, string> = {
@@ -72,6 +74,7 @@ export default function MoneyJourneyPage() {
   const [activePayPeriod, setActivePayPeriod] = useState<string>("2026-07");
   const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+  const [isCanvasExpanded, setIsCanvasExpanded] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
@@ -195,8 +198,33 @@ export default function MoneyJourneyPage() {
             </div>
 
             {/* Visual Canvas Toolbar & Controls */}
-            <div className="card mb-6 overflow-hidden" style={{ padding: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", padding: "16px 24px", background: "rgba(13, 20, 36, 0.95)", borderBottom: "1px solid var(--border)" }}>
+            <div
+              className="card mb-6 overflow-hidden"
+              style={{
+                padding: 0,
+                borderRadius: "24px",
+                border: "1px solid var(--border)",
+                background: "rgba(13, 20, 36, 0.98)",
+                overflow: "hidden",
+                isolation: "isolate",
+                WebkitMaskImage: "-webkit-radial-gradient(white, black)",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "16px",
+                  padding: "16px 24px",
+                  background: "rgba(13, 20, 36, 0.98)",
+                  borderBottom: "1px solid var(--border)",
+                  borderTopLeftRadius: "24px",
+                  borderTopRightRadius: "24px",
+                }}
+              >
                 {/* View Selector Tabs */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(7, 11, 20, 0.9)", padding: "4px", borderRadius: "99px", border: "1px solid var(--border)" }}>
                   <button
@@ -234,69 +262,39 @@ export default function MoneyJourneyPage() {
                     </button>
                   ))}
 
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <select
-                    value={periodType}
-                    onChange={(e) => setPeriodType(e.target.value as any)}
-                    className="form-select"
-                    style={{ width: "auto", fontSize: "12px", padding: "4px 24px 4px 12px", marginLeft: "12px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)", outline: "none", cursor: "pointer", appearance: "none" }}
-                  >
-                    <option value="SALARY">Salary Cycle</option>
-                    <option value="CALENDAR">Calendar Month</option>
-                  </select>
-
-                  <select
-                    value={activePayPeriod}
-                    onChange={(e) => setActivePayPeriod(e.target.value)}
-                    className="form-select"
-                    style={{ width: "auto", fontSize: "12px", padding: "4px 24px 4px 12px", marginLeft: "6px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)", outline: "none", cursor: "pointer", appearance: "none" }}
-                  >
-                    <option value="ALL">All Time</option>
-                    <option value="2026-08">August 2026 {periodType === "SALARY" ? "(15 Aug - 14 Sep)" : "(1 Aug - 31 Aug)"}</option>
-                    <option value="2026-07">July 2026 {periodType === "SALARY" ? "(15 Jul - 14 Aug)" : "(1 Jul - 31 Jul)"}</option>
-                    <option value="2026-06">June 2026 {periodType === "SALARY" ? "(15 Jun - 14 Jul)" : "(1 Jun - 30 Jun)"}</option>
-                    <option value="2026-05">May 2026 {periodType === "SALARY" ? "(15 May - 14 Jun)" : "(1 May - 31 May)"}</option>
-                    <option value="2026-04">April 2026 {periodType === "SALARY" ? "(15 Apr - 14 May)" : "(1 Apr - 30 Apr)"}</option>
-                    <option value="2026-03">March 2026 {periodType === "SALARY" ? "(15 Mar - 14 Apr)" : "(1 Mar - 31 Mar)"}</option>
-                    <option value="2026-02">February 2026 {periodType === "SALARY" ? "(15 Feb - 14 Mar)" : "(1 Feb - 28 Feb)"}</option>
-                    <option value="2026-01">January 2026 {periodType === "SALARY" ? "(15 Jan - 14 Feb)" : "(1 Jan - 31 Jan)"}</option>
-                  </select>
-                </div>
-                </div>
-
-                {/* Zoom Toolbar Controls */}
-                {viewMode === "NEURAL" && (
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <button
-                      onClick={() => setZoomLevel((z) => Math.max(0.7, z - 0.15))}
-                      className="apple-pill-btn"
-                      title="Zoom Out"
+                    <select
+                      value={periodType}
+                      onChange={(e) => setPeriodType(e.target.value as any)}
+                      className="form-select"
+                      style={{ width: "auto", fontSize: "12px", padding: "4px 24px 4px 12px", marginLeft: "12px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)", outline: "none", cursor: "pointer", appearance: "none" }}
                     >
-                      <ZoomOut size={13} />
-                    </button>
-                    <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)", color: "var(--text-muted)", width: "36px", textAlign: "center" }}>
-                      {Math.round(zoomLevel * 100)}%
-                    </span>
-                    <button
-                      onClick={() => setZoomLevel((z) => Math.min(1.4, z + 0.15))}
-                      className="apple-pill-btn"
-                      title="Zoom In"
+                      <option value="SALARY">Salary Cycle</option>
+                      <option value="CALENDAR">Calendar Month</option>
+                    </select>
+
+                    <select
+                      value={activePayPeriod}
+                      onChange={(e) => setActivePayPeriod(e.target.value)}
+                      className="form-select"
+                      style={{ width: "auto", fontSize: "12px", padding: "4px 24px 4px 12px", marginLeft: "6px", background: "rgba(13, 20, 36, 0.95)", border: "1px solid var(--border)", borderRadius: "99px", color: "var(--text-primary)", outline: "none", cursor: "pointer", appearance: "none" }}
                     >
-                      <ZoomIn size={13} />
-                    </button>
-                    <button
-                      onClick={() => setZoomLevel(1.0)}
-                      className="apple-pill-btn"
-                      title="Reset Zoom"
-                    >
-                      <RotateCcw size={13} />
-                    </button>
+                      <option value="ALL">All Time</option>
+                      <option value="2026-08">August 2026 {periodType === "SALARY" ? "(14 Aug - 14 Sep)" : "(1 Aug - 31 Aug)"}</option>
+                      <option value="2026-07">July 2026 {periodType === "SALARY" ? "(15 Jul - 13 Aug)" : "(1 Jul - 31 Jul)"}</option>
+                      <option value="2026-06">June 2026 {periodType === "SALARY" ? "(15 Jun - 14 Jul)" : "(1 Jun - 30 Jun)"}</option>
+                      <option value="2026-05">May 2026 {periodType === "SALARY" ? "(15 May - 14 Jun)" : "(1 May - 31 May)"}</option>
+                      <option value="2026-04">April 2026 {periodType === "SALARY" ? "(15 Apr - 14 May)" : "(1 Apr - 30 Apr)"}</option>
+                      <option value="2026-03">March 2026 {periodType === "SALARY" ? "(16 Mar - 14 Apr)" : "(1 Mar - 31 Mar)"}</option>
+                      <option value="2026-02">February 2026 {periodType === "SALARY" ? "(16 Feb - 15 Mar)" : "(1 Feb - 28 Feb)"}</option>
+                      <option value="2026-01">January 2026 {periodType === "SALARY" ? "(15 Jan - 15 Feb)" : "(1 Jan - 31 Jan)"}</option>
+                    </select>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Main Interactive Diagram Canvas Area */}
-              <div style={{ padding: "16px", background: "rgba(7, 11, 20, 0.98)" }}>
+              <div style={{ padding: 0, background: "transparent" }}>
                 {viewMode === "NEURAL" && (
                   <MoneyFlowNetworkCanvas
                     flows={flows}
@@ -304,6 +302,8 @@ export default function MoneyJourneyPage() {
                     onSelectFlow={(id) => setSelectedFlowId(id)}
                     activeFilter={activeFilter}
                     zoomLevel={zoomLevel}
+                    isExpandedExternal={isCanvasExpanded}
+                    onToggleExpandExternal={() => setIsCanvasExpanded((e) => !e)}
                   />
                 )}
 

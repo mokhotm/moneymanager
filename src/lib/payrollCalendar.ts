@@ -27,10 +27,10 @@ export const SA_PUBLIC_HOLIDAYS: PublicHoliday[] = [
  * Also accounts for the Public Holidays Act rule: if a public holiday falls on a Sunday, the following Monday is a public holiday.
  */
 export function isSAPublicHoliday(date: Date): boolean {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = date.getDay(); // 0 = Sunday
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const dayOfWeek = date.getUTCDay(); // 0 = Sunday
 
   // Direct match
   const directMatch = SA_PUBLIC_HOLIDAYS.some((h) => h.month === month && h.day === day);
@@ -39,9 +39,9 @@ export function isSAPublicHoliday(date: Date): boolean {
   // Monday holiday check (if Sunday was a holiday)
   if (dayOfWeek === 1) {
     const yesterday = new Date(date);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yMonth = yesterday.getMonth() + 1;
-    const yDay = yesterday.getDate();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const yMonth = yesterday.getUTCMonth() + 1;
+    const yDay = yesterday.getUTCDate();
     const sundayWasHoliday = SA_PUBLIC_HOLIDAYS.some((h) => h.month === yMonth && h.day === yDay);
     if (sundayWasHoliday) return true;
   }
@@ -53,7 +53,7 @@ export function isSAPublicHoliday(date: Date): boolean {
  * Check if a date is a weekend (Saturday or Sunday)
  */
 export function isWeekend(date: Date): boolean {
-  const day = date.getDay();
+  const day = date.getUTCDay();
   return day === 0 || day === 6; // Sunday = 0, Saturday = 6
 }
 
@@ -65,39 +65,49 @@ export function isNonBusinessDay(date: Date): boolean {
 }
 
 /**
- * Adjusts a target pay date for weekends and public holidays according to the Preceding Business Day rule (default in SA payroll).
+ * Adjusts a target pay date according to South African payroll rules:
+ * - Base pay date: 15th of the month.
+ * - Saturday -> Friday (Preceding Business Day: day - 1).
+ * - Sunday -> Monday (Following Business Day: day + 1).
+ * - Public Holiday -> Shift to preceding business day before the holiday (and avoid weekends).
  */
 export function adjustPayDateForBusinessDays(
   targetDate: Date,
-  rule: "PRECEDING_BUSINESS_DAY" | "FOLLOWING_BUSINESS_DAY" = "PRECEDING_BUSINESS_DAY"
+  rule: "PRECEDING_BUSINESS_DAY" | "FOLLOWING_BUSINESS_DAY" | "SA_STANDARD" = "SA_STANDARD"
 ): { actualPayDate: Date; wasShifted: boolean; shiftReason?: string } {
-  const current = new Date(targetDate);
-  let shifted = false;
-  let reason = "";
+  let current = new Date(targetDate);
+  const original = new Date(targetDate);
 
-  if (!isNonBusinessDay(current)) {
-    return { actualPayDate: current, wasShifted: false };
+  // If holiday: shift to preceding day first
+  while (isSAPublicHoliday(current)) {
+    current.setUTCDate(current.getUTCDate() - 1);
   }
 
-  shifted = true;
-
-  if (isWeekend(current)) {
-    const dayName = current.getDay() === 6 ? "Saturday" : "Sunday";
-    reason = `Target pay date fell on ${dayName}`;
-  } else if (isSAPublicHoliday(current)) {
-    reason = `Target pay date fell on a public holiday`;
+  const dow = current.getUTCDay(); // 0 = Sun, 6 = Sat
+  if (dow === 6) {
+    // Saturday -> Friday
+    current.setUTCDate(current.getUTCDate() - 1);
+  } else if (dow === 0) {
+    // Sunday -> Monday
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
-  const step = rule === "PRECEDING_BUSINESS_DAY" ? -1 : 1;
-
+  // If shifted date lands on a holiday or weekend, walk back to previous business day
   while (isNonBusinessDay(current)) {
-    current.setDate(current.getDate() + step);
+    current.setUTCDate(current.getUTCDate() - 1);
+  }
+
+  const wasShifted = current.getTime() !== original.getTime();
+  let shiftReason: string | undefined;
+  if (wasShifted) {
+    const origDow = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][original.getUTCDay()];
+    shiftReason = `Base pay date fell on ${origDow}; shifted to ${current.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" })}`;
   }
 
   return {
     actualPayDate: current,
-    wasShifted: shifted,
-    shiftReason: reason ? `${reason}; shifted to ${current.toLocaleDateString("en-ZA", { weekday: "long", year: "numeric", month: "short", day: "numeric" })}` : undefined,
+    wasShifted,
+    shiftReason,
   };
 }
 
@@ -112,7 +122,6 @@ export interface PayCycleBounds {
   wasShifted: boolean;
   shiftReason?: string;
   formattedRange: string;
-  /** "YYYY-MM" of the cycle's start date — use this as the BudgetLineItem month key */
   cycleMonthKey: string;
 }
 
@@ -130,7 +139,7 @@ export function parseSafeDate(input: Date | string | undefined | null): Date {
       const day = parseInt(dmyMatch[1], 10);
       const month = parseInt(dmyMatch[2], 10) - 1;
       const year = parseInt(dmyMatch[3], 10);
-      return new Date(year, month, day);
+      return new Date(Date.UTC(year, month, day));
     }
     // YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
     const ymdMatch = trimmed.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
@@ -138,12 +147,87 @@ export function parseSafeDate(input: Date | string | undefined | null): Date {
       const year = parseInt(ymdMatch[1], 10);
       const month = parseInt(ymdMatch[2], 10) - 1;
       const day = parseInt(ymdMatch[3], 10);
-      return new Date(year, month, day);
+      return new Date(Date.UTC(year, month, day));
     }
     const parsed = new Date(trimmed);
     if (!isNaN(parsed.getTime())) return parsed;
   }
   return new Date();
+}
+
+/**
+ * Resolves the exact salary cycle bounds for a given month key (e.g. "2026-08" or "2026-07").
+ * Synchronizes with actual detected statement salary dates if provided.
+ */
+export function resolveSalaryCycleRange(
+  monthKey: string,
+  detectedStatementDate?: Date | string
+): {
+  startDate: Date;
+  endDate: Date;
+  actualPayDate: Date;
+  nextPayDate: Date;
+  cycleMonthKey: string;
+  formattedRange: string;
+  dropdownLabel: string;
+  wasShifted: boolean;
+  shiftReason?: string;
+} {
+  const [yearStr, monthStr] = monthKey.split("-");
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+
+  // 1. Compute actual pay date for this cycle month (or use detected statement date)
+  let actualPayDate: Date;
+  let wasShifted = false;
+  let shiftReason: string | undefined;
+
+  if (detectedStatementDate) {
+    actualPayDate = parseSafeDate(detectedStatementDate);
+  } else {
+    const baseTarget = new Date(Date.UTC(year, month - 1, 15));
+    const adjusted = adjustPayDateForBusinessDays(baseTarget, "SA_STANDARD");
+    actualPayDate = adjusted.actualPayDate;
+    wasShifted = adjusted.wasShifted;
+    shiftReason = adjusted.shiftReason;
+  }
+
+  // 2. Compute next cycle's actual pay date
+  let nextMonth = month + 1;
+  let nextYear = year;
+  if (nextMonth === 13) {
+    nextMonth = 1;
+    nextYear++;
+  }
+  const nextBaseTarget = new Date(Date.UTC(nextYear, nextMonth - 1, 15));
+  const nextPayDate = adjustPayDateForBusinessDays(nextBaseTarget, "SA_STANDARD").actualPayDate;
+
+  // 3. Cycle starts on actualPayDate at 00:00:00 UTC and ends the day before nextPayDate at 23:59:59.999 UTC
+  const startDate = new Date(Date.UTC(actualPayDate.getUTCFullYear(), actualPayDate.getUTCMonth(), actualPayDate.getUTCDate(), 0, 0, 0, 0));
+  
+  const cycleEndDay = new Date(nextPayDate);
+  cycleEndDay.setUTCDate(cycleEndDay.getUTCDate() - 1);
+  const endDate = new Date(Date.UTC(cycleEndDay.getUTCFullYear(), cycleEndDay.getUTCMonth(), cycleEndDay.getUTCDate(), 23, 59, 59, 999));
+
+  const startDayStr = `${startDate.getUTCDate()} ${startDate.toLocaleString("en-ZA", { month: "short", timeZone: "UTC" })}`;
+  const endDayStr = `${cycleEndDay.getUTCDate()} ${cycleEndDay.toLocaleString("en-ZA", { month: "short", timeZone: "UTC" })}`;
+  const nextPayStr = `${nextPayDate.getUTCDate()} ${nextPayDate.toLocaleString("en-ZA", { month: "short", timeZone: "UTC" })}`;
+  const formattedRange = `${startDayStr} – ${endDayStr}`;
+
+  const monthName = new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-ZA", { month: "long", timeZone: "UTC" });
+  const dropdownLabel = `${monthName} ${year} (${startDayStr} - ${nextPayStr})`;
+
+  return {
+    startDate,
+    endDate,
+    actualPayDate,
+    nextPayDate,
+    cycleMonthKey: monthKey,
+    formattedRange,
+    dropdownLabel,
+    wasShifted,
+    shiftReason,
+  };
 }
 
 /**
@@ -167,14 +251,14 @@ export function getPayCycleBounds(
       payDate: targetDate,
       actualPayDate: targetDate,
       wasShifted: false,
-      formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
-      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+      formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short", timeZone: "UTC" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`,
+      cycleMonthKey: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
     };
   }
 
   if (mode === "CALENDAR_MONTH") {
-    const start = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-    const end = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59);
+    const start = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), 1, 0, 0, 0));
+    const end = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth() + 1, 0, 23, 59, 59, 999));
     return {
       mode: "CALENDAR_MONTH",
       startDate: start,
@@ -182,22 +266,27 @@ export function getPayCycleBounds(
       payDate: targetDate,
       actualPayDate: targetDate,
       wasShifted: false,
-      formattedRange: `1 ${start.toLocaleDateString("en-ZA", { month: "short" })} – ${end.getDate()} ${end.toLocaleDateString("en-ZA", { month: "short", year: "numeric" })}`,
-      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+      formattedRange: `1 ${start.toLocaleDateString("en-ZA", { month: "short", timeZone: "UTC" })} – ${end.getUTCDate()} ${end.toLocaleDateString("en-ZA", { month: "short", year: "numeric", timeZone: "UTC" })}`,
+      cycleMonthKey: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
     };
   }
 
   // PAYSLIP_AUTO mode
-  const { actualPayDate, wasShifted, shiftReason } = adjustPayDateForBusinessDays(targetDate, "PRECEDING_BUSINESS_DAY");
+  const { actualPayDate, wasShifted, shiftReason } = adjustPayDateForBusinessDays(targetDate, "SA_STANDARD");
 
-  const start = new Date(actualPayDate);
-  start.setHours(0, 0, 0, 0);
-
-  // End date is 1 month minus 1 day from actual pay date
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + 1);
-  end.setDate(end.getDate() - 1);
-  end.setHours(23, 59, 59, 999);
+  const start = new Date(Date.UTC(actualPayDate.getUTCFullYear(), actualPayDate.getUTCMonth(), actualPayDate.getUTCDate(), 0, 0, 0, 0));
+  
+  // Next cycle pay date
+  let nextMonth = actualPayDate.getUTCMonth() + 2;
+  let nextYear = actualPayDate.getUTCFullYear();
+  if (nextMonth === 13) {
+    nextMonth = 1;
+    nextYear++;
+  }
+  const nextTarget = new Date(Date.UTC(nextYear, nextMonth - 1, 15));
+  const nextActual = adjustPayDateForBusinessDays(nextTarget, "SA_STANDARD").actualPayDate;
+  
+  const end = new Date(Date.UTC(nextActual.getUTCFullYear(), nextActual.getUTCMonth(), nextActual.getUTCDate() - 1, 23, 59, 59, 999));
 
   return {
     mode: "PAYSLIP_AUTO",
@@ -207,7 +296,7 @@ export function getPayCycleBounds(
     actualPayDate,
     wasShifted,
     shiftReason,
-    formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
-    cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+    formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short", timeZone: "UTC" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`,
+    cycleMonthKey: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
   };
 }
