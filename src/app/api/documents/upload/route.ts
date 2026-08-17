@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
 import { processAndVectorizeDocument } from "@/agents/documentAgent";
+import { executeDocumentSyncPipeline } from "@/services/documentSyncPipeline";
 
 
 /** Extract text from a PDF buffer, with optional password for protected files. */
@@ -380,6 +381,15 @@ export async function POST(req: NextRequest) {
 
     const result = await processAndVectorizeDocument(doc.id, buffer, rawText, existingHashes);
 
+    // Run Automated Ground-Truth Database Alignment Pipeline
+    const syncReport = await executeDocumentSyncPipeline(
+      userId,
+      doc.id,
+      rawText,
+      result.documentType,
+      result.parsedFields
+    );
+
     // Update record with refined classification and parse status
     await prisma.document.update({
       where: { id: doc.id },
@@ -395,6 +405,7 @@ export async function POST(req: NextRequest) {
           rawText,
           fullText: rawText,
           parsedFields: result.parsedFields ?? {},
+          syncReport,
           ...(result.parsedFields ?? {}),
         },
       },
@@ -409,6 +420,7 @@ export async function POST(req: NextRequest) {
         urgencyNote: result.urgencyNote,
         embeddingsCreated: result.embeddingsCreated,
         accountCreated: accountNameCreated ?? `${account.name} (${account.institution})`,
+        syncReport,
       },
       { status: 201 }
     );

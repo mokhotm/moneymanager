@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
+import { executeDocumentSyncPipeline } from "@/services/documentSyncPipeline";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -147,6 +148,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           }
         }
       }
+
+      const rawText = parsedData.rawText || parsedData.fullText || "";
+      await executeDocumentSyncPipeline(userId, documentId, rawText, doc.documentType, parsedFields);
     }
 
     return NextResponse.json({ success: true, document: updatedDoc });
