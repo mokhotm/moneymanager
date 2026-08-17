@@ -112,10 +112,14 @@ export async function GET(request: NextRequest) {
         endDate = new Date(nextYear, nextMonth, 14, 23, 59, 59);
       }
 
-      filteredFlows = filteredFlows.filter((t) => {
+      const filtered = filteredFlows.filter((t) => {
          const d = new Date(t.createdAt);
          return d >= startDate && d <= endDate;
       });
+
+      if (filtered.length > 0) {
+        filteredFlows = filtered;
+      }
     }
 
     // Compute summary metrics from real flows
