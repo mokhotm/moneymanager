@@ -1088,9 +1088,13 @@ async function main() {
     { category: "GOAL_CONTRIBUTIONS", label: "Car Transmission Repair Sinking Fund", amount: 10095.16, isComputed: true, confidence: "CONFIRMED", note: "Target: R 40,000.00 transmission overhaul fund (Allocating full liquid surplus R 10,095.16/mo · Target: Dec 2026)", sourceRef: "goal:car_transmission_repair" },
 
     // 4. Family & Discretionary Monthly Spend
-    { category: "FAMILY_AND_DISCRETIONARY", label: "Groceries & Household Supplies", amount: 6500.00, confidence: "ESTIMATED", note: "SuperSpar, Woolworths & Pick n Pay monthly allocation" },
+    { category: "FAMILY_AND_DISCRETIONARY", label: "Groceries & Household Supplies", amount: 4000.00, confidence: "CONFIRMED", note: "SuperSpar, Woolworths & Pick n Pay monthly allocation" },
     { category: "FAMILY_AND_DISCRETIONARY", label: "Fuel & Transportation", amount: 1200.00, confidence: "ESTIMATED", note: "WFH schedule: 3-4 office trips/month @ R250/trip + local errands (R1,200 total)" },
     { category: "FAMILY_AND_DISCRETIONARY", label: "Family Discretionary & Dining", amount: 2500.00, confidence: "ESTIMATED", note: "Family allowances, weekend dining & leisure" },
+
+    // 5. One-Off / Unexpected Expenses
+    { category: "ONE_OFF_UNEXPECTED", label: "Car Brakes and Disk Repairs", amount: 3812.25, confidence: "CONFIRMED", note: "One-off vehicle maintenance: brake pads and disk replacement" },
+    { category: "ONE_OFF_UNEXPECTED", label: "Weekend Getaway", amount: 5920.00, confidence: "CONFIRMED", note: "One-off family leisure trip & accommodation" },
   ];
 
   for (const b of budgetItems) {
