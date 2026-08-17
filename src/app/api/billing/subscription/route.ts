@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const profile = await prisma.userProfile.findUnique({
       where: { userId },
       include: {
-        subscription: {
+        userSubscription: {
           include: {
             tier: true,
           },
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
       },
     });
 
-    if (!profile || !profile.subscription) {
+    if (!profile || !profile.userSubscription) {
       // Default to free tier
       const freeTier = await prisma.subscriptionTier.findFirst({
         where: { name: 'Free' },
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       });
     }
 
-    const sub = profile.subscription;
+    const sub = profile.userSubscription;
     const isActive = sub.status === 'ACTIVE' || sub.status === 'TRIALING' || sub.status === 'PAST_DUE';
 
     return NextResponse.json({

@@ -30,17 +30,17 @@ export async function GET(req: Request) {
     let liquidSavings = 0;
 
     for (const acc of accounts) {
-      const bal = Number(acc.currentBalance);
+      const bal = Number(acc.openingBalance);
       if (acc.isDebt || (acc.debt && acc.debt.status === 'ACTIVE')) {
         const debtBal = acc.debt ? Number(acc.debt.currentBalance) : Math.abs(bal);
         totalDebts += debtBal;
         if (acc.debt) {
           monthlyDebtObligations += Number(acc.debt.minimumPayment);
         }
-      } else if (acc.isAsset || bal > 0) {
+      } else if (!acc.isDebt || bal > 0) {
         totalAssets += bal;
         if (acc.type === 'SAVINGS' || acc.type === 'CURRENT' || acc.type === 'CASH_WALLET') {
-          liquidSavings += bal;
+          liquidSavings += Math.max(0, bal);
         }
       }
     }

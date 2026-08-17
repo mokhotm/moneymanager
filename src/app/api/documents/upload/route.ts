@@ -9,8 +9,10 @@ import { executeDocumentSyncPipeline } from "@/services/documentSyncPipeline";
 /** Extract text from a PDF buffer, with optional password for protected files. */
 export async function extractPdfText(buffer: Buffer, password?: string): Promise<string> {
   try {
+    // @ts-ignore
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     try {
+      // @ts-ignore
       const pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
       pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
     } catch {
@@ -405,9 +407,9 @@ export async function POST(req: NextRequest) {
           rawText,
           fullText: rawText,
           parsedFields: result.parsedFields ?? {},
-          syncReport,
+          syncReport: syncReport as any,
           ...(result.parsedFields ?? {}),
-        },
+        } as any,
       },
     });
 
