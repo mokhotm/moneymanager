@@ -27,7 +27,7 @@ import { speakText, stopSpeech, isSpeaking } from "@/lib/speechSynthesis";
 
 interface Recommendation {
   id: string;
-  agent: "DOCUMENT_AGENT" | "BUDGET_AGENT" | "DEBT_AGENT" | "GOALS_AGENT";
+  agent: "DOCUMENT_AGENT" | "BUDGET_AGENT" | "DEBT_AGENT" | "GOALS_AGENT" | "COACH";
   title: string;
   description: string;
   rationale: string;
@@ -41,6 +41,7 @@ const AGENT_METADATA: Record<string, { label: string; color: string; borderTop: 
   DEBT_AGENT: { label: "DEBT_AGENT", color: "#f59e0b", borderTop: "#f59e0b", Icon: CreditCard },
   GOALS_AGENT: { label: "GOALS_AGENT", color: "#a855f7", borderTop: "#a855f7", Icon: Target },
   BUDGET_AGENT: { label: "BUDGET_AGENT", color: "#10b981", borderTop: "#10b981", Icon: Receipt },
+  COACH: { label: "FINANCIAL_COACH", color: "#06b6d4", borderTop: "#06b6d4", Icon: Bot },
 };
 
 export default function AgentInboxPage() {
