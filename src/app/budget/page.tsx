@@ -110,16 +110,18 @@ export default function BudgetPage() {
     note: "",
   });
 
-  const loadData = async () => {
-    const cyc = await fetch("/api/budget/cycle").then((r) => r.json());
-    let activeMonth = month;
-    if (cyc.success && cyc.cycle?.cycleMonthKey) {
-      activeMonth = cyc.cycle.cycleMonthKey;
-      if (!monthResolved) {
+  const loadData = async (overrideMonth?: string) => {
+    const selectedMonth = overrideMonth ?? month;
+    let activeMonth = selectedMonth;
+
+    const cyc = await fetch("/api/budget/cycle").then((r) => r.json()).catch(() => null);
+    if (cyc?.success && cyc.cycle) {
+      setCycle(cyc.cycle);
+      if (!monthResolved && cyc.cycle.cycleMonthKey) {
+        activeMonth = cyc.cycle.cycleMonthKey;
         setMonth(activeMonth);
         setMonthResolved(true);
       }
-      setCycle(cyc.cycle);
     }
 
     const [b, inc] = await Promise.all([
@@ -135,7 +137,7 @@ export default function BudgetPage() {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(month);
   }, [month]);
 
   const handleCycleModeChange = async (newMode: "PAYSLIP_AUTO" | "CALENDAR_MONTH" | "CUSTOM_RANGE") => {
@@ -192,7 +194,7 @@ export default function BudgetPage() {
         });
       }
       setShowModal(false);
-      await loadData();
+      await loadData(month);
     } catch (err) {
       console.error("Failed to save budget item:", err);
     } finally {
@@ -203,7 +205,7 @@ export default function BudgetPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this line item?")) return;
     await fetch(`/api/budget?id=${id}`, { method: "DELETE" });
-    loadData();
+    await loadData(month);
   };
 
   if (loading) {
