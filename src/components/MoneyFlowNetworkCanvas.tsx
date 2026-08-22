@@ -80,34 +80,18 @@ interface GraphEdge {
 }
 
 function formatDisplayLabel(name: string, type?: string, flowType?: string): string {
-  if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Prestige Current Account (XXXX4469)";
+  if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Primary Account";
   
   const lower = name.toLowerCase();
 
   // Cash Wallet
-  if (type === "CASH_WALLET" || lower.includes("cash-wallet") || lower.includes("nsqfa0gcdp7") || lower.includes("physical cash")) {
+  if (type === "CASH_WALLET" || lower.includes("cash-wallet") || lower.includes("physical cash")) {
     return "Physical Cash Wallet";
   }
 
-  // SARS / Salary Inflow
-  if (type === "INFLOW" || flowType === "INCOME" || lower.includes("salary") || lower.includes("sars") || lower.includes("inflow")) {
-    return "SARS Net Salary Inflow";
-  }
-
-  // Credit Card
-  if (lower.includes("titanium") || lower.includes("credit card") || lower.includes("3529")) {
-    return "Titanium Prestige Credit Card (XXXX3529)";
-  }
-
-  // Current / Cheque Account (Consolidate all variations into one single clean node)
-  if (
-    lower.includes("prestige current") ||
-    lower.includes("4469") ||
-    lower.includes("cheque") ||
-    /^c[a-z0-9]{20,}$/i.test(name) ||
-    name.startsWith("cms")
-  ) {
-    return "Prestige Current Account (XXXX4469)";
+  // Salary Inflow
+  if (type === "INFLOW" || flowType === "INCOME" || lower.includes("salary") || lower.includes("inflow")) {
+    return name.includes("SARS") ? "SARS Net Salary Inflow" : "Net Salary Inflow";
   }
 
   return name;

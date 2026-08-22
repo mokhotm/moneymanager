@@ -799,87 +799,89 @@ export function ForensicAuditReport({
       </div>
 
       {/* ─── Forensic Root Cause Analysis Deep-Dive ─── */}
-      <div style={{ marginTop: "12px" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <Sparkles size={16} color="#f59e0b" />
-          Forensic Root Cause Analysis: What Ground Truth Uncovered
-        </h3>
+      {rootCauses.length > 0 && (
+        <div style={{ marginTop: "12px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <Sparkles size={16} color="#f59e0b" />
+            Forensic Root Cause Analysis: What Ground Truth Uncovered
+          </h3>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "14px",
-          }}
-        >
-          {rootCauses.map((rc) => (
-            <div
-              key={rc.id}
-              style={{
-                background: "rgba(13, 20, 36, 0.8)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                borderRadius: "16px",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 800,
-                      color: "#38bdf8",
-                      background: "rgba(56, 189, 248, 0.12)",
-                      padding: "2px 8px",
-                      borderRadius: "99px",
-                    }}
-                  >
-                    {rc.badge}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 800,
-                      color: rc.severity === "HIGH" ? "#f43f5e" : "#fbbf24",
-                      background: rc.severity === "HIGH" ? "rgba(244, 63, 94, 0.12)" : "rgba(245, 158, 11, 0.12)",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {rc.severity} IMPACT
-                  </span>
-                </div>
-                <h4 style={{ fontSize: "14px", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>
-                  {rc.title}
-                </h4>
-                <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0, lineHeight: "1.55" }}>
-                  {rc.description}
-                </p>
-              </div>
-
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            {rootCauses.map((rc) => (
               <div
+                key={rc.id}
                 style={{
-                  marginTop: "16px",
-                  paddingTop: "12px",
-                  borderTop: "1px solid rgba(255, 255, 255, 0.06)",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "#10b981",
+                  background: "rgba(13, 20, 36, 0.8)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "16px",
+                  padding: "20px",
                   display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                 }}
               >
-                <CheckCircle2 size={13} />
-                <span>{rc.impactSummary}</span>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 800,
+                        color: "#38bdf8",
+                        background: "rgba(56, 189, 248, 0.12)",
+                        padding: "2px 8px",
+                        borderRadius: "99px",
+                      }}
+                    >
+                      {rc.badge}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 800,
+                        color: rc.severity === "HIGH" ? "#f43f5e" : "#fbbf24",
+                        background: rc.severity === "HIGH" ? "rgba(244, 63, 94, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {rc.severity} IMPACT
+                    </span>
+                  </div>
+                  <h4 style={{ fontSize: "14px", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>
+                    {rc.title}
+                  </h4>
+                  <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0, lineHeight: "1.55" }}>
+                    {rc.description}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: "16px",
+                    paddingTop: "12px",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "#10b981",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <CheckCircle2 size={13} />
+                  <span>{rc.impactSummary}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

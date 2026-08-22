@@ -99,12 +99,12 @@ export function MoneyFlowBubbleCanvas({
   const bubbleData = useMemo(() => {
 function formatBubbleLabel(name: string, type?: string): string {
   if (!name) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Account";
-  if (name.includes("nsqfa0gcdp7") || name === "cash-wallet-primary" || type === "CASH_WALLET") {
+  if (name === "cash-wallet-primary" || type === "CASH_WALLET") {
     return "Physical Cash Wallet";
   }
   if (/^c[a-z0-9]{20,}$/i.test(name) || name.startsWith("cms")) {
-    if (type === "INCOME" || name.includes("salary")) return "SARS Net Salary Deposit";
-    return "Prestige Current Account (XXXX4469)";
+    if (type === "INCOME" || name.includes("salary")) return "Net Salary Inflow";
+    return "Primary Account";
   }
   return name;
 }

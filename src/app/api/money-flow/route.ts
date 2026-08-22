@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
 
       // Handle legacy or unknown CUID strings
       if (/^c[a-z0-9]{20,}$/i.test(ref) || ref.startsWith("cms")) {
-        if (type === "ACCOUNT") return "Prestige Current Account (XXXX4469)";
+        if (type === "ACCOUNT") return "Primary Account";
         if (type === "CASH_WALLET") return "Physical Cash Wallet";
-        if (flowType === "INCOME") return "SARS Net Salary Deposit";
-        return "Standard Bank Account";
+        if (flowType === "INCOME") return "Net Salary Inflow";
+        return "Bank Account";
       }
 
       return ref;

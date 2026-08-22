@@ -49,14 +49,14 @@ const FLOW_COLORS: Record<string, string> = {
 
 export function formatRefLabel(ref: string | null | undefined, type?: string, flowType?: string): string {
   if (!ref) return type === "CASH_WALLET" ? "Physical Cash Wallet" : "Account";
-  if (ref.includes("nsqfa0gcdp7") || ref === "cash-wallet-primary" || type === "CASH_WALLET") {
+  if (ref === "cash-wallet-primary" || type === "CASH_WALLET") {
     return "Physical Cash Wallet";
   }
   if (/^c[a-z0-9]{20,}$/i.test(ref) || ref.startsWith("cms")) {
     if (type === "INFLOW" || type === "INCOME" || flowType === "INCOME" || ref.includes("salary")) {
-      return "SARS Net Salary Deposit";
+      return "Net Salary Inflow";
     }
-    return "Prestige Current Account (XXXX4469)";
+    return "Primary Account";
   }
   return ref;
 }

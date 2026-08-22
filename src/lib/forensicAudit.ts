@@ -256,35 +256,59 @@ export function buildForensicAuditReport(
   const totalCleanTransactions = items.reduce((s, i) => s + i.transactionCount, 0);
   const totalReversalsCount = items.reduce((s, i) => s + i.reversalCount, 0);
 
-  const rootCauses = [
-    {
+  const rootCauses: Array<{
+    id: string;
+    title: string;
+    badge: string;
+    description: string;
+    impactSummary: string;
+    severity: "HIGH" | "MEDIUM" | "LOW";
+  }> = [];
+
+  if (totalBouncedReversals > 0) {
+    rootCauses.push({
       id: "rc-1",
       title: "Bounced Debit Order Double-Inflation (RTD- Reversals)",
       badge: "Accounting Distortion Fixed",
       description:
-        "When debit orders bounce due to timing or insufficient funds (RTD-NOT PROVIDED FOR / RTD-NO AUTHORITY TO DEBIT), Standard Bank posts an outgoing debit attempt followed immediately by an incoming credit reversal. Raw aggregations treated both entries as positive expenses, inflating spend by 200%. The forensic engine nets them to R0 actual outflow.",
+        "When debit orders bounce due to timing or cash availability (RTD-NOT PROVIDED FOR / RTD-NO AUTHORITY TO DEBIT), banking institutions record an outgoing debit attempt followed immediately by an incoming credit reversal. Raw aggregations treated both entries as positive expenses, inflating spend by 200%. The forensic engine nets them to R0 actual outflow.",
       impactSummary: `R ${totalBouncedReversals.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} in reversed credits reconciled`,
-      severity: "HIGH" as const,
-    },
-    {
-      id: "rc-2",
-      title: "Telkom Escalating Arrears vs. Contractual Balance",
-      badge: "Cumulative Retries Isolated",
-      description:
-        "Telkom submitted escalating retry debit orders for accumulated arrears over 8 consecutive months (R2.6k, R3.5k, R4.5k, R5.5k, R6.5k), all of which bounced. Summing raw debits added the same debt multiple times, showing R85k. The forensic engine isolates actual operating spend while directing confirmed principal (R9,614.73) to the Debt Payoff Engine.",
-      impactSummary: "R 29,656.07 in redundant arrears retry attempts removed",
-      severity: "HIGH" as const,
-    },
-    {
+      severity: "HIGH",
+    });
+  }
+
+  const arrearsItems = items.filter(
+    (i) => i.grossReversals > 0 && i.grossDebits > i.netPaid && i.grossDebits >= 1000
+  );
+  if (arrearsItems.length > 0) {
+    const totalRemovedArrears = arrearsItems.reduce((s, i) => s + (i.grossDebits - i.netPaid), 0);
+    if (totalRemovedArrears > 0) {
+      rootCauses.push({
+        id: "rc-2",
+        title: "Escalating Arrears vs. Contractual Balance",
+        badge: "Cumulative Retries Isolated",
+        description:
+          "Escalating retry debit orders for accumulated arrears across consecutive billing cycles are isolated by the forensic engine, preventing the same debt balance from inflating monthly operating outflows.",
+        impactSummary: `R ${totalRemovedArrears.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} in redundant arrears retry attempts removed`,
+        severity: "HIGH",
+      });
+    }
+  }
+
+  const multiAccountDuplicates = items.filter(
+    (i) => i.statusLabel.includes("Multi-Account") || i.statusLabel.includes("Duplicate")
+  );
+  if (multiAccountDuplicates.length > 0) {
+    rootCauses.push({
       id: "rc-3",
       title: "Cross-Account Multi-Statement Ingestion Deduplication",
       badge: "Cross-Statement Deduplication",
       description:
-        "Recurring subscriptions (e.g. Netflix R229) and merchant charges appearing simultaneously on both Cheque (XXXX4469) and Credit Card (XXXX3529) statement uploads are hashed by date, amount, and provider pattern to prevent duplicate billing counting.",
+        "Recurring subscriptions and merchant charges appearing simultaneously across multiple linked account statements are hashed by date, amount, and provider pattern to prevent duplicate billing counting.",
       impactSummary: "Cross-statement duplicates filtered into clean billing cycles",
-      severity: "MEDIUM" as const,
-    },
-  ];
+      severity: "MEDIUM",
+    });
+  }
 
   return {
     summary: {

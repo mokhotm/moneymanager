@@ -319,13 +319,15 @@ export async function GET(request: NextRequest) {
           recommendation = "Use scheduled standard EFTs or grouped monthly cash withdrawals instead of repeated vouchers.";
         }
 
+        const sourceAccName = accounts.find((a) => a.id === f.sourceRef)?.name || accounts[0]?.name || "Linked Account";
+
         leakageItems.push({
           id: f.id,
           date: f.createdAt.toISOString().split("T")[0],
           type: leakType,
           description: rawDesc,
           amount: amt,
-          account: "Standard Bank Prestige (XXXX4469)",
+          account: sourceAccName,
           actionRecommendation: recommendation,
         });
       }
