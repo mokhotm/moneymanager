@@ -9,7 +9,7 @@ const billingService = new BillingService(prisma);
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user || (user.role !== 'admin' && user.username !== 'mokhotm')) {
+    if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized. Admin privilege required.' }, { status: 403 });
     }
 
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
-    if (!user || (user.role !== 'admin' && user.username !== 'mokhotm')) {
+    if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized. Admin privilege required.' }, { status: 403 });
     }
 

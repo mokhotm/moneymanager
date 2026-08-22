@@ -129,8 +129,8 @@ export async function getUserSubscriptionDetails(userId: string) {
     if (tierRecord?.name) {
       resolvedTier = normalizeTierName(tierRecord.name);
     }
-  } else if (user.role === "admin" || user.username === "mokhotm") {
-    // Retain Executive privileges for system admin / primary account
+  } else if (user.role === "admin") {
+    // Retain Executive privileges for system admin account
     resolvedTier = "EXECUTIVE_ENTERPRISE";
   }
 

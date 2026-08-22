@@ -90,10 +90,7 @@ interface UserSession {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<UserSession>({
-    username: "mokhotm",
-    jobTitle: "Wealth Manager",
-  });
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -195,13 +192,14 @@ export default function Sidebar() {
       {currentUser && (
         <div
           style={{
-            padding: "14px 16px",
-            borderTop: "1px solid var(--border-light)",
             display: "flex",
             alignItems: "center",
             gap: "10px",
-            background: "rgba(7, 11, 20, 0.75)",
-            backdropFilter: "blur(12px)",
+            padding: "10px 12px",
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-md)",
+            minHeight: "52px",
           }}
         >
           <div
@@ -220,7 +218,7 @@ export default function Sidebar() {
               flexShrink: 0,
             }}
           >
-            {currentUser.username.charAt(0).toUpperCase()}
+            {currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : "U"}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -233,7 +231,7 @@ export default function Sidebar() {
                 textOverflow: "ellipsis",
               }}
             >
-              {currentUser.username}
+              {currentUser?.username || "Authenticated"}
             </div>
             <div
               style={{
@@ -245,7 +243,7 @@ export default function Sidebar() {
                 fontWeight: 600,
               }}
             >
-              {currentUser.jobTitle || "Wealth Manager"}
+              {currentUser?.jobTitle || "Personal Wealth"}
             </div>
           </div>
           <button

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
+import { getUserSubscription } from "@/lib/subscriptionGate";
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,7 +17,17 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    return NextResponse.json(user);
+
+    const subInfo = await getUserSubscription(userId);
+
+    return NextResponse.json({
+      ...user,
+      subscriptionTier: subInfo.tier,
+      accountsCount: subInfo.usage.accountsCount,
+      debtsCount: subInfo.usage.debtsCount,
+      specs: subInfo.specs,
+      subscriptionStatus: subInfo.subscriptionStatus,
+    });
   } catch (error) {
     console.error("GET /api/profile error:", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });

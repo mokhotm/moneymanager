@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
         role: "user",
         profile: {
           create: {
-            fullName: fullName && fullName.trim() ? fullName.trim() : cleanUsername,
-            jobTitle: jobTitle && jobTitle.trim() ? jobTitle.trim() : "User",
+            fullName: fullName && fullName.trim() ? fullName.trim() : null,
+            jobTitle: jobTitle && jobTitle.trim() ? jobTitle.trim() : null,
             employerName: employerName && employerName.trim() ? employerName.trim() : null,
           },
         },

@@ -129,7 +129,7 @@ export default function ProfilePage() {
   };
 
   const subTierName = useMemo(() => {
-    const tier = userData?.subscriptionTier || "PRO_WEALTH";
+    const tier = userData?.subscriptionTier || "STARTER_FREE";
     if (tier === "PRO_WEALTH") return "Pro Wealth Accelerator (R199/mo)";
     if (tier === "EXECUTIVE_ENTERPRISE") return "Executive Enterprise (R499/mo)";
     return "Starter Free (R0/mo)";
@@ -744,11 +744,34 @@ export default function ProfilePage() {
               {/* Feature Checklist Matrix */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
                 {[
-                  { name: "Max Accounts & Debt Portfolio", status: "Unlimited (7 Accounts, 4 Debts Active)", active: true },
-                  { name: "Dual-Track Snowball Waterfall Engine", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
-                  { name: "GPS Geotagged Spending Location Radar", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
-                  { name: "BYOK Custom LLM Engine Key Vault", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
-                  { name: "Multi-Agent OCR Document Ingestion", status: "Unlocked & Active", active: userData?.subscriptionTier !== "STARTER_FREE" },
+                  {
+                    name: "Max Accounts & Debt Portfolio",
+                    status:
+                      userData?.subscriptionTier === "STARTER_FREE"
+                        ? `3 Accounts Max (${userData?.accountsCount ?? 0} Accounts, ${userData?.debtsCount ?? 0} Debts Active)`
+                        : `Unlimited (${userData?.accountsCount ?? 0} Accounts, ${userData?.debtsCount ?? 0} Debts Active)`,
+                    active: true,
+                  },
+                  {
+                    name: "Dual-Track Snowball Waterfall Engine",
+                    status: userData?.subscriptionTier === "STARTER_FREE" ? "Locked (Starter Plan)" : "Unlocked & Active",
+                    active: userData?.subscriptionTier !== "STARTER_FREE",
+                  },
+                  {
+                    name: "GPS Geotagged Spending Location Radar",
+                    status: userData?.subscriptionTier === "STARTER_FREE" ? "Locked (Starter Plan)" : "Unlocked & Active",
+                    active: userData?.subscriptionTier !== "STARTER_FREE",
+                  },
+                  {
+                    name: "BYOK Custom LLM Engine Key Vault",
+                    status: userData?.subscriptionTier === "STARTER_FREE" ? "Locked (Starter Plan)" : "Unlocked & Active",
+                    active: userData?.subscriptionTier !== "STARTER_FREE",
+                  },
+                  {
+                    name: "Multi-Agent OCR Document Ingestion",
+                    status: userData?.subscriptionTier === "STARTER_FREE" ? "Locked (Starter Plan)" : "Unlocked & Active",
+                    active: userData?.subscriptionTier !== "STARTER_FREE",
+                  },
                   {
                     name: "Windeed & Lightstone Deed Valuations",
                     status: userData?.subscriptionTier === "EXECUTIVE_ENTERPRISE" ? "Unlocked (Executive)" : "Locked (Requires Executive Enterprise)",

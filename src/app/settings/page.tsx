@@ -709,7 +709,7 @@ export default function SettingsPage() {
             Authentication Required
           </h2>
           <p style={{ fontSize: "14px", color: "#94a3b8", marginBottom: "24px", lineHeight: 1.6 }}>
-            API keys and agent routing are secured per user session. Please sign in as <strong>mokhotm</strong> to access your private LLM vault.
+            API keys and agent routing are secured per user session. Please sign in to access your private LLM vault.
           </p>
           <a
             href="/login"
