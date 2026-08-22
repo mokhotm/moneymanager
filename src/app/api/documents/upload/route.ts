@@ -206,13 +206,25 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileHash = crypto.createHash("sha256").update(buffer).digest("hex");
 
-    // Exact-duplicate check — no LLM call needed
-    const existing = await prisma.document.findFirst({ where: { fileHash } });
-    if (existing) {
-      return NextResponse.json(
-        { error: "DUPLICATE", message: "This file was already uploaded", existingId: existing.id },
-        { status: 409 }
-      );
+    // Fetch user's entities to scope deduplication
+    const userAccounts = await prisma.account.findMany({ where: { userId }, select: { id: true } });
+    const userIncomes = await prisma.income.findMany({ where: { userId }, select: { id: true } });
+    const userEntityIds = [...userAccounts.map((a) => a.id), ...userIncomes.map((i) => i.id)];
+
+    // Exact-duplicate check scoped to current user — no LLM call needed
+    if (userEntityIds.length > 0) {
+      const existing = await prisma.document.findFirst({
+        where: {
+          fileHash,
+          relatedEntityId: { in: userEntityIds },
+        },
+      });
+      if (existing) {
+        return NextResponse.json(
+          { error: "DUPLICATE", message: "This file was already uploaded to your account", existingId: existing.id },
+          { status: 409 }
+        );
+      }
     }
 
     // Extract text early so we can auto-detect institution if needed
@@ -375,11 +387,19 @@ export async function POST(req: NextRequest) {
     });
 
     // Run Document Agent pipeline (hashing, classification, urgency, vectorization)
-    const existingHashes = (
-      await prisma.document.findMany({ where: { id: { not: doc.id } }, select: { fileHash: true } })
-    )
-      .map((d) => d.fileHash)
-      .filter(Boolean) as string[];
+    const existingHashes = userEntityIds.length === 0
+      ? []
+      : (
+          await prisma.document.findMany({
+            where: {
+              id: { not: doc.id },
+              relatedEntityId: { in: userEntityIds },
+            },
+            select: { fileHash: true },
+          })
+        )
+          .map((d) => d.fileHash)
+          .filter(Boolean) as string[];
 
     const result = await processAndVectorizeDocument(doc.id, buffer, rawText, existingHashes);
 

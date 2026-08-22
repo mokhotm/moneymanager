@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
+import { getUserSubscriptionDetails } from "@/lib/subscriptionGate";
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,6 +27,18 @@ export async function POST(req: NextRequest) {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const subDetails = await getUserSubscriptionDetails(userId);
+    if (subDetails && !subDetails.usage.canAddAccount) {
+      return NextResponse.json(
+        {
+          error: "ACCOUNT_LIMIT_REACHED",
+          message: `Your ${subDetails.specs.displayName} plan allows a maximum of ${subDetails.specs.maxAccounts} accounts. Please upgrade to Pro Wealth for unlimited accounts.`,
+          requiredTier: "PRO_WEALTH",
+        },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -62,6 +75,13 @@ export async function PUT(req: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: "Account ID is required" }, { status: 400 });
+    }
+
+    const existing = await prisma.account.findFirst({
+      where: { id, userId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
     const updatedAccount = await prisma.account.update({

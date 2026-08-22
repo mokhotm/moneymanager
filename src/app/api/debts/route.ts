@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
+import { getUserSubscriptionDetails } from "@/lib/subscriptionGate";
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,6 +28,18 @@ export async function POST(req: NextRequest) {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const subDetails = await getUserSubscriptionDetails(userId);
+    if (subDetails && !subDetails.usage.canAddDebt) {
+      return NextResponse.json(
+        {
+          error: "DEBT_LIMIT_REACHED",
+          message: `Your ${subDetails.specs.displayName} plan allows a maximum of ${subDetails.specs.maxDebts} debt items. Please upgrade to Pro Wealth for unlimited debt tracking.`,
+          requiredTier: "PRO_WEALTH",
+        },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();

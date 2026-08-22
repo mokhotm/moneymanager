@@ -32,6 +32,9 @@ describe('v5 Billing & Payment Processing Engine (§17 / Scenarios AK–AP)', ()
         upsert: vi.fn(),
         update: vi.fn(),
       },
+      agentRecommendation: {
+        create: vi.fn(),
+      },
       alert: {
         create: vi.fn(),
       },
@@ -181,11 +184,11 @@ describe('v5 Billing & Payment Processing Engine (§17 / Scenarios AK–AP)', ()
       where: { userProfileId: 'prof_mokhotm' },
       data: { status: SubscriptionStatus.PAST_DUE },
     });
-    expect(mockPrisma.alert.create).toHaveBeenCalledWith({
+    expect(mockPrisma.agentRecommendation.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        type: 'BILL_DUE_SOON',
-        severity: 'WARNING',
-        message: expect.stringContaining('grace period'),
+        agent: 'COACH',
+        title: expect.stringContaining('Grace Period'),
+        description: expect.stringContaining('grace period'),
       }),
     });
   });

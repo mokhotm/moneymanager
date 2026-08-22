@@ -1,12 +1,18 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient, PaymentGatewayProvider, GatewayMode, GatewayConfigStatus } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+import { PaymentGatewayProvider, GatewayMode, GatewayConfigStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { getCurrentUser } from '@/lib/session';
 import { BillingService } from '@/services/billing/billingService';
 
-const prisma = new PrismaClient();
 const billingService = new BillingService(prisma);
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user || (user.role !== 'admin' && user.username !== 'mokhotm')) {
+      return NextResponse.json({ error: 'Unauthorized. Admin privilege required.' }, { status: 403 });
+    }
+
     const configs = await prisma.paymentGatewayConfig.findMany({
       include: {
         settlementAccount: true,
@@ -25,8 +31,13 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req);
+    if (!user || (user.role !== 'admin' && user.username !== 'mokhotm')) {
+      return NextResponse.json({ error: 'Unauthorized. Admin privilege required.' }, { status: 403 });
+    }
+
     const body = await req.json();
     const {
       provider,

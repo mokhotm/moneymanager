@@ -52,8 +52,8 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const current = await prisma.income.findUnique({ where: { id: body.id } });
-    if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const current = await prisma.income.findFirst({ where: { id: body.id, userId } });
+    if (!current) return NextResponse.json({ error: "Income not found" }, { status: 404 });
 
     const updated = await prisma.income.update({
       where: { id: body.id },

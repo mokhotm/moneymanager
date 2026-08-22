@@ -75,6 +75,7 @@ export function DashboardCharts({
   debtDistribution = [],
 }: DashboardChartsProps) {
   const [activeTab, setActiveTab] = useState<"SPENDING" | "NET_WORTH" | "CASH_FLOW" | "HEATMAP" | "DEBT">("SPENDING");
+  const [hoveredSpendingIndex, setHoveredSpendingIndex] = useState<number | null>(null);
 
   // Fallback defaults if props are loading or empty
   const categoriesToRender = spendingByCategory && spendingByCategory.length > 0 ? spendingByCategory : [
@@ -84,6 +85,9 @@ export function DashboardCharts({
     { key: "FAMILY_AND_DISCRETIONARY", name: "Discretionary & Family", amount: 6200, percentage: 12, color: "#f59e0b" },
     { key: "ONE_OFF_UNEXPECTED", name: "One-off Unexpected", amount: 2000, percentage: 4, color: "#8b5cf6" },
   ];
+
+  const activeSpendCategory = hoveredSpendingIndex !== null ? categoriesToRender[hoveredSpendingIndex] : null;
+  const totalSpendingAmount = categoriesToRender.reduce((s, c) => s + c.amount, 0);
 
   const netWorthToRender = netWorthHistory && netWorthHistory.length > 0 ? netWorthHistory : [
     { month: "Mar 2026", netWorth: -470000, totalAssets: 1980000, totalDebts: 2450000 },
@@ -240,67 +244,232 @@ export function DashboardCharts({
 
       {/* Tab 1: Spending Distribution */}
       {activeTab === "SPENDING" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "32px", alignItems: "center" }}>
-          <div style={{ height: "300px", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "36px", alignItems: "center" }}>
+          {/* Donut Chart with Dynamic Center Readout */}
+          <div style={{ height: "320px", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoriesToRender}
                   cx="50%"
                   cy="50%"
-                  innerRadius={75}
-                  outerRadius={115}
-                  paddingAngle={5}
+                  innerRadius={82}
+                  outerRadius={124}
+                  paddingAngle={4}
                   dataKey="amount"
                   nameKey="name"
+                  onMouseEnter={(_, index) => setHoveredSpendingIndex(index)}
+                  onMouseLeave={() => setHoveredSpendingIndex(null)}
                 >
-                  {categoriesToRender.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0.6)" strokeWidth={2} />
-                  ))}
+                  {categoriesToRender.map((entry, index) => {
+                    const isHovered = hoveredSpendingIndex === index;
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        stroke={isHovered ? "#ffffff" : "rgba(10, 16, 30, 0.9)"}
+                        strokeWidth={isHovered ? 3 : 2}
+                        style={{
+                          filter: isHovered ? `drop-shadow(0 0 12px ${entry.color}cc)` : "none",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      />
+                    );
+                  })}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <div style={{ position: "absolute", textAlign: "center", pointerEvents: "none" }}>
-              <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>
-                Total Monthly
-              </span>
-              <div style={{ fontSize: "22px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "#f59e0b", marginTop: "2px" }}>
-                {formatZAR(categoriesToRender.reduce((s, c) => s + c.amount, 0))}
-              </div>
+
+            {/* Dynamic Center Intelligence - Completely Crisp & Never Colliding */}
+            <div
+              style={{
+                position: "absolute",
+                textAlign: "center",
+                pointerEvents: "none",
+                maxWidth: "155px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s ease-out",
+              }}
+            >
+              {activeSpendCategory ? (
+                <>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: activeSpendCategory.color,
+                      textTransform: "uppercase",
+                      fontWeight: 800,
+                      letterSpacing: "0.5px",
+                      lineHeight: "1.2",
+                      marginBottom: "2px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "150px",
+                    }}
+                  >
+                    {activeSpendCategory.name}
+                  </span>
+                  <div
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 800,
+                      fontFamily: "var(--font-mono, monospace)",
+                      color: "#f8fafc",
+                      lineHeight: "1.1",
+                    }}
+                  >
+                    {formatZAR(activeSpendCategory.amount)}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      fontFamily: "var(--font-mono, monospace)",
+                      color: activeSpendCategory.color,
+                      marginTop: "3px",
+                    }}
+                  >
+                    {activeSpendCategory.percentage}% of total
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      color: "#64748b",
+                      textTransform: "uppercase",
+                      fontWeight: 700,
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    Total Monthly
+                  </span>
+                  <div
+                    style={{
+                      fontSize: "22px",
+                      fontWeight: 800,
+                      fontFamily: "var(--font-mono, monospace)",
+                      color: "#f59e0b",
+                      marginTop: "2px",
+                      lineHeight: "1.1",
+                    }}
+                  >
+                    {formatZAR(totalSpendingAmount)}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      color: "#10b981",
+                      fontWeight: 600,
+                      marginTop: "2px",
+                    }}
+                  >
+                    100% Allocated
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <span style={{ fontSize: "11px", textTransform: "uppercase", fontFamily: "var(--font-mono, monospace)", color: "#64748b", letterSpacing: "1px", fontWeight: 700 }}>
-              Category Spending Allocations
-            </span>
-            {categoriesToRender.map((cat) => (
-              <div
-                key={cat.key}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "12px 16px",
-                  borderRadius: "14px",
-                  background: "rgba(255, 255, 255, 0.025)",
-                  border: "1px solid rgba(255, 255, 255, 0.05)",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: cat.color, flexShrink: 0, boxShadow: `0 0 10px ${cat.color}80` }} />
-                  <div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#f8fafc" }}>{cat.name}</div>
-                    <div style={{ fontSize: "11px", color: "#64748b" }}>{cat.percentage}% of total monthly budget</div>
+          {/* Category List with Rich Hover States and Progress Meters */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+              <span style={{ fontSize: "11px", textTransform: "uppercase", fontFamily: "var(--font-mono, monospace)", color: "#64748b", letterSpacing: "1px", fontWeight: 700 }}>
+                Category Spending Allocations
+              </span>
+              <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "var(--font-mono, monospace)" }}>
+                Hover to inspect
+              </span>
+            </div>
+
+            {categoriesToRender.map((cat, index) => {
+              const isHovered = hoveredSpendingIndex === index;
+              return (
+                <div
+                  key={cat.key}
+                  onMouseEnter={() => setHoveredSpendingIndex(index)}
+                  onMouseLeave={() => setHoveredSpendingIndex(null)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    padding: "12px 16px",
+                    borderRadius: "14px",
+                    background: isHovered ? "rgba(255, 255, 255, 0.07)" : "rgba(255, 255, 255, 0.025)",
+                    border: isHovered ? `1px solid ${cat.color}80` : "1px solid rgba(255, 255, 255, 0.05)",
+                    boxShadow: isHovered ? `0 8px 24px rgba(0,0,0,0.5), inset 0 0 12px ${cat.color}15` : "none",
+                    cursor: "pointer",
+                    transition: "all 0.18s ease",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span
+                        style={{
+                          width: "12px",
+                          height: "12px",
+                          borderRadius: "50%",
+                          background: cat.color,
+                          flexShrink: 0,
+                          boxShadow: `0 0 10px ${cat.color}90`,
+                          transform: isHovered ? "scale(1.2)" : "scale(1)",
+                          transition: "transform 0.15s ease",
+                        }}
+                      />
+                      <div>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: isHovered ? "#ffffff" : "#f1f5f9" }}>
+                          {cat.name}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "8px", fontWeight: 600 }}>
+                          ({cat.percentage}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    <span
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: 800,
+                        fontFamily: "var(--font-mono, monospace)",
+                        color: isHovered ? cat.color : "#f8fafc",
+                        transition: "color 0.15s ease",
+                      }}
+                    >
+                      {formatZAR(cat.amount)}
+                    </span>
+                  </div>
+
+                  {/* Visual Proportion Bar */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "4px",
+                      borderRadius: "99px",
+                      background: "rgba(255, 255, 255, 0.06)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${cat.percentage}%`,
+                        height: "100%",
+                        background: isHovered
+                          ? `linear-gradient(90deg, ${cat.color}, #ffffff)`
+                          : cat.color,
+                        borderRadius: "99px",
+                        transition: "width 0.3s ease",
+                      }}
+                    />
                   </div>
                 </div>
-                <span style={{ fontSize: "15px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "#f8fafc" }}>
-                  {formatZAR(cat.amount)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

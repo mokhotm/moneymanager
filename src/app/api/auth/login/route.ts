@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { createSessionToken } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,8 +25,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid username or password" }, { status: 401 });
     }
 
-    // Set HTTP-only auth_session cookie
-    const sessionToken = Buffer.from(JSON.stringify({ userId: user.id, username: user.username, exp: Date.now() + 86400000 })).toString("base64");
+    // Set signed HTTP-only auth_session cookie
+    const sessionToken = createSessionToken({
+      userId: user.id,
+      username: user.username,
+      exp: Date.now() + 86400000,
+    });
 
     const response = NextResponse.json({
       success: true,

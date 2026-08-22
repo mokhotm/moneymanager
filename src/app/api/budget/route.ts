@@ -108,6 +108,13 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
     }
 
+    const existing = await prisma.budgetLineItem.findFirst({
+      where: { id, userId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Budget item not found" }, { status: 404 });
+    }
+
     const item = await prisma.budgetLineItem.update({
       where: { id },
       data: {
@@ -136,6 +143,13 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const existing = await prisma.budgetLineItem.findFirst({
+      where: { id, userId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Budget item not found" }, { status: 404 });
     }
 
     await prisma.budgetLineItem.delete({

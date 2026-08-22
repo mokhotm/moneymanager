@@ -41,6 +41,8 @@ interface DashboardData {
   cashFlowHistory?: any[];
   spendingHeatmap?: any[];
   spendingLocations?: any[];
+  digitalServices?: any[];
+  spendingIntelligence?: any;
   debtDistribution?: any[];
   financialHealth?: {
     score: number;
@@ -216,7 +218,7 @@ export default function Dashboard() {
           <div className="stat-card warning">
             <div className="stat-label">Total Net Worth</div>
             <div className="stat-value gold">{formatZAR(data.netWorth ?? -2169020.04)}</div>
-            <div className="stat-sub">Assets ({formatZAR(data.totalAssets ?? 45755.99)}) − Debts</div>
+            <div className="stat-sub">Assets ({formatZAR(data.totalAssets ?? 45755.99)}) − Debts ({formatZAR(data.totalDebt ?? 2214776.03)})</div>
             {/* Sparkline Decorative SVG */}
             <svg style={{ position: "absolute", bottom: 0, right: 0, width: "120px", height: "40px", opacity: 0.2, pointerEvents: "none" }}>
               <path d="M 0 30 Q 30 10 60 25 T 120 5" fill="none" stroke="#f59e0b" strokeWidth="2.5" />
@@ -323,7 +325,11 @@ export default function Dashboard() {
 
         {/* Geotagged Spending Location Radar Map */}
         <div className="mb-6">
-          <SpendingLocationMap locations={data.spendingLocations} />
+          <SpendingLocationMap
+            locations={data.spendingLocations}
+            digitalServices={data.digitalServices}
+            intelligence={data.spendingIntelligence}
+          />
         </div>
       </div>
     </>

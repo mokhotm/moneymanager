@@ -25,12 +25,19 @@ import {
   FolderOpen,
   Copy,
   Check,
+  Calendar,
 } from "lucide-react";
+import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 
 interface DocumentRecord {
   id: string;
   documentType: string;
+  documentName?: string;
+  institution?: string;
+  accountName?: string;
+  accountNumber?: string;
   relatedEntityType: string;
+  relatedEntityId?: string;
   fileHash: string | null;
   parseStatus: string;
   uploadedAt: string;
@@ -84,6 +91,8 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [cycleMode, setCycleMode] = useState<"PAY_CYCLE" | "CALENDAR_MONTH">("PAY_CYCLE");
 
   // User's own documents
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -299,11 +308,76 @@ export default function DocumentsPage() {
     }
   };
 
-  // Filtered Documents
+  const monthKeys = [
+    "2026-08",
+    "2026-07",
+    "2026-06",
+    "2026-05",
+    "2026-04",
+    "2026-03",
+    "2026-02",
+    "2026-01",
+    "2025-12",
+    "2025-11",
+    "2025-10",
+  ];
+
+  const monthOptions = useMemo(() => {
+    const list = [
+      {
+        value: "ALL",
+        payCycleLabel: "All Pay Cycles / All Dates",
+        calendarLabel: "All Months / All Dates",
+      },
+    ];
+
+    for (const mKey of monthKeys) {
+      const cycle = resolveSalaryCycleRange(mKey);
+      const [yStr, mStr] = mKey.split("-");
+      const y = parseInt(yStr, 10);
+      const m = parseInt(mStr, 10);
+      const monthName = new Date(Date.UTC(y, m - 1, 1)).toLocaleString("en-ZA", { month: "long", timeZone: "UTC" });
+      const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+
+      list.push({
+        value: mKey,
+        payCycleLabel: `${monthName} ${y} Pay Cycle (${cycle.formattedRange})`,
+        calendarLabel: `${monthName} ${y} (01 ${monthName.slice(0, 3)} – ${lastDay} ${monthName.slice(0, 3)})`,
+      });
+    }
+
+    return list;
+  }, []);
+
+  // Filtered Documents by Category and Month / Pay Cycle
   const filteredDocuments = useMemo(() => {
-    if (activeFilter === "ALL") return documents;
-    return documents.filter((d) => d.documentType === activeFilter);
-  }, [documents, activeFilter]);
+    return documents.filter((doc) => {
+      // 1. Filter by category
+      if (activeFilter !== "ALL" && doc.documentType !== activeFilter) {
+        return false;
+      }
+
+      // 2. Filter by month / pay cycle
+      if (selectedMonth === "ALL") return true;
+
+      const docDate = doc.periodStart
+        ? new Date(doc.periodStart)
+        : (doc.periodEnd ? new Date(doc.periodEnd) : new Date(doc.uploadedAt));
+
+      if (cycleMode === "PAY_CYCLE") {
+        const cycle = resolveSalaryCycleRange(selectedMonth);
+        const start = new Date(cycle.startDate).getTime();
+        const end = new Date(cycle.endDate).getTime();
+        const t = docDate.getTime();
+        return t >= start && t <= end;
+      } else {
+        const [yStr, mStr] = selectedMonth.split("-");
+        const y = parseInt(yStr, 10);
+        const m = parseInt(mStr, 10) - 1;
+        return docDate.getFullYear() === y && docDate.getMonth() === m;
+      }
+    });
+  }, [documents, activeFilter, selectedMonth, cycleMode]);
 
   if (loading) {
     return (
@@ -789,30 +863,137 @@ export default function DocumentsPage() {
           )}
         </div>
 
-        {/* Category Pill Filters */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-muted)", marginRight: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-            <Filter size={13} /> Filter:
-          </span>
-          <button
-            onClick={() => setActiveFilter("ALL")}
-            className={`apple-pill-btn ${activeFilter === "ALL" ? "active" : ""}`}
-          >
-            All Documents ({documents.length})
-          </button>
-          {Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => {
-            const count = documents.filter((d) => d.documentType === k).length;
-            if (count === 0 && activeFilter !== k) return null;
-            return (
+        {/* Integrated Filter Bar: Categories + Pay Cycle / Month */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+            marginBottom: "20px",
+            background: "rgba(13, 20, 36, 0.8)",
+            border: "1px solid rgba(255, 255, 255, 0.06)",
+            borderRadius: "16px",
+            padding: "12px 16px",
+            backdropFilter: "blur(16px)",
+          }}
+        >
+          {/* Left: Category Pill Filters */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)", marginRight: "2px", display: "flex", alignItems: "center", gap: "4px", fontWeight: 700, fontFamily: "var(--font-mono)" }}>
+              <Filter size={13} /> Filter:
+            </span>
+            <button
+              onClick={() => setActiveFilter("ALL")}
+              className={`apple-pill-btn ${activeFilter === "ALL" ? "active" : ""}`}
+            >
+              All Documents ({documents.length})
+            </button>
+            {Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => {
+              const count = documents.filter((d) => d.documentType === k).length;
+              if (count === 0 && activeFilter !== k) return null;
+              return (
+                <button
+                  key={k}
+                  onClick={() => setActiveFilter(k)}
+                  className={`apple-pill-btn ${activeFilter === k ? "active" : ""}`}
+                >
+                  {v.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: Pay Cycle / Month Selector & Mode Switcher */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            {/* Mode Switcher */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: "rgba(10, 16, 30, 0.8)",
+                padding: "3px",
+                borderRadius: "999px",
+                border: "1px solid var(--border)",
+              }}
+            >
               <button
-                key={k}
-                onClick={() => setActiveFilter(k)}
-                className={`apple-pill-btn ${activeFilter === k ? "active" : ""}`}
+                type="button"
+                onClick={() => setCycleMode("PAY_CYCLE")}
+                className={`apple-pill-btn ${cycleMode === "PAY_CYCLE" ? "active" : ""}`}
+                style={{ fontSize: "11px", padding: "4px 10px" }}
               >
-                {v.label} ({count})
+                Pay Cycle (15th–15th)
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => setCycleMode("CALENDAR_MONTH")}
+                className={`apple-pill-btn ${cycleMode === "CALENDAR_MONTH" ? "active" : ""}`}
+                style={{ fontSize: "11px", padding: "4px 10px" }}
+              >
+                Calendar Month
+              </button>
+            </div>
+
+            {/* Pay Cycle / Month Dropdown */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "rgba(10, 16, 30, 0.9)",
+                border: selectedMonth !== "ALL" ? "1px solid rgba(245, 158, 11, 0.45)" : "1px solid var(--border)",
+                borderRadius: "10px",
+                padding: "6px 12px",
+              }}
+            >
+              <Calendar size={14} color="#f59e0b" />
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                style={{
+                  background: "transparent",
+                  color: selectedMonth !== "ALL" ? "#fbbf24" : "#f8fafc",
+                  border: "none",
+                  outline: "none",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                {monthOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value} style={{ background: "#0d1424", color: "#fff" }}>
+                    {cycleMode === "PAY_CYCLE" ? opt.payCycleLabel : opt.calendarLabel}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Reset Filter Button */}
+            {(selectedMonth !== "ALL" || activeFilter !== "ALL") && (
+              <button
+                onClick={() => {
+                  setSelectedMonth("ALL");
+                  setActiveFilter("ALL");
+                }}
+                className="apple-pill-btn"
+                style={{
+                  fontSize: "11px",
+                  padding: "6px 10px",
+                  color: "#f87171",
+                  borderColor: "rgba(239, 68, 68, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+                title="Clear Month and Category Filters"
+              >
+                <RefreshCw size={11} /> Reset
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 3. Source Documents Table Card */}
@@ -848,6 +1029,7 @@ export default function DocumentsPage() {
                 <thead>
                   <tr>
                     <th>Document Type</th>
+                    <th>Account Name</th>
                     <th>Statement Period / Upload Date</th>
                     <th>Cryptographic SHA-256 Hash</th>
                     <th>Parsing Status</th>
@@ -863,6 +1045,21 @@ export default function DocumentsPage() {
                     };
                     const Icon = meta.Icon;
                     const isUrgent = doc.parseStatus === "APPLIED" && doc.documentType === "MUNICIPAL_BILL";
+                    
+                    const linkedAcc = accounts.find((a) => a.id === doc.relatedEntityId);
+                    const displayAccount =
+                      doc.accountName ||
+                      (linkedAcc ? linkedAcc.name : null) ||
+                      (doc.documentType === "PAYSLIP" ? "Employer Salary" : "Standard Bank Account");
+
+                    const displayInstitution =
+                      doc.institution ||
+                      (linkedAcc ? linkedAcc.institution : null) ||
+                      (doc.documentType === "PAYSLIP" ? "SARS / Payroll" : "Standard Bank");
+
+                    const displayAccountNumber =
+                      doc.accountNumber ||
+                      (linkedAcc ? (linkedAcc as any).accountNumberMasked : null);
 
                     return (
                       <tr key={doc.id}>
@@ -880,6 +1077,22 @@ export default function DocumentsPage() {
                               <Icon size={16} />
                             </span>
                             <span style={{ color: "var(--text-primary)" }}>{meta.label}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "13.5px" }}>
+                              {displayAccount}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px", fontFamily: "var(--font-mono)" }}>
+                              <span style={{ color: "#38bdf8" }}>{displayInstitution}</span>
+                              {displayAccountNumber && (
+                                <>
+                                  <span>•</span>
+                                  <span>Acc: {displayAccountNumber}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="td-mono">

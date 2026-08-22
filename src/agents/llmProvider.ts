@@ -52,9 +52,13 @@ export function decryptApiKey(encryptedKey: string): string {
 
 export function resolveGoogleModel(modelName: string): string {
   if (!modelName || modelName.trim() === "") {
-    return "gemini-2.0-flash";
+    return "gemini-3.7-flash";
   }
-  return modelName.trim();
+  const trimmed = modelName.trim().replace(/^models\//, "");
+  if (trimmed === "gemini-3.7-ultra" || trimmed === "gemini-3.7-pro" || trimmed === "gemini-3.0-pro") {
+    return "gemini-3.7-flash";
+  }
+  return trimmed;
 }
 
 /**

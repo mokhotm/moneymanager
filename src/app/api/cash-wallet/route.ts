@@ -11,8 +11,10 @@ import {
 
 export async function GET(req: NextRequest) {
   try {
-    const sessionUserId = await getEffectiveUserId(req);
-    const userId = sessionUserId || "cmss0o4qk000agythu0bm5hxf"; // default mokhotm
+    const userId = await getEffectiveUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     let cashAccount = await prisma.account.findFirst({
       where: { userId, type: AccountType.CASH_WALLET },
@@ -85,8 +87,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const sessionUserId = await getEffectiveUserId(req);
-    const userId = sessionUserId || "cmss0o4qk000agythu0bm5hxf";
+    const userId = await getEffectiveUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const body = await req.json();
     const { action, amount, category, description, actualCountedBalance } = body;

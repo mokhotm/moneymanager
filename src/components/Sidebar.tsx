@@ -26,25 +26,60 @@ import {
   BarChart3,
 } from "lucide-react";
 
-const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/net-worth", icon: Gem, label: "Net Worth" },
-  { href: "/reports", icon: BarChart3, label: "Reports & Leakages" },
-  { href: "/money-journey", icon: GitCommit, label: "Money Journey" },
-  { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet" },
-  { href: "/goals", icon: Target, label: "Goals & Wealth" },
-  { href: "/accounts", icon: Landmark, label: "Accounts" },
-  { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
-  { href: "/debts", icon: CreditCard, label: "Debt Register" },
-  { href: "/timeline", icon: LineChart, label: "Payoff Timeline" },
-  { href: "/budget", icon: Receipt, label: "Monthly Budget" },
-  { href: "/recommendations", icon: Inbox, label: "Agent Inbox" },
-  { href: "/chatbot", icon: Bot, label: "ChatBot AI" },
-  { href: "/documents", icon: FolderOpen, label: "Documents" },
-  { href: "/scenario", icon: FlaskConical, label: "Scenario Planner" },
-  { href: "/settings", icon: Settings, label: "Settings & BYOK" },
-  { href: "/billing", icon: Sparkles, label: "Billing & Plans" },
-  { href: "/profile", icon: User, label: "Profile" },
+interface NavGroup {
+  sectionTitle: string;
+  items: {
+    href: string;
+    icon: any;
+    label: string;
+    badge?: string;
+  }[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    sectionTitle: "Overview & Wealth",
+    items: [
+      { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/net-worth", icon: Gem, label: "Net Worth" },
+      { href: "/goals", icon: Target, label: "Goals & Wealth" },
+      { href: "/money-journey", icon: GitCommit, label: "Money Journey" },
+    ],
+  },
+  {
+    sectionTitle: "Cashflow & Banking",
+    items: [
+      { href: "/accounts", icon: Landmark, label: "Accounts" },
+      { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
+      { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet" },
+      { href: "/budget", icon: Receipt, label: "Monthly Budget" },
+    ],
+  },
+  {
+    sectionTitle: "Debt & Freedom Engine",
+    items: [
+      { href: "/debts", icon: CreditCard, label: "Debt Register" },
+      { href: "/timeline", icon: LineChart, label: "Payoff Timeline" },
+      { href: "/scenario", icon: FlaskConical, label: "Scenario Planner" },
+    ],
+  },
+  {
+    sectionTitle: "Intelligence & Vault",
+    items: [
+      { href: "/recommendations", icon: Inbox, label: "Agent Inbox" },
+      { href: "/chatbot", icon: Bot, label: "ChatBot AI" },
+      { href: "/documents", icon: FolderOpen, label: "Document Vault" },
+      { href: "/reports", icon: BarChart3, label: "Reports & Leakages" },
+    ],
+  },
+  {
+    sectionTitle: "System & Settings",
+    items: [
+      { href: "/settings", icon: Settings, label: "Settings & BYOK" },
+      { href: "/billing", icon: Sparkles, label: "Billing & Plans" },
+      { href: "/profile", icon: User, label: "Profile" },
+    ],
+  },
 ];
 
 interface UserSession {
@@ -94,43 +129,85 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="sidebar-nav">
-        <div className="sidebar-section-label">Main Navigation</div>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-item ${isActive ? "active" : ""}`}
-              id={`nav-${item.href.replace("/", "") || "dashboard"}`}
+      <nav className="sidebar-nav" style={{ padding: "14px 12px", gap: "2px" }}>
+        {navGroups.map((group, groupIdx) => (
+          <div key={group.sectionTitle} style={{ marginBottom: groupIdx === navGroups.length - 1 ? 0 : "12px" }}>
+            <div
+              className="sidebar-section-label"
+              style={{
+                fontSize: "10.5px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "var(--text-muted)",
+                padding: "8px 12px 4px",
+                fontFamily: "var(--font-mono)",
+                opacity: 0.85,
+              }}
             >
-              <span className="nav-item-icon">
-                <Icon size={19} />
-              </span>
-              {item.label}
-            </Link>
-          );
-        })}
+              {group.sectionTitle}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`nav-item ${isActive ? "active" : ""}`}
+                    id={`nav-${item.href.replace("/", "") || "dashboard"}`}
+                    style={{
+                      padding: "8px 12px",
+                      fontSize: "13.5px",
+                      gap: "10px",
+                    }}
+                  >
+                    <span className="nav-item-icon" style={{ display: "flex", alignItems: "center" }}>
+                      <Icon size={17} />
+                    </span>
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                    {item.badge && (
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          padding: "2px 6px",
+                          borderRadius: "999px",
+                          background: "var(--gold-dim)",
+                          color: "var(--gold)",
+                          fontWeight: 700,
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* User Session Footer */}
       {currentUser && (
         <div
           style={{
-            padding: "16px 20px",
+            padding: "14px 16px",
             borderTop: "1px solid var(--border-light)",
             display: "flex",
             alignItems: "center",
-            gap: "12px",
-            background: "rgba(7, 11, 20, 0.6)",
+            gap: "10px",
+            background: "rgba(7, 11, 20, 0.75)",
+            backdropFilter: "blur(12px)",
           }}
         >
           <div
             style={{
-              width: "36px",
-              height: "36px",
+              width: "34px",
+              height: "34px",
               borderRadius: "50%",
               background: "var(--gold-gradient)",
               color: "#070b14",
@@ -138,7 +215,7 @@ export default function Sidebar() {
               alignItems: "center",
               justifyContent: "center",
               fontWeight: "800",
-              fontSize: "14px",
+              fontSize: "13px",
               boxShadow: "var(--gold-glow)",
               flexShrink: 0,
             }}
@@ -149,7 +226,7 @@ export default function Sidebar() {
             <div
               style={{
                 fontWeight: "700",
-                fontSize: "13.5px",
+                fontSize: "13px",
                 color: "var(--text-primary)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -180,7 +257,7 @@ export default function Sidebar() {
               border: "1px solid var(--border)",
               color: "var(--text-muted)",
               cursor: "pointer",
-              padding: "8px",
+              padding: "7px",
               borderRadius: "8px",
               display: "flex",
               alignItems: "center",
@@ -199,7 +276,7 @@ export default function Sidebar() {
             }}
             id="sidebar-logout-btn"
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
           </button>
         </div>
       )}

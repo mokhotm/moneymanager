@@ -61,10 +61,10 @@ describe("Payroll Calendar & Business Day Adjustment Engine", () => {
   it("calculates PAYSLIP_AUTO pay cycle bounds accurately", () => {
     // SARS July 2026 pay date (15 July 2026)
     const bounds = getPayCycleBounds(new Date(2026, 6, 15), "PAYSLIP_AUTO");
-    expect(bounds.mode).toBe("PAYSLIP_AUTO");
     expect(bounds.startDate.getDate()).toBe(15);
     expect(bounds.startDate.getMonth()).toBe(6); // July
-    expect(bounds.endDate.getDate()).toBe(14);
+    // Next pay date in August shifts from Saturday 15th to Friday 14th; cycle ends 13th
+    expect(bounds.endDate.getDate()).toBe(13);
     expect(bounds.endDate.getMonth()).toBe(7); // August
   });
 

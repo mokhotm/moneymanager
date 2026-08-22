@@ -22,40 +22,62 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + durationDays * 86400 * 1000);
     const transactionRef = `TXN-SUB-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
-    // Process subscription inside PostgreSQL transaction
-    const [subRecord, updatedUser] = await prisma.$transaction([
-      prisma.subscriptionRecord.create({
+    let targetTier = await prisma.subscriptionTier.findFirst({
+      where: { name: { contains: tier, mode: "insensitive" } },
+    });
+
+    if (!targetTier) {
+      targetTier = await prisma.subscriptionTier.create({
         data: {
-          userId,
-          tier,
-          billingCycle,
-          amount: parseFloat(amount) || (tier === "PRO_WEALTH" ? 199 : 499),
-          currency: "ZAR",
-          paymentGateway: paymentGateway as any,
-          transactionRef,
-          status: "SUCCESS",
-          paidAt: new Date(),
-          expiresAt,
+          name: tier,
+          priceMonthly: parseFloat(amount) || (tier === "PRO_WEALTH" ? 199 : 499),
+          entitlements: { tier, features: ["all"] },
+          isActive: true,
         },
-      }),
-      prisma.user.update({
-        where: { id: userId },
-        data: {
-          subscriptionTier: tier as any,
-          subscriptionStatus: "ACTIVE",
-          billingCycle: billingCycle as any,
-          subscriptionExpiresAt: expiresAt,
-        },
-        select: {
-          id: true,
-          username: true,
-          subscriptionTier: true,
-          subscriptionStatus: true,
-          billingCycle: true,
-          subscriptionExpiresAt: true,
-        },
-      }),
-    ]);
+      });
+    }
+
+    let profile = await prisma.userProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!profile) {
+      profile = await prisma.userProfile.create({
+        data: { userId },
+      });
+    }
+
+    const sub = await prisma.userSubscription.upsert({
+      where: { userProfileId: profile.id },
+      update: {
+        tierId: targetTier.id,
+        status: "ACTIVE",
+        billingPeriod: billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: expiresAt,
+        autoRenew: true,
+      },
+      create: {
+        userProfileId: profile.id,
+        tierId: targetTier.id,
+        status: "ACTIVE",
+        billingPeriod: billingCycle === "ANNUAL" ? "ANNUAL" : "MONTHLY",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: expiresAt,
+        autoRenew: true,
+      },
+      include: { tier: true },
+    });
+
+    await prisma.userProfile.update({
+      where: { id: profile.id },
+      data: { subscriptionTierId: targetTier.id },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, email: true },
+    });
 
     // Audit log entry
     await prisma.auditLogEntry.create({
@@ -67,15 +89,15 @@ export async function POST(request: NextRequest) {
         newValue: `${tier} (${billingCycle})`,
         reason: `Subscribed to ${tier} via ${paymentGateway}. Ref: ${transactionRef}`,
         actor: "USER",
-        changedBy: updatedUser.username,
+        changedBy: user?.username || "user",
       },
     });
 
     return NextResponse.json({
       success: true,
       message: `Successfully subscribed to ${tier}!`,
-      subscription: subRecord,
-      user: updatedUser,
+      subscription: sub,
+      user,
     });
   } catch (error: any) {
     console.error("POST /api/subscription/checkout error:", error);

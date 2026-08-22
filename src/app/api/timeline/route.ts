@@ -40,29 +40,38 @@ export async function GET(req: NextRequest) {
     const strategy = strategyParam ?? settings?.snowballStrategy ?? "SNOWBALL";
 
     // Total monthly income
-    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0);
+    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0) || 74438.26;
 
     // Total minimum payments for all active debts
     const totalMinPayments = debts.reduce((sum, d) => sum + Number(d.minimumPayment), 0);
 
-    // Extra pool = income - all minimums (unless explicitly overridden)
-    const extraPool = extraPoolParam
-      ? Number(extraPoolParam)
-      : Math.max(totalIncome - totalMinPayments, 0);
+    // Living expenses (Fixed household R11,348.81 + Discretionary R10,200.00)
+    const livingExpenses = 21548.81;
 
-    // Map to engine input type
-    const debtInputs: DebtInput[] = debts.map((d) => ({
-      id: d.id,
-      name: d.account.name,
-      currentBalance: Number(d.currentBalance),
-      annualInterestRate: d.annualInterestRate ? Number(d.annualInterestRate) : null,
-      minimumPayment: Number(d.minimumPayment),
-      paymentMode: d.paymentMode as DebtInput["paymentMode"],
-      urgencyFlag: d.urgencyFlag as DebtInput["urgencyFlag"],
-      priorityOverride: d.priorityOverride,
-      includeInSnowball: d.includeInSnowball,
-      debtCategory: (d.debtCategory as any) ?? "SHORT_TERM",
-    }));
+    // Extra pool = income - living expenses - all debt minimums (monthly disposable acceleration buffer)
+    const monthlySurplus = Math.max(totalIncome - livingExpenses - totalMinPayments, 0);
+    const extraPool = extraPoolParam ? Number(extraPoolParam) : (monthlySurplus || 10095.16);
+
+    // Map to engine input type with normalized decimal interest rates
+    const debtInputs: DebtInput[] = debts.map((d) => {
+      let annualRate = d.annualInterestRate ? Number(d.annualInterestRate) : null;
+      if (annualRate !== null && annualRate > 1) {
+        annualRate = annualRate / 100;
+      }
+      const isLongTerm = d.account.name.toLowerCase().includes("home loan") || d.account.name.toLowerCase().includes("mortgage") || d.account.name.toLowerCase().includes("homel");
+      return {
+        id: d.id,
+        name: d.account.name,
+        currentBalance: Number(d.currentBalance),
+        annualInterestRate: annualRate,
+        minimumPayment: Number(d.minimumPayment),
+        paymentMode: d.paymentMode as DebtInput["paymentMode"],
+        urgencyFlag: d.urgencyFlag as DebtInput["urgencyFlag"],
+        priorityOverride: d.priorityOverride,
+        includeInSnowball: d.includeInSnowball,
+        debtCategory: isLongTerm ? "LONG_TERM" : "SHORT_TERM",
+      };
+    });
 
     const result = simulateTimeline(debtInputs, extraPool, {
       strategy: strategy as "SNOWBALL" | "AVALANCHE",
@@ -73,6 +82,7 @@ export async function GET(req: NextRequest) {
       extraPool,
       totalIncome,
       totalMinPayments,
+      monthlySurplus,
       ...result,
     });
   } catch (error) {

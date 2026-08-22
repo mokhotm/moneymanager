@@ -88,20 +88,17 @@ const LLM_PRESETS: LLMPreset[] = [
     pricingLabel: "Free Tier Available",
     pricingBadgeColor: "#10b981",
     pricingDetails: "Google AI Studio provides 15 RPM / 1,000,000 TPM free tier allowance for Gemini 2.0/2.5/3.x Flash models.",
-    defaultModel: "gemini-3.7-ultra",
+    defaultModel: "gemini-3.7-flash",
     defaultBaseUrl: "",
     placeholderKey: "AIzaSy…",
-    desc: "Google Gemini frontier models (Gemini 3.7 Ultra, 3.7 Pro, 3.7 Flash, 3.0 Pro, 2.5 Pro). Multimodal with extreme speed and long context.",
+    desc: "Google Gemini frontier models (Gemini 3.7 Flash, 2.5 Flash, 2.5 Pro, 2.0 Flash, 1.5 Pro). Multimodal with extreme speed and long context.",
     models: [
-      { id: "gemini-3.7-ultra", label: "Gemini 3.7 Ultra (Next-Gen Flagship)", badge: "LATEST", badgeColor: "#f59e0b" },
-      { id: "gemini-3.7-pro", label: "Gemini 3.7 Pro (Frontier Multimodal)", badge: "LATEST", badgeColor: "#f59e0b" },
-      { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Sub-Second Speed)", badge: "FAST", badgeColor: "#10b981" },
-      { id: "gemini-3.0-pro", label: "Gemini 3.0 Pro (High Capacity)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
+      { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Sub-Second Speed & Multimodal)", badge: "LATEST", badgeColor: "#f59e0b" },
+      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Fast & Efficient)", badge: "FAST", badgeColor: "#10b981" },
       { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Deep Reasoning)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", badge: "FAST", badgeColor: "#10b981" },
       { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Free Tier)", badge: "FREE", badgeColor: "#34d399" },
-      { id: "gemini-2.0-flash-thinking-exp-01-21", label: "Gemini 2.0 Flash Thinking", badge: "REASONING", badgeColor: "#a855f7" },
       { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro (2M Context)", badge: "FLAGSHIP", badgeColor: "#64748b" },
+      { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Ultra Fast)", badge: "FAST", badgeColor: "#10b981" },
     ],
   },
   {
@@ -469,7 +466,7 @@ export default function SettingsPage() {
     displayName: "",
     apiKey: "",
     baseUrl: "",
-    modelName: "gemini-3.7-ultra",
+    modelName: "gemini-3.7-flash",
   });
 
   const loadSettings = async () => {

@@ -5,8 +5,10 @@ import { computeSouthAfricanRetirementPlan, RetirementProfileInput } from "@/eng
 
 export async function GET(req: NextRequest) {
   try {
-    const sessionUserId = await getEffectiveUserId(req);
-    const userId = sessionUserId || "cmss0o4qk000agythu0bm5hxf"; // mokhotm
+    const userId = await getEffectiveUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const [income, accounts, debts] = await Promise.all([
       prisma.income.findFirst({ where: { userId } }),

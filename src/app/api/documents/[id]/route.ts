@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
 import { executeDocumentSyncPipeline } from "@/services/documentSyncPipeline";
+import { getUserEntityScope, isEntityOwnedByUser } from "@/lib/userEntityScope";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -13,6 +14,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const resolvedParams = await params;
     const documentId = resolvedParams.id;
 
+    const scope = await getUserEntityScope(userId);
+
     const doc = await prisma.document.findUnique({
       where: { id: documentId },
       include: {
@@ -20,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
 
-    if (!doc) {
+    if (!doc || !isEntityOwnedByUser(doc.relatedEntityId, scope)) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
@@ -28,28 +31,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (doc.relatedEntityId) {
       if (doc.relatedEntityType === "ACCOUNT") {
-        const acc = await prisma.account.findFirst({
-          where: { id: doc.relatedEntityId, userId },
-          select: { name: true, institution: true },
-        });
-        if (acc) linkedAccount = acc;
+        const acc = scope.accountMap.get(doc.relatedEntityId);
+        if (acc) linkedAccount = { name: acc.name, institution: acc.institution };
       } else if (doc.relatedEntityType === "DEBT") {
-        const debt = await prisma.debt.findFirst({
-          where: { id: doc.relatedEntityId, account: { userId } },
-          include: { account: { select: { name: true, institution: true } } },
-        });
-        if (debt?.account) linkedAccount = debt.account;
+        const debt = scope.debtMap.get(doc.relatedEntityId);
+        if (debt?.account) linkedAccount = { name: debt.account.name, institution: debt.account.institution };
       } else if (doc.relatedEntityType === "INCOME") {
-        const inc = await prisma.income.findFirst({
-          where: { id: doc.relatedEntityId, userId },
-          select: { sourceName: true },
-        });
+        const inc = scope.incomeMap.get(doc.relatedEntityId);
         if (inc) linkedAccount = { name: inc.sourceName, institution: "Income Source" };
       } else if (doc.relatedEntityType === "ASSET") {
-        const asset = await prisma.asset.findFirst({
-          where: { id: doc.relatedEntityId, userId },
-          select: { name: true, type: true },
-        });
+        const asset = scope.assetMap.get(doc.relatedEntityId);
         if (asset) linkedAccount = { name: asset.name, institution: asset.type };
       }
     }
@@ -80,11 +71,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json().catch(() => ({}));
     const newStatus = body.status || "APPLIED";
 
+    const scope = await getUserEntityScope(userId);
+
     const doc = await prisma.document.findUnique({
       where: { id: documentId },
     });
 
-    if (!doc) {
+    if (!doc || !isEntityOwnedByUser(doc.relatedEntityId, scope)) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
@@ -169,11 +162,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const resolvedParams = await params;
     const documentId = resolvedParams.id;
 
+    const scope = await getUserEntityScope(userId);
+
     const doc = await prisma.document.findUnique({
       where: { id: documentId },
     });
 
-    if (!doc) {
+    if (!doc || !isEntityOwnedByUser(doc.relatedEntityId, scope)) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 

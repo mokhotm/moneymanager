@@ -44,11 +44,8 @@ export async function GET(request: NextRequest) {
 
     const activeMonth = searchParams.get("month") ?? (await getActiveCycleMonthKey());
 
-    // Fetch DB flows, reference accounts, debts, and active budget line items
-    const [flows, accounts, debts, budgetItems] = await Promise.all([
-      prisma.moneyFlow.findMany({
-        orderBy: { createdAt: "desc" },
-      }),
+    // Fetch reference accounts, debts, and active budget line items
+    const [accounts, debts, budgetItems] = await Promise.all([
       prisma.account.findMany({ where: { userId } }),
       prisma.debt.findMany({
         where: { account: { userId } },
@@ -59,6 +56,21 @@ export async function GET(request: NextRequest) {
         orderBy: [{ category: "asc" }, { createdAt: "asc" }],
       }),
     ]);
+
+    const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
+
+    const flows = userEntityIds.length === 0
+      ? []
+      : await prisma.moneyFlow.findMany({
+          where: {
+            OR: [
+              { sourceRef: { in: userEntityIds } },
+              { destinationRef: { in: userEntityIds } },
+            ],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 350,
+        });
 
     const accountMap = new Map(accounts.map((a) => [a.id, a]));
     const debtMap = new Map(debts.map((d) => [d.id, d]));
@@ -488,7 +500,7 @@ export async function GET(request: NextRequest) {
         const [yearStr, monthStr] = payPeriod.split("-");
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10);
-        startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+        startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
         endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
       } else {
         // South African statutory payroll adjustment (Friday 14th if Sat 15th, Mon 16th if Sun 15th, preceding if holiday)
@@ -497,9 +509,15 @@ export async function GET(request: NextRequest) {
         endDate = cycleBounds.endDate;
       }
 
+      const startDayStr = startDate.toISOString().split("T")[0];
+      const endDayStr = endDate.toISOString().split("T")[0];
+
       filtered = filtered.filter((t) => {
+        const tDayStr = t.date.includes("T") ? t.date.split("T")[0] : t.date;
         const d = new Date(t.date);
-        return d >= startDate && d <= endDate;
+        const isTimeInRange = d.getTime() >= startDate.getTime() && d.getTime() <= endDate.getTime();
+        const isDayInRange = tDayStr >= startDayStr && tDayStr <= endDayStr;
+        return isTimeInRange || isDayInRange;
       });
     }
 

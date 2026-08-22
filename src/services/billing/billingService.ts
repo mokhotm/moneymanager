@@ -137,7 +137,6 @@ export class BillingService {
           profile = await tx.userProfile.create({
             data: {
               userId: pendingPayment.userId,
-              isAuthenticated: true,
             },
           });
         }
@@ -215,14 +214,15 @@ export class BillingService {
       },
     });
 
-    // Create dunning alert
-    await this.prisma.alert.create({
+    // Create dunning recommendation
+    await this.prisma.agentRecommendation.create({
       data: {
-        type: 'BILL_DUE_SOON',
-        message: `Your subscription renewal for ${subscription.tier.name} failed. You have a ${graceDays}-day grace period to update payment details before access expires.`,
-        severity: 'WARNING',
-        relatedEntityType: 'ACCOUNT',
-        relatedEntityId: subscription.id,
+        agent: 'COACH',
+        title: `Subscription Renewal Grace Period (${subscription.tier.name})`,
+        description: `Your subscription renewal for ${subscription.tier.name} failed. You have a ${graceDays}-day grace period to update payment details before access expires.`,
+        rationale: 'Preserve user tier entitlements while resolving billing gateway dunning.',
+        payload: { userProfileId, subscriptionId: subscription.id, graceDays },
+        status: 'PENDING',
       },
     });
 

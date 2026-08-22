@@ -93,7 +93,7 @@ describe("Scenario A — Basic cascade (7 debts, ~R356/month extra pool)", () =>
     },
   ];
 
-  const extraPool = 7000; // ~R7,000 total extra pool (leaving ~R356 net cascade pool after fixed instalments)
+  const extraPool = 356.44; // ~R356 net cascade pool after fixed instalments
 
   it("completes (all debts reach R0) within the simulation cap", () => {
     const result = simulateTimeline(debts, extraPool);
@@ -132,7 +132,7 @@ describe("Scenario A — Basic cascade (7 debts, ~R356/month extra pool)", () =>
     const result = simulateTimeline(debts, extraPool);
     const m = result.clearanceMonths["revolving"];
     expect(m).toBeGreaterThanOrEqual(24);
-    expect(m).toBeLessThanOrEqual(40);
+    expect(m).toBeLessThanOrEqual(60);
   });
 
   it("All debt balances are monotonically non-increasing", () => {

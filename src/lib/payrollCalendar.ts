@@ -27,10 +27,9 @@ export const SA_PUBLIC_HOLIDAYS: PublicHoliday[] = [
  * Also accounts for the Public Holidays Act rule: if a public holiday falls on a Sunday, the following Monday is a public holiday.
  */
 export function isSAPublicHoliday(date: Date): boolean {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-  const dayOfWeek = date.getUTCDay(); // 0 = Sunday
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayOfWeek = date.getDay(); // 0 = Sunday
 
   // Direct match
   const directMatch = SA_PUBLIC_HOLIDAYS.some((h) => h.month === month && h.day === day);
@@ -39,9 +38,9 @@ export function isSAPublicHoliday(date: Date): boolean {
   // Monday holiday check (if Sunday was a holiday)
   if (dayOfWeek === 1) {
     const yesterday = new Date(date);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const yMonth = yesterday.getUTCMonth() + 1;
-    const yDay = yesterday.getUTCDate();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yMonth = yesterday.getMonth() + 1;
+    const yDay = yesterday.getDate();
     const sundayWasHoliday = SA_PUBLIC_HOLIDAYS.some((h) => h.month === yMonth && h.day === yDay);
     if (sundayWasHoliday) return true;
   }
@@ -53,7 +52,7 @@ export function isSAPublicHoliday(date: Date): boolean {
  * Check if a date is a weekend (Saturday or Sunday)
  */
 export function isWeekend(date: Date): boolean {
-  const day = date.getUTCDay();
+  const day = date.getDay();
   return day === 0 || day === 6; // Sunday = 0, Saturday = 6
 }
 
@@ -68,40 +67,53 @@ export function isNonBusinessDay(date: Date): boolean {
  * Adjusts a target pay date according to South African payroll rules:
  * - Base pay date: 15th of the month.
  * - Saturday -> Friday (Preceding Business Day: day - 1).
- * - Sunday -> Monday (Following Business Day: day + 1).
+ * - Sunday -> Monday (Following Business Day: day + 1) or Friday if PRECEDING_BUSINESS_DAY.
  * - Public Holiday -> Shift to preceding business day before the holiday (and avoid weekends).
  */
 export function adjustPayDateForBusinessDays(
   targetDate: Date,
   rule: "PRECEDING_BUSINESS_DAY" | "FOLLOWING_BUSINESS_DAY" | "SA_STANDARD" = "SA_STANDARD"
 ): { actualPayDate: Date; wasShifted: boolean; shiftReason?: string } {
-  let current = new Date(targetDate);
-  const original = new Date(targetDate);
+  let current = new Date(targetDate.getTime());
+  const original = new Date(targetDate.getTime());
 
   // If holiday: shift to preceding day first
   while (isSAPublicHoliday(current)) {
-    current.setUTCDate(current.getUTCDate() - 1);
+    current.setDate(current.getDate() - 1);
   }
 
-  const dow = current.getUTCDay(); // 0 = Sun, 6 = Sat
-  if (dow === 6) {
-    // Saturday -> Friday
-    current.setUTCDate(current.getUTCDate() - 1);
-  } else if (dow === 0) {
-    // Sunday -> Monday
-    current.setUTCDate(current.getUTCDate() + 1);
+  const dow = current.getDay(); // 0 = Sun, 6 = Sat
+  if (rule === "PRECEDING_BUSINESS_DAY") {
+    if (dow === 6) {
+      current.setDate(current.getDate() - 1); // Sat -> Fri
+    } else if (dow === 0) {
+      current.setDate(current.getDate() - 2); // Sun -> Fri
+    }
+  } else if (rule === "FOLLOWING_BUSINESS_DAY") {
+    if (dow === 6) {
+      current.setDate(current.getDate() + 2); // Sat -> Mon
+    } else if (dow === 0) {
+      current.setDate(current.getDate() + 1); // Sun -> Mon
+    }
+  } else {
+    // SA_STANDARD
+    if (dow === 6) {
+      current.setDate(current.getDate() - 1); // Sat -> Fri
+    } else if (dow === 0) {
+      current.setDate(current.getDate() + 1); // Sun -> Mon
+    }
   }
 
   // If shifted date lands on a holiday or weekend, walk back to previous business day
   while (isNonBusinessDay(current)) {
-    current.setUTCDate(current.getUTCDate() - 1);
+    current.setDate(current.getDate() - 1);
   }
 
   const wasShifted = current.getTime() !== original.getTime();
   let shiftReason: string | undefined;
   if (wasShifted) {
-    const origDow = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][original.getUTCDay()];
-    shiftReason = `Base pay date fell on ${origDow}; shifted to ${current.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" })}`;
+    const origDow = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][original.getDay()];
+    shiftReason = `Base pay date fell on ${origDow}; shifted to ${current.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "short" })}`;
   }
 
   return {
@@ -257,8 +269,8 @@ export function getPayCycleBounds(
   }
 
   if (mode === "CALENDAR_MONTH") {
-    const start = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), 1, 0, 0, 0));
-    const end = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+    const start = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1, 0, 0, 0);
+    const end = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
     return {
       mode: "CALENDAR_MONTH",
       startDate: start,
@@ -266,27 +278,27 @@ export function getPayCycleBounds(
       payDate: targetDate,
       actualPayDate: targetDate,
       wasShifted: false,
-      formattedRange: `1 ${start.toLocaleDateString("en-ZA", { month: "short", timeZone: "UTC" })} – ${end.getUTCDate()} ${end.toLocaleDateString("en-ZA", { month: "short", year: "numeric", timeZone: "UTC" })}`,
-      cycleMonthKey: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
+      formattedRange: `1 ${start.toLocaleDateString("en-ZA", { month: "short" })} – ${end.getDate()} ${end.toLocaleDateString("en-ZA", { month: "short", year: "numeric" })}`,
+      cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
     };
   }
 
   // PAYSLIP_AUTO mode
   const { actualPayDate, wasShifted, shiftReason } = adjustPayDateForBusinessDays(targetDate, "SA_STANDARD");
 
-  const start = new Date(Date.UTC(actualPayDate.getUTCFullYear(), actualPayDate.getUTCMonth(), actualPayDate.getUTCDate(), 0, 0, 0, 0));
+  const start = new Date(actualPayDate.getFullYear(), actualPayDate.getMonth(), actualPayDate.getDate(), 0, 0, 0, 0);
   
   // Next cycle pay date
-  let nextMonth = actualPayDate.getUTCMonth() + 2;
-  let nextYear = actualPayDate.getUTCFullYear();
+  let nextMonth = actualPayDate.getMonth() + 2;
+  let nextYear = actualPayDate.getFullYear();
   if (nextMonth === 13) {
     nextMonth = 1;
     nextYear++;
   }
-  const nextTarget = new Date(Date.UTC(nextYear, nextMonth - 1, 15));
+  const nextTarget = new Date(nextYear, nextMonth - 1, 15);
   const nextActual = adjustPayDateForBusinessDays(nextTarget, "SA_STANDARD").actualPayDate;
   
-  const end = new Date(Date.UTC(nextActual.getUTCFullYear(), nextActual.getUTCMonth(), nextActual.getUTCDate() - 1, 23, 59, 59, 999));
+  const end = new Date(nextActual.getFullYear(), nextActual.getMonth(), nextActual.getDate() - 1, 23, 59, 59, 999);
 
   return {
     mode: "PAYSLIP_AUTO",
@@ -296,7 +308,7 @@ export function getPayCycleBounds(
     actualPayDate,
     wasShifted,
     shiftReason,
-    formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short", timeZone: "UTC" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`,
-    cycleMonthKey: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
+    formattedRange: `${start.toLocaleDateString("en-ZA", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}`,
+    cycleMonthKey: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
   };
 }

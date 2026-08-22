@@ -1,13 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { BillingService } from '@/services/billing/billingService';
 import { BillingPeriod } from '@prisma/client';
+import { getEffectiveUserId } from '@/lib/session';
 
 const billingService = new BillingService();
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { tierId, userId, billingPeriod } = body;
+    const body = await req.json().catch(() => ({}));
+    let userId = body.userId;
+    if (!userId || userId === 'unauthenticated') {
+      userId = await getEffectiveUserId(req);
+    }
 
     // §17.1 / Scenario AK: Check authentication
     if (!userId || userId === 'unauthenticated') {
@@ -16,6 +20,8 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+
+    const { tierId, billingPeriod } = body;
 
     if (!tierId) {
       return NextResponse.json({ error: 'tierId is required' }, { status: 400 });

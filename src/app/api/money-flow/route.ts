@@ -21,17 +21,29 @@ export async function GET(request: NextRequest) {
     const payPeriod = searchParams.get("payPeriod");
     const periodType = searchParams.get("periodType") || "SALARY";
 
-    // Fetch all DB flows & reference entities (accounts & debts for mokhotm)
-    const [dbFlows, accounts, debts] = await Promise.all([
-      prisma.moneyFlow.findMany({
-        orderBy: { createdAt: "desc" },
-      }),
+    // Fetch reference entities (accounts & debts)
+    const [accounts, debts] = await Promise.all([
       prisma.account.findMany({ where: { userId } }),
       prisma.debt.findMany({
         where: { account: { userId } },
         include: { account: true },
       }),
     ]);
+
+    const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
+
+    const dbFlows = userEntityIds.length === 0
+      ? []
+      : await prisma.moneyFlow.findMany({
+          where: {
+            OR: [
+              { sourceRef: { in: userEntityIds } },
+              { destinationRef: { in: userEntityIds } },
+            ],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 350,
+        });
 
     const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
     const debtMap = new Map(debts.map((d) => [d.id, d.account.name]));

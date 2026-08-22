@@ -3,17 +3,26 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import crypto from "crypto";
 
-const ENC_KEY = (process.env.ENCRYPTION_KEY ?? "money_manager_secret_key_32bytes!!").padEnd(32).slice(0, 32);
-const IV = Buffer.alloc(16, 0);
+const ENC_KEY = Buffer.from((process.env.ENCRYPTION_KEY ?? "money_manager_secret_key_32bytes!!").padEnd(32).slice(0, 32));
 
 function encrypt(plain: string): string {
-  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENC_KEY), IV);
-  return cipher.update(plain, "utf8", "hex") + cipher.final("hex");
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv("aes-256-cbc", ENC_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  return iv.toString("hex") + ":" + encrypted.toString("hex");
 }
 
 function decrypt(enc: string): string {
   try {
-    const d = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENC_KEY), IV);
+    if (enc.includes(":")) {
+      const [ivHex, dataHex] = enc.split(":");
+      const iv = Buffer.from(ivHex, "hex");
+      const decipher = crypto.createDecipheriv("aes-256-cbc", ENC_KEY, iv);
+      return Buffer.concat([decipher.update(Buffer.from(dataHex, "hex")), decipher.final()]).toString("utf8");
+    }
+    // Legacy fallback with static IV
+    const legacyIV = Buffer.alloc(16, 0);
+    const d = crypto.createDecipheriv("aes-256-cbc", ENC_KEY, legacyIV);
     return d.update(enc, "hex", "utf8") + d.final("utf8");
   } catch { return ""; }
 }

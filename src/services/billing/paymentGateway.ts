@@ -78,7 +78,14 @@ export class MockPaymentGateway implements PaymentGatewayProvider {
     if (!signature) return false;
     if (signature === 'mock_valid_signature') return true;
     const expected = this.signPayload(payload, secret || this.secret);
-    return signature === expected;
+    try {
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expected);
+      if (sigBuf.length !== expBuf.length) return false;
+      return crypto.timingSafeEqual(sigBuf, expBuf);
+    } catch {
+      return false;
+    }
   }
 
   async refund(chargeId: string, amount: number): Promise<RefundResult> {

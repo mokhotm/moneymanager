@@ -515,10 +515,10 @@ export default function TimelinePage() {
                   <CheckCircle2 size={16} /> Short-Term Consumer Debt-Free In
                 </div>
                 <div className="stat-value green" style={{ fontSize: "24px", margin: "6px 0 4px 0" }}>
-                  {formatMonths(data.shortTermClearanceMonths || 18)}
+                  {formatMonths(data.shortTermClearanceMonths || 55)}
                 </div>
                 <div className="stat-sub flex items-center gap-1" style={{ color: "#6ee7b7" }}>
-                  <Sparkles size={12} style={{ color: "#10b981" }} /> All 7 consumer debts cleared!
+                  <Sparkles size={12} style={{ color: "#10b981" }} /> All consumer debts fully cleared!
                 </div>
               </div>
 
@@ -528,10 +528,10 @@ export default function TimelinePage() {
                   <Home size={16} /> Mortgage Bond Payoff Target
                 </div>
                 <div className="stat-value" style={{ color: "#c084fc", fontSize: "24px", margin: "6px 0 4px 0" }}>
-                  {formatMonths(data.longTermClearanceMonths && data.longTermClearanceMonths < 600 ? data.longTermClearanceMonths : 240)}
+                  {formatMonths(data.longTermClearanceMonths && data.longTermClearanceMonths < 600 ? data.longTermClearanceMonths : 101)}
                 </div>
                 <div className="stat-sub" style={{ color: "#e9d5ff" }}>
-                  Standard Bank Home Loan (240 Mo Term)
+                  Accelerated from 20 yrs to {( (data.longTermClearanceMonths || 101) / 12 ).toFixed(1)} yrs via Snowball!
                 </div>
               </div>
 
@@ -554,7 +554,7 @@ export default function TimelinePage() {
                 <div className="stat-value gold" style={{ fontSize: "24px", margin: "6px 0 4px 0" }}>
                   {formatZAR(data.extraPool)}
                 </div>
-                <div className="stat-sub">Available after minimum payments</div>
+                <div className="stat-sub">Monthly surplus applied to target debt</div>
               </div>
             </div>
 
@@ -566,8 +566,8 @@ export default function TimelinePage() {
               {(
                 [
                   { id: "ALL", label: "All Debts", icon: ShieldCheck },
-                  { id: "SHORT_TERM", label: "Short-Term Consumer Debts (Clears M18)", icon: CreditCard },
-                  { id: "LONG_TERM", label: "Long-Term Mortgage (Home Loan)", icon: Home },
+                  { id: "SHORT_TERM", label: `Short-Term Consumer Debts (Clears M${data.shortTermClearanceMonths || 55})`, icon: CreditCard },
+                  { id: "LONG_TERM", label: `Long-Term Mortgage (Clears M${data.longTermClearanceMonths || 101})`, icon: Home },
                 ] as const
               ).map((f) => {
                 const IconComponent = f.icon;
@@ -621,7 +621,7 @@ export default function TimelinePage() {
                   }}
                 >
                   <CheckCircle2 size={13} />
-                  Short-Term Consumer Debt Cleared in 18 Months!
+                  Short-Term Consumer Debt Cleared in {data.shortTermClearanceMonths || 55} Months!
                 </span>
               </div>
 
@@ -629,7 +629,7 @@ export default function TimelinePage() {
               {filterCategory !== "LONG_TERM" && (
                 <div style={{ marginBottom: "24px" }}>
                   <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <CreditCard size={14} style={{ color: "#f59e0b" }} /> Short-Term Consumer Debts (Cleared within 18 Months)
+                    <CreditCard size={14} style={{ color: "#f59e0b" }} /> Short-Term Consumer Debts (Cleared within {data.shortTermClearanceMonths || 55} Months)
                   </h4>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "14px" }}>

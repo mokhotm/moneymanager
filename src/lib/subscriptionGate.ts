@@ -6,6 +6,7 @@ export interface TierLimits {
   tier: TierName;
   displayName: string;
   priceZar: number;
+  priceAnnualZar: number;
   maxAccounts: number;
   maxDebts: number;
   dualTrackWaterfall: boolean;
@@ -13,6 +14,12 @@ export interface TierLimits {
   byokLLM: boolean;
   multiAgentOCR: boolean;
   windeedValuations: boolean;
+  moneyJourney: boolean;
+  coach: boolean;
+  reportsDepth: "basic" | "standard" | "advanced";
+  aiInsights: "limited" | "full" | "unlimited";
+  agentAssignments: number;
+  prioritySupport: boolean;
 }
 
 export const TIER_SPECIFICATIONS: Record<TierName, TierLimits> = {
@@ -20,6 +27,7 @@ export const TIER_SPECIFICATIONS: Record<TierName, TierLimits> = {
     tier: "STARTER_FREE",
     displayName: "Starter Free",
     priceZar: 0,
+    priceAnnualZar: 0,
     maxAccounts: 3,
     maxDebts: 5,
     dualTrackWaterfall: false,
@@ -27,11 +35,18 @@ export const TIER_SPECIFICATIONS: Record<TierName, TierLimits> = {
     byokLLM: false,
     multiAgentOCR: false,
     windeedValuations: false,
+    moneyJourney: false,
+    coach: false,
+    reportsDepth: "basic",
+    aiInsights: "limited",
+    agentAssignments: 1,
+    prioritySupport: false,
   },
   PRO_WEALTH: {
     tier: "PRO_WEALTH",
     displayName: "Pro Wealth Accelerator",
     priceZar: 199,
+    priceAnnualZar: 1990,
     maxAccounts: Infinity,
     maxDebts: Infinity,
     dualTrackWaterfall: true,
@@ -39,11 +54,18 @@ export const TIER_SPECIFICATIONS: Record<TierName, TierLimits> = {
     byokLLM: true,
     multiAgentOCR: true,
     windeedValuations: false,
+    moneyJourney: true,
+    coach: true,
+    reportsDepth: "standard",
+    aiInsights: "full",
+    agentAssignments: 2,
+    prioritySupport: false,
   },
   EXECUTIVE_ENTERPRISE: {
     tier: "EXECUTIVE_ENTERPRISE",
     displayName: "Executive Enterprise",
     priceZar: 499,
+    priceAnnualZar: 4990,
     maxAccounts: Infinity,
     maxDebts: Infinity,
     dualTrackWaterfall: true,
@@ -51,8 +73,24 @@ export const TIER_SPECIFICATIONS: Record<TierName, TierLimits> = {
     byokLLM: true,
     multiAgentOCR: true,
     windeedValuations: true,
+    moneyJourney: true,
+    coach: true,
+    reportsDepth: "advanced",
+    aiInsights: "unlimited",
+    agentAssignments: 4,
+    prioritySupport: true,
   },
 };
+
+function normalizeTierName(name?: string | null): TierName {
+  if (!name) return "STARTER_FREE";
+  const upper = name.toUpperCase();
+  if (upper.includes("EXECUTIVE") || upper.includes("ENTERPRISE")) return "EXECUTIVE_ENTERPRISE";
+  if (upper.includes("PRO") || upper.includes("WEALTH") || upper.includes("PLUS") || upper.includes("PREMIUM")) {
+    return "PRO_WEALTH";
+  }
+  return "STARTER_FREE";
+}
 
 export async function getUserSubscriptionDetails(userId: string) {
   const user = await prisma.user.findUnique({
@@ -62,27 +100,59 @@ export async function getUserSubscriptionDetails(userId: string) {
       username: true,
       email: true,
       role: true,
+      profile: {
+        include: {
+          userSubscription: {
+            include: {
+              tier: true,
+            },
+          },
+        },
+      },
     },
   });
 
   if (!user) return null;
 
-  // Grant EXECUTIVE_ENTERPRISE to mokhotm, admin roles, or authenticated owner
-  const tier: TierName = "EXECUTIVE_ENTERPRISE";
-  const specs = TIER_SPECIFICATIONS[tier] || TIER_SPECIFICATIONS.EXECUTIVE_ENTERPRISE;
+  // Resolve dynamic tier
+  let resolvedTier: TierName = "STARTER_FREE";
+
+  const sub = user.profile?.userSubscription;
+  const isActiveSub = sub && (sub.status === "ACTIVE" || sub.status === "TRIALING" || sub.status === "PAST_DUE");
+
+  if (isActiveSub && sub.tier?.name) {
+    resolvedTier = normalizeTierName(sub.tier.name);
+  } else if (user.profile?.subscriptionTierId) {
+    const tierRecord = await prisma.subscriptionTier.findUnique({
+      where: { id: user.profile.subscriptionTierId },
+    });
+    if (tierRecord?.name) {
+      resolvedTier = normalizeTierName(tierRecord.name);
+    }
+  } else if (user.role === "admin" || user.username === "mokhotm") {
+    // Retain Executive privileges for system admin / primary account
+    resolvedTier = "EXECUTIVE_ENTERPRISE";
+  }
+
+  const specs = TIER_SPECIFICATIONS[resolvedTier] || TIER_SPECIFICATIONS.STARTER_FREE;
 
   const [accountsCount, debtsCount] = await Promise.all([
     prisma.account.count({ where: { userId } }),
     prisma.debt.count({ where: { account: { userId } } }),
   ]);
 
-  const canAddAccount = accountsCount < specs.maxAccounts;
-  const canAddDebt = debtsCount < specs.maxDebts;
+  const canAddAccount = specs.maxAccounts === Infinity || accountsCount < specs.maxAccounts;
+  const canAddDebt = specs.maxDebts === Infinity || debtsCount < specs.maxDebts;
 
   return {
-    ...user,
-    tier,
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    tier: resolvedTier,
     specs,
+    subscriptionStatus: sub?.status || (resolvedTier !== "STARTER_FREE" ? "ACTIVE" : "FREE"),
+    currentPeriodEnd: sub?.currentPeriodEnd || null,
     usage: {
       accountsCount,
       maxAccounts: specs.maxAccounts === Infinity ? "UNLIMITED" : specs.maxAccounts,
@@ -97,6 +167,12 @@ export async function getUserSubscriptionDetails(userId: string) {
       byokLLM: specs.byokLLM,
       multiAgentOCR: specs.multiAgentOCR,
       windeedValuations: specs.windeedValuations,
+      moneyJourney: specs.moneyJourney,
+      coach: specs.coach,
+      reportsDepth: specs.reportsDepth,
+      aiInsights: specs.aiInsights,
+      agentAssignments: specs.agentAssignments,
+      prioritySupport: specs.prioritySupport,
     },
   };
 }
@@ -118,6 +194,6 @@ export async function checkFeatureAccess(userId: string, feature: keyof TierLimi
     requiredTier,
     message: allowed
       ? `Feature ${feature} is active for ${details.tier}`
-      : `Feature ${feature} requires ${requiredTier} tier. Upgrade on your profile page.`,
+      : `Feature ${feature} requires ${requiredTier} tier. Upgrade on your subscription page.`,
   };
 }

@@ -11,6 +11,12 @@ import {
   RefreshCw,
   AlertCircle,
   Sparkles,
+  Layers,
+  MapPin,
+  FileSearch,
+  Key,
+  Compass,
+  Bot,
 } from "lucide-react";
 
 interface SubscriptionTier {
@@ -30,6 +36,14 @@ interface CurrentSubscription {
   currentPeriodEnd?: string;
   tier?: SubscriptionTier;
   entitlements?: Record<string, any>;
+  usage?: {
+    accountsCount: number;
+    maxAccounts: number | string;
+    canAddAccount: boolean;
+    debtsCount: number;
+    maxDebts: number | string;
+    canAddDebt: boolean;
+  };
 }
 
 export default function BillingPage() {
@@ -65,8 +79,8 @@ export default function BillingPage() {
   };
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
-    if (tier.name.toLowerCase() === "free") {
-      setNotification({ message: "You are currently on the Free tier.", type: "success" });
+    if (tier.name.toLowerCase().includes("free")) {
+      setNotification({ message: "You are currently on the Starter Free tier.", type: "success" });
       return;
     }
 
@@ -79,7 +93,6 @@ export default function BillingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tierId: tier.id,
-          userId: "cml8x5mqu0000vv5c7n4k5b2p", // Active user mokhotm
           billingPeriod,
         }),
       });
@@ -159,7 +172,7 @@ export default function BillingPage() {
               Subscription &amp; Plans
             </h1>
             <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0, marginTop: "4px" }}>
-              Unlock full AI wealth intelligence, multi-hop Money Journey lineage, and advanced reports.
+              Unlock full AI wealth intelligence, multi-hop Money Journey lineage, GPS Radar, and Deed Office valuations.
             </p>
           </div>
         </div>
@@ -225,7 +238,7 @@ export default function BillingPage() {
                 Active Subscription
               </div>
               <div style={{ fontSize: "20px", fontWeight: "800", color: "#f8fafc", display: "flex", alignItems: "center", gap: "10px" }}>
-                {subscription.tier?.name || "Free Tier"}
+                {subscription.tier?.name || "Starter Free"}
                 <span
                   style={{
                     fontSize: "12px",
@@ -240,9 +253,9 @@ export default function BillingPage() {
                   {subscription.status}
                 </span>
               </div>
-              {subscription.currentPeriodEnd && (
-                <div style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>
-                  Renews on: {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-ZA")}
+              {subscription.usage && (
+                <div style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>
+                  Accounts: <strong>{subscription.usage.accountsCount} / {subscription.usage.maxAccounts}</strong> &bull; Debts: <strong>{subscription.usage.debtsCount} / {subscription.usage.maxDebts}</strong>
                 </div>
               )}
             </div>
@@ -327,7 +340,7 @@ export default function BillingPage() {
                 color: "#34d399",
               }}
             >
-              Save 20%
+              Save 17%
             </span>
           </button>
         </div>
@@ -336,8 +349,8 @@ export default function BillingPage() {
       {/* Tier Cards Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px", marginBottom: "48px" }}>
         {tiers.map((tier) => {
-          const isCurrent = subscription?.tier?.name?.toLowerCase() === tier.name.toLowerCase();
-          const isPopular = tier.name.toLowerCase() === "plus";
+          const isCurrent = subscription?.tier?.name?.toLowerCase().includes(tier.name.toLowerCase().split(" ")[0]);
+          const isPopular = tier.name.toLowerCase().includes("pro") || tier.name.toLowerCase().includes("wealth");
           const ent = parseEntitlements(tier);
           const price = billingPeriod === "ANNUAL" && tier.priceAnnual != null
             ? Math.round(Number(tier.priceAnnual) / 12)
@@ -392,7 +405,7 @@ export default function BillingPage() {
                     / month
                   </span>
                 </div>
-                {billingPeriod === "ANNUAL" && tier.priceAnnual != null && (
+                {billingPeriod === "ANNUAL" && tier.priceAnnual != null && tier.priceAnnual > 0 && (
                   <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
                     Billed R{Number(tier.priceAnnual)} annually
                   </div>
@@ -405,35 +418,47 @@ export default function BillingPage() {
                   Includes:
                 </div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.moneyJourney ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.moneyJourney ? "#34d399" : "#475569" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#f1f5f9" }}>
+                    <div style={{ color: "#34d399" }}>
                       <Check size={16} />
                     </div>
-                    Money Journey &amp; Transfer Matching
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.coach ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.coach ? "#34d399" : "#475569" }}>
-                      <Check size={16} />
-                    </div>
-                    AI Coach &amp; Conversational Copilot
+                    {ent.maxAccounts === Infinity || ent.maxAccounts === "UNLIMITED" ? "Unlimited Accounts" : `${ent.maxAccounts || 3} Bank & Asset Accounts`}
                   </li>
                   <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#f1f5f9" }}>
                     <div style={{ color: "#34d399" }}>
                       <Check size={16} />
                     </div>
-                    {ent.agentAssignments ?? 1} AI Agent Model Assignment(s)
+                    {ent.maxDebts === Infinity || ent.maxDebts === "UNLIMITED" ? "Unlimited Debt Trackers" : `${ent.maxDebts || 5} Debt Trackers`}
                   </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#f1f5f9" }}>
-                    <div style={{ color: "#34d399" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.dualTrackWaterfall ? "#f1f5f9" : "#64748b" }}>
+                    <div style={{ color: ent.dualTrackWaterfall ? "#34d399" : "#475569" }}>
                       <Check size={16} />
                     </div>
-                    Reports Depth: <strong style={{ textTransform: "capitalize", marginLeft: "4px" }}>{ent.reportsDepth ?? "basic"}</strong>
+                    Dual-Track Snowball Waterfall Engine
                   </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.prioritySupport ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.prioritySupport ? "#34d399" : "#475569" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.spendingLocationRadar ? "#f1f5f9" : "#64748b" }}>
+                    <div style={{ color: ent.spendingLocationRadar ? "#34d399" : "#475569" }}>
                       <Check size={16} />
                     </div>
-                    Priority Support &amp; Early Features
+                    GPS Geotagged Spending Radar
+                  </li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.byokLLM ? "#f1f5f9" : "#64748b" }}>
+                    <div style={{ color: ent.byokLLM ? "#34d399" : "#475569" }}>
+                      <Check size={16} />
+                    </div>
+                    BYOK Custom LLM Engine Key Vault
+                  </li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.multiAgentOCR ? "#f1f5f9" : "#64748b" }}>
+                    <div style={{ color: ent.multiAgentOCR ? "#34d399" : "#475569" }}>
+                      <Check size={16} />
+                    </div>
+                    Multi-Agent OCR Document Ingestion
+                  </li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.windeedValuations ? "#f1f5f9" : "#64748b" }}>
+                    <div style={{ color: ent.windeedValuations ? "#34d399" : "#475569" }}>
+                      <Check size={16} />
+                    </div>
+                    Windeed Deeds Office Property Valuations
                   </li>
                 </ul>
               </div>

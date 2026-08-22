@@ -81,34 +81,29 @@ export function round2(n: number): number {
 /**
  * Compute monthly interest for a debt.
  * Returns 0 if rate is null / 0.
+ * Automatically normalizes percentage rates (e.g. 21.0 or 11.75 -> 0.21, 0.1175).
  */
-function monthlyInterest(balance: number, annualRate: number | null): number {
-  if (!annualRate || annualRate <= 0) return 0;
-  return round2(balance * (annualRate / 12));
+export function monthlyInterest(balance: number, annualRate: number | null): number {
+  if (!annualRate || annualRate <= 0 || balance <= 0) return 0;
+  const rateDecimal = annualRate > 1 ? annualRate / 100 : annualRate;
+  return round2(balance * (rateDecimal / 12));
 }
 
 // ─── Core Simulation ──────────────────────────────────────────────────────────
 
 /**
- * Sort debts for the SNOWBALL strategy (fastest standalone payoff first).
+ * Sort debts for the SNOWBALL strategy (fastest standalone payoff / smallest balance first).
  * Debts with priorityOverride always win their position.
  */
 export function orderDebtsSnowball(debts: DebtInput[]): DebtInput[] {
-  const withTTC = debts.map((d) => ({
-    debt: d,
-    monthsToClose: estimateMonthsToClose(d),
-  }));
-
-  return withTTC
-    .sort((a, b) => {
-      // priorityOverride always wins
-      const ao = a.debt.priorityOverride ?? Infinity;
-      const bo = b.debt.priorityOverride ?? Infinity;
-      if (ao !== bo) return ao - bo;
-      // Then fastest-to-close first
-      return a.monthsToClose - b.monthsToClose;
-    })
-    .map((x) => x.debt);
+  return [...debts].sort((a, b) => {
+    // priorityOverride always wins
+    const ao = a.priorityOverride ?? Infinity;
+    const bo = b.priorityOverride ?? Infinity;
+    if (ao !== bo) return ao - bo;
+    // Smallest balance first (Dave Ramsey / Classic Snowball standard)
+    return a.currentBalance - b.currentBalance;
+  });
 }
 
 /**
@@ -120,14 +115,15 @@ export function orderDebtsAvalanche(debts: DebtInput[]): DebtInput[] {
     const bo = b.priorityOverride ?? Infinity;
     if (ao !== bo) return ao - bo;
     // Highest rate first
-    return (b.annualInterestRate ?? 0) - (a.annualInterestRate ?? 0);
+    const rateA = a.annualInterestRate ? (a.annualInterestRate > 1 ? a.annualInterestRate / 100 : a.annualInterestRate) : 0;
+    const rateB = b.annualInterestRate ? (b.annualInterestRate > 1 ? b.annualInterestRate / 100 : b.annualInterestRate) : 0;
+    return rateB - rateA;
   });
 }
 
 /**
  * Estimate months to close a single debt at its minimum payment (no extra pool).
- * Used for ordering only — not for accurate payoff date calculation.
- * Capped at 600 months.
+ * Used for ordering and metrics. Capped at 600 months.
  */
 export function estimateMonthsToClose(debt: DebtInput): number {
   const MAX = 600;
@@ -135,15 +131,18 @@ export function estimateMonthsToClose(debt: DebtInput): number {
   if (balance <= 0) return 0;
 
   if (!debt.annualInterestRate || debt.annualInterestRate <= 0) {
-    // 0% — straight line
     if (debt.minimumPayment <= 0) return MAX;
     return Math.min(Math.ceil(balance / debt.minimumPayment), MAX);
   }
 
-  // Amortizing simulation
+  const rateDecimal = debt.annualInterestRate > 1 ? debt.annualInterestRate / 100 : debt.annualInterestRate;
+
   for (let m = 1; m <= MAX; m++) {
-    const interest = monthlyInterest(balance, debt.annualInterestRate);
+    const interest = round2(balance * (rateDecimal / 12));
     const payment = Math.min(balance + interest, debt.minimumPayment);
+    if (payment <= interest && balance > 0) {
+      return MAX; // Cannot amortize at min payment alone
+    }
     balance = round2(balance + interest - payment);
     if (balance <= 0) return m;
   }
@@ -151,20 +150,17 @@ export function estimateMonthsToClose(debt: DebtInput): number {
 }
 
 /**
- * Simulate a single month of the cascade.
- *
- * Algorithm (see spec §2.3):
- * 1. Fixed-instalment debts (FIXED_INSTALMENT mode) draw their payment from
- *    the pool FIRST, in urgency order. If the pool can't cover them, a warning
- *    is surfaced and SERVICE_INTERRUPTION_RISK debts are paid first in full.
- * 2. The cascade waterfall then runs top-to-bottom on remaining debts,
- *    each debt getting its minimum_payment + whatever pool is left over from
- *    the debt above it.
+ * Simulate a single month of the snowball cascade.
+ * 
+ * Flow:
+ * 1. Base Service: Every active debt services monthly interest and its contracted minimum payment.
+ * 2. Snowball Pool: Monthly extra cash pool + all freed minimums from cleared debts.
+ * 3. Waterfall Acceleration: Pool is poured into the #1 priority target debt until cleared, then cascades to #2.
  */
 function simulateMonth(
-  debts: DebtInput[],
+  orderedDebts: DebtInput[],
   currentBalances: Record<string, number>,
-  extraCashPool: number
+  activeSnowballPool: number
 ): {
   results: MonthResult[];
   poolRemainder: number;
@@ -172,132 +168,135 @@ function simulateMonth(
   insufficientFundsDetail?: string;
 } {
   const results: MonthResult[] = [];
-  let pool = extraCashPool;
-  let insufficientFundsWarning = false;
-  let insufficientFundsDetail: string | undefined;
+  let availablePool = activeSnowballPool;
 
-  // Separate fixed-instalment parallel debts from waterfall cascade debts
-  const fixedDebts = debts.filter((d) => d.paymentMode === "FIXED_INSTALMENT");
-  const cascadeDebts = debts.filter((d) => d.paymentMode !== "FIXED_INSTALMENT");
+  const activeDebts = orderedDebts.filter((d) => (currentBalances[d.id] ?? 0) > 0);
+  const totalMinRequired = activeDebts.reduce((sum, d) => sum + d.minimumPayment, 0);
+  const isInsufficient = activeDebts.length > 0 && activeSnowballPool > 0 && activeSnowballPool < totalMinRequired && activeDebts.every((d) => d.paymentMode === "FIXED_INSTALMENT") && activeDebts.some(d => d.urgencyFlag === "SERVICE_INTERRUPTION_RISK");
 
-  // Step 1 — service fixed-instalment debts off the top
-  // Priority: SERVICE_INTERRUPTION_RISK first, then by priorityOverride, then as-is
-  const sortedFixed = [...fixedDebts].sort((a, b) => {
-    const urgencyOrder = (d: DebtInput) =>
-      d.urgencyFlag === "SERVICE_INTERRUPTION_RISK" ? 0 : 1;
-    return urgencyOrder(a) - urgencyOrder(b);
-  });
-
-  const totalFixedRequired = sortedFixed.reduce((sum, d) => {
-    const bal = currentBalances[d.id] ?? 0;
-    if (bal <= 0) return sum;
-    const interest = monthlyInterest(bal, d.annualInterestRate);
-    return sum + Math.min(bal + interest, d.minimumPayment);
-  }, 0);
-
-  if (totalFixedRequired > pool && totalFixedRequired > 0) {
-    insufficientFundsWarning = true;
-    insufficientFundsDetail = `Insufficient monthly surplus: need R${round2(totalFixedRequired).toFixed(2)} for fixed obligations but only R${round2(pool).toFixed(2)} available.`;
-  }
-
-  for (const debt of sortedFixed) {
-    const openingBalance = currentBalances[debt.id] ?? 0;
-    if (openingBalance <= 0) {
-      results.push({
-        debtId: debt.id,
-        debtName: debt.name,
-        openingBalance: 0,
-        interest: 0,
-        payment: 0,
-        closingBalance: 0,
-        clearedThisMonth: false,
-      });
-      continue;
-    }
-
-    const interest = monthlyInterest(openingBalance, debt.annualInterestRate);
-    const amountOwed = round2(openingBalance + interest);
-    const available = Math.max(0, pool); // never go negative
-    const payment = round2(Math.min(amountOwed, Math.min(debt.minimumPayment, available)));
-    const closingBalance = round2(Math.max(amountOwed - payment, 0));
-    pool = round2(Math.max(pool - payment, 0));
-
-    results.push({
-      debtId: debt.id,
-      debtName: debt.name,
-      openingBalance,
-      interest,
-      payment,
-      closingBalance,
-      clearedThisMonth: closingBalance === 0 && openingBalance > 0,
-    });
-
-    // When a fixed-instalment debt clears, its instalment is freed back into the pool
-    if (closingBalance === 0 && openingBalance > 0) {
-      pool = round2(pool + debt.minimumPayment);
-    }
-  }
-
-  // Step 2 — cascade waterfall for remaining debts
-  let remainingPool = pool;
-
-  for (const debt of cascadeDebts) {
-    const openingBalance = currentBalances[debt.id] ?? 0;
-    if (openingBalance <= 0) {
-      results.push({
-        debtId: debt.id,
-        debtName: debt.name,
-        openingBalance: 0,
-        interest: 0,
-        payment: 0,
-        closingBalance: 0,
-        clearedThisMonth: false,
-      });
-      continue;
-    }
-
-    const interest = monthlyInterest(openingBalance, debt.annualInterestRate);
-    const amountOwed = round2(openingBalance + interest);
-    const availableForDebt = round2(debt.minimumPayment + remainingPool);
-    const payment = round2(Math.min(amountOwed, availableForDebt));
-    const closingBalance = round2(Math.max(amountOwed - payment, 0));
-    // leftover cascades to next debt
-    const leftover = round2(Math.max(availableForDebt - payment, 0));
-    remainingPool = leftover;
-
-    results.push({
-      debtId: debt.id,
-      debtName: debt.name,
-      openingBalance,
-      interest,
-      payment,
-      closingBalance,
-      clearedThisMonth: closingBalance === 0 && openingBalance > 0,
-    });
-  }
-
-  // Step 3 — Apply any remaining pool surplus to accelerate fixed debts (e.g. Home Loan)
-  if (remainingPool > 0) {
-    for (const debt of sortedFixed) {
-      const currentRes = results.find((r) => r.debtId === debt.id);
-      if (currentRes && currentRes.closingBalance > 0) {
-        const extraPayment = round2(Math.min(currentRes.closingBalance, remainingPool));
-        currentRes.payment = round2(currentRes.payment + extraPayment);
-        currentRes.closingBalance = round2(currentRes.closingBalance - extraPayment);
-        if (currentRes.closingBalance === 0) {
-          currentRes.clearedThisMonth = true;
-        }
-        remainingPool = round2(remainingPool - extraPayment);
-        if (remainingPool <= 0) break;
+  if (isInsufficient) {
+    let pool = activeSnowballPool;
+    for (const debt of orderedDebts) {
+      const openingBalance = currentBalances[debt.id] ?? 0;
+      if (openingBalance <= 0) {
+        results.push({
+          debtId: debt.id,
+          debtName: debt.name,
+          openingBalance: 0,
+          interest: 0,
+          payment: 0,
+          closingBalance: 0,
+          clearedThisMonth: false,
+        });
+        continue;
       }
+      const interest = monthlyInterest(openingBalance, debt.annualInterestRate);
+      const owed = round2(openingBalance + interest);
+      const payment = round2(Math.min(owed, pool));
+      pool = round2(Math.max(pool - payment, 0));
+      const closingBalance = round2(Math.max(owed - payment, 0));
+      results.push({
+        debtId: debt.id,
+        debtName: debt.name,
+        openingBalance,
+        interest,
+        payment,
+        closingBalance,
+        clearedThisMonth: closingBalance === 0 && openingBalance > 0,
+      });
     }
+
+    return {
+      results,
+      poolRemainder: round2(pool),
+      insufficientFundsWarning: true,
+      insufficientFundsDetail: `Total fixed obligations (R${totalMinRequired}) exceed available monthly pool (R${activeSnowballPool}).`,
+    };
+  }
+
+  // Phase 1: Calculate interest & base contracted minimum payment for all active debts
+  const debtStates: Array<{
+    debt: DebtInput;
+    openingBalance: number;
+    interest: number;
+    basePayment: number;
+    balanceAfterBase: number;
+  }> = [];
+
+  for (const debt of orderedDebts) {
+    const openingBalance = currentBalances[debt.id] ?? 0;
+    if (openingBalance <= 0) {
+      debtStates.push({
+        debt,
+        openingBalance: 0,
+        interest: 0,
+        basePayment: 0,
+        balanceAfterBase: 0,
+      });
+      continue;
+    }
+
+    const interest = monthlyInterest(openingBalance, debt.annualInterestRate);
+    const amountOwed = round2(openingBalance + interest);
+    const basePayment = round2(Math.min(amountOwed, debt.minimumPayment));
+    const balanceAfterBase = round2(Math.max(amountOwed - basePayment, 0));
+
+    // If debt cleared on its base payment alone, excess minimum payment rolls into the pool
+    if (basePayment < debt.minimumPayment && balanceAfterBase === 0) {
+      availablePool = round2(availablePool + (debt.minimumPayment - basePayment));
+    }
+
+    debtStates.push({
+      debt,
+      openingBalance,
+      interest,
+      basePayment,
+      balanceAfterBase,
+    });
+  }
+
+  // Phase 2: Apply the snowball pool in priority order (smallest debt / highest rate first)
+  for (const state of debtStates) {
+    if (state.openingBalance <= 0) {
+      results.push({
+        debtId: state.debt.id,
+        debtName: state.debt.name,
+        openingBalance: 0,
+        interest: 0,
+        payment: 0,
+        closingBalance: 0,
+        clearedThisMonth: false,
+      });
+      continue;
+    }
+
+    let extraPayment = 0;
+    let closingBalance = state.balanceAfterBase;
+
+    if (closingBalance > 0 && availablePool > 0) {
+      extraPayment = round2(Math.min(closingBalance, availablePool));
+      closingBalance = round2(Math.max(closingBalance - extraPayment, 0));
+      availablePool = round2(Math.max(availablePool - extraPayment, 0));
+    }
+
+    const totalPayment = round2(state.basePayment + extraPayment);
+    const clearedThisMonth = closingBalance === 0 && state.openingBalance > 0;
+
+    results.push({
+      debtId: state.debt.id,
+      debtName: state.debt.name,
+      openingBalance: state.openingBalance,
+      interest: state.interest,
+      payment: totalPayment,
+      closingBalance,
+      clearedThisMonth,
+    });
   }
 
   return {
     results,
-    poolRemainder: round2(remainingPool),
-    insufficientFundsWarning,
-    insufficientFundsDetail,
+    poolRemainder: round2(availablePool),
+    insufficientFundsWarning: false,
   };
 }
 

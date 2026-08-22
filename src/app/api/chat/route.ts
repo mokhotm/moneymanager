@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { decryptApiKey } from "@/agents/llmProvider";
+import { decryptApiKey, resolveGoogleModel } from "@/agents/llmProvider";
 import { searchDocumentEmbeddings } from "@/lib/embeddings";
 
 export interface ChatMessage {
@@ -142,14 +142,15 @@ async function callLLM(
 
   if (provider === "GOOGLE") {
     // Gemini generateContent
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    const model = resolveGoogleModel(modelName);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const system = messages.find((m) => m.role === "system")?.content ?? "";
     const turns = messages.filter((m) => m.role !== "system");
     const contents = turns.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -158,6 +159,21 @@ async function callLLM(
         generationConfig: { maxOutputTokens: 2048 },
       }),
     });
+
+    // If 404 or unsupported model, fall back gracefully to gemini-3.7-flash or gemini-2.5-flash
+    if (!res.ok && res.status === 404 && model !== "gemini-3.7-flash") {
+      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
+      res = await fetch(fallbackUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          systemInstruction: system ? { parts: [{ text: system }] } : undefined,
+          contents,
+          generationConfig: { maxOutputTokens: 2048 },
+        }),
+      });
+    }
+
     if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";

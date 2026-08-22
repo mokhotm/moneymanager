@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { createSessionToken } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,10 +57,12 @@ export async function POST(request: NextRequest) {
       include: { profile: true },
     });
 
-    // Set HTTP-only auth_session cookie for instant login
-    const sessionToken = Buffer.from(
-      JSON.stringify({ userId: newUser.id, username: newUser.username, exp: Date.now() + 86400000 })
-    ).toString("base64");
+    // Set signed HTTP-only auth_session cookie for instant login
+    const sessionToken = createSessionToken({
+      userId: newUser.id,
+      username: newUser.username,
+      exp: Date.now() + 86400000,
+    });
 
     const response = NextResponse.json({
       success: true,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/session";
 import { getPayCycleBounds, BudgetCycleMode, parseSafeDate } from "@/lib/payrollCalendar";
 
 // In-memory runtime cache for demonstration / user session cycle preference
@@ -13,16 +14,29 @@ let runtimeCyclePreference: {
 
 export async function GET(request: NextRequest) {
   try {
+    const userId = await getEffectiveUserId(request);
     const { searchParams } = new URL(request.url);
     const modeParam = (searchParams.get("mode") as BudgetCycleMode) || runtimeCyclePreference.mode;
     const startParam = searchParams.get("startDate") || runtimeCyclePreference.customStartDate;
     const endParam = searchParams.get("endDate") || runtimeCyclePreference.customEndDate;
 
-    // Fetch latest parsed payslip
-    const latestPayslip = await prisma.document.findFirst({
-      where: { documentType: "PAYSLIP" },
-      orderBy: { uploadedAt: "desc" },
-    });
+    let whereClause: any = { documentType: "PAYSLIP" };
+    if (userId) {
+      const [accounts, incomes] = await Promise.all([
+        prisma.account.findMany({ where: { userId }, select: { id: true } }),
+        prisma.income.findMany({ where: { userId }, select: { id: true } }),
+      ]);
+      const entityIds = [...accounts.map((a) => a.id), ...incomes.map((i) => i.id)];
+      whereClause.relatedEntityId = entityIds.length > 0 ? { in: entityIds } : "__NONE__";
+    }
+
+    // Fetch latest parsed payslip for current user
+    const latestPayslip = whereClause.relatedEntityId === "__NONE__"
+      ? null
+      : await prisma.document.findFirst({
+          where: whereClause,
+          orderBy: { uploadedAt: "desc" },
+        });
 
     // Derive the target pay month (statutory 15th base pay date in South Africa)
     let targetYear = 2026;
@@ -49,6 +63,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await getEffectiveUserId(request);
     const body = await request.json();
     const { mode, customStartDate, customEndDate } = body;
 
@@ -58,11 +73,23 @@ export async function POST(request: NextRequest) {
     if (customStartDate) runtimeCyclePreference.customStartDate = customStartDate;
     if (customEndDate) runtimeCyclePreference.customEndDate = customEndDate;
 
+    let whereClause: any = { documentType: "PAYSLIP" };
+    if (userId) {
+      const [accounts, incomes] = await Promise.all([
+        prisma.account.findMany({ where: { userId }, select: { id: true } }),
+        prisma.income.findMany({ where: { userId }, select: { id: true } }),
+      ]);
+      const entityIds = [...accounts.map((a) => a.id), ...incomes.map((i) => i.id)];
+      whereClause.relatedEntityId = entityIds.length > 0 ? { in: entityIds } : "__NONE__";
+    }
+
     // Fetch latest parsed payslip
-    const latestPayslip = await prisma.document.findFirst({
-      where: { documentType: "PAYSLIP" },
-      orderBy: { uploadedAt: "desc" },
-    });
+    const latestPayslip = whereClause.relatedEntityId === "__NONE__"
+      ? null
+      : await prisma.document.findFirst({
+          where: whereClause,
+          orderBy: { uploadedAt: "desc" },
+        });
 
     let targetYear = 2026;
     let targetMonth = 8;

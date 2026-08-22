@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { currentMonthKey } from "@/lib/formatters";
 import { getEffectiveUserId } from "@/lib/session";
 import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
+import { resolveSpendingLocations } from "@/lib/geoResolver";
 
 /**
  * GET /api/dashboard
@@ -23,8 +24,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all domain data & snapshots in parallel with connection resilience
-    const [cycleMonth, debts, accounts, incomes, snapshots, dbAssets, flows] = await Promise.all([
-      getActiveCycleMonthKey().catch(() => currentMonthKey()),
+    const [cycleMonth, debts, accounts, incomes, snapshots, dbAssets] = await Promise.all([
+      getActiveCycleMonthKey(userId).catch(() => currentMonthKey()),
       prisma.debt.findMany({
         where: {
           status: "ACTIVE",
@@ -61,14 +62,25 @@ export async function GET(req: NextRequest) {
         console.warn("prisma.asset.findMany connection warning:", err?.message || err);
         return [];
       }),
-      prisma.moneyFlow.findMany({
-        take: 50,
-        orderBy: { createdAt: "desc" },
-      }).catch((err) => {
-        console.warn("prisma.moneyFlow.findMany connection warning:", err?.message || err);
-        return [];
-      }),
     ]);
+
+    const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
+
+    const flows = userEntityIds.length === 0
+      ? []
+      : await prisma.moneyFlow.findMany({
+          where: {
+            OR: [
+              { sourceRef: { in: userEntityIds } },
+              { destinationRef: { in: userEntityIds } },
+            ],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 250,
+        }).catch((err) => {
+          console.warn("prisma.moneyFlow.findMany connection warning:", err?.message || err);
+          return [];
+        });
 
     // Budget items query uses resolved cycle month
     const budgetItems = await prisma.budgetLineItem.findMany({
@@ -227,86 +239,33 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Geotagged Spending Locations across South African Hubs
-    const spendingLocations = [
-      {
-        id: "loc-1",
-        merchant: "Woolworths Food Sandton",
-        locationName: "Sandton City, Johannesburg",
-        lat: -26.1076,
-        lng: 28.0567,
-        amount: 1845.50,
-        category: "Groceries & Household",
-        date: "2026-08-04",
-        city: "Johannesburg",
-      },
-      {
-        id: "loc-2",
-        merchant: "Checkers Hyper Mall of Africa",
-        locationName: "Mall of Africa, Midrand",
-        lat: -25.9961,
-        lng: 28.1065,
-        amount: 3420.00,
-        category: "Groceries & Household",
-        date: "2026-08-02",
-        city: "Johannesburg",
-      },
-      {
-        id: "loc-3",
-        merchant: "Shell Select Rosebank",
-        locationName: "Rosebank, Johannesburg",
-        lat: -26.1465,
-        lng: 28.0436,
-        amount: 1150.00,
-        category: "Fuel & Transport",
-        date: "2026-08-05",
-        city: "Johannesburg",
-      },
-      {
-        id: "loc-4",
-        merchant: "Mugg & Bean V&A Waterfront",
-        locationName: "V&A Waterfront, Cape Town",
-        lat: -33.9056,
-        lng: 18.4211,
-        amount: 480.00,
-        category: "Dining & Social",
-        date: "2026-07-28",
-        city: "Cape Town",
-      },
-      {
-        id: "loc-5",
-        merchant: "iStore Menlyn Maine",
-        locationName: "Menlyn, Pretoria",
-        lat: -25.7831,
-        lng: 28.2758,
-        amount: 8999.00,
-        category: "Tech & Equipment",
-        date: "2026-07-25",
-        city: "Pretoria",
-      },
-      {
-        id: "loc-6",
-        merchant: "Virgin Active Gateway",
-        locationName: "Umhlanga, Durban",
-        lat: -29.7259,
-        lng: 31.0664,
-        amount: 1250.00,
-        category: "Health & Fitness",
-        date: "2026-08-01",
-        city: "Durban",
-      },
-      {
-        id: "loc-7",
-        merchant: "City of Johannesburg Water & Lights",
-        locationName: "Civic Centre, Braamfontein",
-        lat: -26.1925,
-        lng: 28.0373,
-        amount: 6900.00,
-        category: "Municipal Utilities",
-        date: "2026-08-03",
-        city: "Johannesburg",
-      },
-    ];
+    // Geotagged Spending Intelligence across South African Hubs (with custom user overrides)
+    let userOverrides = {};
+    try {
+      const overridesPath = path.join(process.cwd(), "merchant_overrides.json");
+      if (fs.existsSync(overridesPath)) {
+        userOverrides = JSON.parse(fs.readFileSync(overridesPath, "utf-8"));
+      }
+    } catch (e) {
+      console.warn("Could not read merchant_overrides.json:", e);
+    }
+
+    const geoIntelligence = resolveSpendingLocations(flows, userOverrides);
+    const spendingLocations = geoIntelligence.physicalLocations.map((loc) => ({
+      id: loc.id,
+      merchant: loc.merchant,
+      locationName: loc.locationName,
+      lat: loc.lat,
+      lng: loc.lng,
+      amount: loc.totalAmount,
+      category: loc.category,
+      date: loc.lastDate,
+      city: loc.city,
+      suburb: loc.suburb,
+      region: loc.region,
+      transactionCount: loc.transactionCount,
+      recentTransactions: loc.recentTransactions,
+    }));
 
     // Debt Breakdown Progress
     const debtDistribution = debts.map((d) => {
@@ -368,6 +327,8 @@ export async function GET(req: NextRequest) {
       cashFlowHistory,
       spendingHeatmap,
       spendingLocations,
+      digitalServices: geoIntelligence.digitalServices,
+      spendingIntelligence: geoIntelligence,
       debtDistribution,
       financialHealth,
     });

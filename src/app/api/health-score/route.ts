@@ -1,13 +1,14 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getEffectiveUserId } from '@/lib/session';
 import { computeFinancialHealthScore, HealthScoreInput } from '@/engine/financialHealthScore';
 
-const prisma = new PrismaClient();
-
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') || 'cml8x5mqu0000vv5c7n4k5b2p';
+    const userId = await getEffectiveUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // 1. Fetch Accounts & Debts
     const accounts = await prisma.account.findMany({
@@ -46,37 +47,35 @@ export async function GET(req: Request) {
     }
 
     const netWorth = totalAssets - totalDebts;
-    const monthlyIncome = income ? Number(income.recurringAmount) : 71026.90;
-    const monthlyFixedExpenses = monthlyDebtObligations + 18500; // Fixed living & housing expenses baseline
+    const monthlyIncome = income ? Number(income.recurringAmount) : 0;
+    const monthlyFixedExpenses = monthlyDebtObligations + (monthlyIncome > 0 ? 18500 : 0);
 
     const input: HealthScoreInput = {
       netWorth,
-      netWorthPriorMonth: netWorth - 12500, // Seeded month-over-month baseline
+      netWorthPriorMonth: netWorth,
       monthlyIncome,
       monthlyDebtObligations,
       liquidSavings,
       monthlyFixedExpenses,
       budgetAdherenceRate: 0.94,
-      goalsActiveCount: goals.length || 3,
-      goalsOnTrackCount: Math.max(1, goals.length - 1) || 2,
+      goalsActiveCount: goals.length,
+      highInterestDebtCount: accounts.filter(
+        (a) => a.debt && a.debt.annualInterestRate && Number(a.debt.annualInterestRate) > 15
+      ).length,
+      hasEmergencyFund: liquidSavings >= (monthlyFixedExpenses || 10000) * 3,
+      hasWill: false,
     };
 
-    const healthResult = computeFinancialHealthScore(input);
+    const result = computeFinancialHealthScore(input);
 
     return NextResponse.json({
       success: true,
-      data: healthResult,
-      metrics: {
-        totalAssets,
-        totalDebts,
-        netWorth,
-        monthlyIncome,
-        monthlyDebtObligations,
-        liquidSavings,
-      },
+      userId,
+      input,
+      result,
     });
   } catch (error: any) {
-    console.error('Error computing health score:', error);
-    return NextResponse.json({ error: 'Failed to compute financial health score' }, { status: 500 });
+    console.error('Health Score API error:', error);
+    return NextResponse.json({ error: error.message || 'Failed to compute health score' }, { status: 500 });
   }
 }
