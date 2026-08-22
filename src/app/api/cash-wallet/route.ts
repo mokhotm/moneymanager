@@ -21,33 +21,13 @@ export async function GET(req: NextRequest) {
     });
 
     if (!cashAccount) {
-      cashAccount = await prisma.account.create({
-        data: {
-          user: { connect: { id: userId } },
-          name: "Physical Cash Wallet",
-          institution: "Physical Cash",
-          accountNumberMasked: "CASH-WALLET-01",
-          type: AccountType.CASH_WALLET,
-          currency: "ZAR",
-          openingBalance: 0.0,
-          isAsset: true,
-          isDebt: false,
-          notes: "Physical cash on hand for cash expenses",
-        },
+      return NextResponse.json({
+        cashWalletAccountId: "",
+        accountName: "Physical Cash Wallet",
+        trackedBalance: 0,
+        lastReconciledAt: null,
+        recentFlows: [],
       });
-    } else if (Number(cashAccount.openingBalance) === 850) {
-      // Clean up legacy default balance for fresh users
-      const flowsCount = await prisma.moneyFlow.count({
-        where: {
-          OR: [{ destinationRef: cashAccount.id }, { sourceRef: cashAccount.id }],
-        },
-      });
-      if (flowsCount === 0) {
-        cashAccount = await prisma.account.update({
-          where: { id: cashAccount.id },
-          data: { openingBalance: 0.0 },
-        });
-      }
     }
 
     // Fetch live money flows for this cash wallet

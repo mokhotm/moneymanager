@@ -387,8 +387,52 @@ export default function AccountsPage() {
           })}
         </div>
 
-        {/* Grouped View vs Flat Table View */}
-        {groupByInstitution ? (
+        {/* Grouped View vs Flat Table View or Empty State */}
+        {accounts.length === 0 ? (
+          <div
+            className="card"
+            style={{
+              textAlign: "center",
+              padding: "64px 24px",
+              background: "rgba(13, 20, 36, 0.9)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+            }}
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "18px",
+                background: "rgba(245, 158, 11, 0.12)",
+                border: "1px solid rgba(245, 158, 11, 0.25)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px auto",
+                color: "#f59e0b",
+              }}
+            >
+              <Landmark size={32} />
+            </div>
+            <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#f8fafc", marginBottom: "8px" }}>
+              No Financial Accounts Registered
+            </h2>
+            <p className="text-muted text-sm" style={{ maxWidth: "460px", margin: "0 auto 24px auto", lineHeight: 1.6 }}>
+              You haven't linked any bank accounts, credit cards, municipal bills, or service providers yet. Get started by uploading a statement or manually registering your accounts.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button className="btn btn-primary" onClick={openAdd} id="empty-state-add-btn">
+                <Plus size={16} />
+                <span>Add Your First Account</span>
+              </button>
+              <a href="/documents" className="btn btn-secondary" id="empty-state-upload-btn">
+                <Building2 size={16} />
+                <span>Upload Statement</span>
+              </a>
+            </div>
+          </div>
+        ) : groupByInstitution ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             {grouped.map((g) => {
               const instColor = INSTITUTION_COLORS[g.institution] || "#3b82f6";
