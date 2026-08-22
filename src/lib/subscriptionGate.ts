@@ -197,3 +197,6 @@ export async function checkFeatureAccess(userId: string, feature: keyof TierLimi
       : `Feature ${feature} requires ${requiredTier} tier. Upgrade on your subscription page.`,
   };
 }
+
+export const getUserSubscription = getUserSubscriptionDetails;
+

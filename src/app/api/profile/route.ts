@@ -22,11 +22,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ...user,
-      subscriptionTier: subInfo.tier,
-      accountsCount: subInfo.usage.accountsCount,
-      debtsCount: subInfo.usage.debtsCount,
-      specs: subInfo.specs,
-      subscriptionStatus: subInfo.subscriptionStatus,
+      subscriptionTier: subInfo?.tier ?? "STARTER_FREE",
+      accountsCount: subInfo?.usage?.accountsCount ?? 0,
+      debtsCount: subInfo?.usage?.debtsCount ?? 0,
+      specs: subInfo?.specs,
+      subscriptionStatus: subInfo?.subscriptionStatus ?? "FREE",
     });
   } catch (error) {
     console.error("GET /api/profile error:", error);
