@@ -197,18 +197,18 @@ export default function ReportsPage() {
   };
 
   const summary = data?.summary || {
-    totalIncome: 74438.26,
-    salarySourceLabel: "SARS Net Payslip Confirmed (Aug 2026)",
-    totalPlannedOutflows: 64343.10,
-    totalActualOutflows: 64343.10,
-    debtsOutflow: 42794.29,
-    livingOutflow: 21548.81,
-    netSurplus: 10095.16,
-    savingsRatePercentage: 13.6,
-    totalLeakageMonthly: 680.0,
-    annualizedLeakage: 8160.0,
-    phantomCashMonthly: 850.0,
-    totalVerifiedAccounts: 14,
+    totalIncome: 0,
+    salarySourceLabel: "No confirmed income",
+    totalPlannedOutflows: 0,
+    totalActualOutflows: 0,
+    debtsOutflow: 0,
+    livingOutflow: 0,
+    netSurplus: 0,
+    savingsRatePercentage: 0,
+    totalLeakageMonthly: 0,
+    annualizedLeakage: 0,
+    phantomCashMonthly: 0,
+    totalVerifiedAccounts: 0,
     reconciliationScore: 100,
   };
 

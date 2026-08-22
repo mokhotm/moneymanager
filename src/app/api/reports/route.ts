@@ -142,9 +142,12 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    const monthConfig = HISTORICAL_SALARIES[selectedMonth] || HISTORICAL_SALARIES["2026-08"];
-    const netSalary = monthConfig.amount;
-    const salarySourceLabel = monthConfig.label;
+    const userRecurringIncome = incomes.reduce((s, i) => s + Number(i.recurringAmount), 0);
+    const hasIncome = userRecurringIncome > 0;
+    const netSalary = hasIncome ? userRecurringIncome : 0;
+    const salarySourceLabel = hasIncome
+      ? `${incomes[0]?.sourceName || "Salary"} Confirmed (${selectedMonth})`
+      : "No confirmed income";
 
     // 1. Budget Planned Outflows
     const plannedByCategory: Record<string, number> = {
@@ -166,23 +169,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (plannedByCategory.DEBT_ACCELERATION_PLAN === 0) {
-      plannedByCategory.DEBT_ACCELERATION_PLAN = monthConfig.debts;
-      plannedByCategory.FIXED_HOUSEHOLD_OBLIGATIONS = 11348.81;
-      plannedByCategory.FAMILY_AND_DISCRETIONARY =
-        monthConfig.living > 11348.81 ? monthConfig.living - 11348.81 : 7700.0;
-      plannedByCategory.GOAL_CONTRIBUTIONS = monthConfig.surplus > 0 ? monthConfig.surplus : 5000.0;
-      plannedByCategory.ONE_OFF_UNEXPECTED = 2500.0;
-    }
-
     // Direct living and debt outflows (excluding internal goal contributions)
-    const debtsPlanned = plannedByCategory.DEBT_ACCELERATION_PLAN || monthConfig.debts;
+    const debtsPlanned = plannedByCategory.DEBT_ACCELERATION_PLAN;
     const livingPlanned =
-      (plannedByCategory.FIXED_HOUSEHOLD_OBLIGATIONS || 11348.81) +
-      (plannedByCategory.FAMILY_AND_DISCRETIONARY || 7700.0) +
-      (plannedByCategory.ONE_OFF_UNEXPECTED > 0 && plannedByCategory.ONE_OFF_UNEXPECTED <= 3000
-        ? plannedByCategory.ONE_OFF_UNEXPECTED
-        : 2500.0);
+      plannedByCategory.FIXED_HOUSEHOLD_OBLIGATIONS +
+      plannedByCategory.FAMILY_AND_DISCRETIONARY +
+      plannedByCategory.ONE_OFF_UNEXPECTED;
     const totalExpenseOutflows = debtsPlanned + livingPlanned;
     const netSurplus = Math.max(0, netSalary - totalExpenseOutflows);
     const savingsRatePct = netSalary > 0 ? (netSurplus / netSalary) * 100 : 0;

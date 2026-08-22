@@ -488,7 +488,7 @@ export default function DocumentsPage() {
             <div className="stat-label text-blue-400 flex items-center gap-1.5">
               <Database size={14} /> Vector Chunks Created
             </div>
-            <div className="stat-value text-blue-400 font-extrabold">{documents.length * 12 + 14}</div>
+            <div className="stat-value text-blue-400 font-extrabold">{documents.length * 12}</div>
             <div className="stat-sub">Indexed for Cosine RAG Search</div>
           </div>
 
