@@ -27,6 +27,31 @@ export async function GET(req: NextRequest) {
       prisma.income.findMany({ where: { userId } }),
     ]);
 
+    if (debts.length === 0) {
+      return NextResponse.json({
+        strategy,
+        createdDate: new Date().toISOString(),
+        extraMonthlyPool: 0,
+        totalOriginalDebt: 0,
+        totalInterestPaid: 0,
+        totalMonths: 0,
+        debtFreeDate: null,
+        totalInterestSavedVsBaseline: 0,
+        monthsSavedVsBaseline: 0,
+        planSchedule: [],
+        position: {
+          planMonthNumber: 0,
+          plannedTotalBalance: 0,
+          actualTotalBalance: 0,
+          driftAmount: 0,
+          driftPercentage: 0,
+          driftStatus: "ON_TRACK",
+          driftCategory: "SLIGHT_AHEAD",
+          debtPositions: [],
+        },
+      });
+    }
+
     const totalIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0);
     const totalMinPayments = debts.reduce((sum, d) => sum + Number(d.minimumPayment), 0);
     const extraPool = Math.max(totalIncome - totalMinPayments, 0);

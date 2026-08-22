@@ -37,6 +37,10 @@ export async function GET(req: NextRequest) {
     const totalDebts = debts.reduce((s, d) => s + Number(d.currentBalance), 0);
     const netWorth = totalAssets - totalDebts;
 
+    const userSnapshots = (assets.length === 0 && debts.length === 0 && accounts.length === 0)
+      ? []
+      : snapshots;
+
     return NextResponse.json({
       totalAssets,
       totalDebts,
@@ -45,7 +49,7 @@ export async function GET(req: NextRequest) {
       bankAssetsTotal,
       assets: unlinkedAssets,
       debts,
-      snapshots,
+      snapshots: userSnapshots,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

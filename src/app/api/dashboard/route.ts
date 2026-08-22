@@ -4,6 +4,7 @@ import { currentMonthKey } from "@/lib/formatters";
 import { getEffectiveUserId } from "@/lib/session";
 import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
 import { resolveSpendingLocations } from "@/lib/geoResolver";
+import { getUserEntityScope, isRecommendationOwnedByUser } from "@/lib/userEntityScope";
 
 /**
  * GET /api/dashboard
@@ -12,6 +13,8 @@ import { resolveSpendingLocations } from "@/lib/geoResolver";
  * - Current month Net Margin (recurring vs actual)
  * - Urgency-flagged debts
  * - Debts by clearance order
+ * - Scoped pending recommendation count & goals progress
+ * - Dynamic financial health score
  */
 export async function GET(req: NextRequest) {
   try {
@@ -24,7 +27,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all domain data & snapshots in parallel with connection resilience
-    const [cycleMonth, debts, accounts, incomes, snapshots, dbAssets] = await Promise.all([
+    const [cycleMonth, debts, accounts, incomes, snapshots, dbAssets, goals, scope, allPendingRecs] = await Promise.all([
       getActiveCycleMonthKey(userId).catch(() => currentMonthKey()),
       prisma.debt.findMany({
         where: {
@@ -39,7 +42,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.account.findMany({
         where: { userId },
-        select: { id: true, openingBalance: true, isDebt: true },
+        select: { id: true, name: true, type: true, openingBalance: true, isDebt: true },
       }).catch((err) => {
         console.warn("prisma.account.findMany connection warning:", err?.message || err);
         return [];
@@ -62,7 +65,35 @@ export async function GET(req: NextRequest) {
         console.warn("prisma.asset.findMany connection warning:", err?.message || err);
         return [];
       }),
+      prisma.goal.findMany({
+        where: { userId, status: "ACTIVE" },
+        orderBy: { priority: "asc" },
+      }).catch((err) => {
+        console.warn("prisma.goal.findMany connection warning:", err?.message || err);
+        return [];
+      }),
+      getUserEntityScope(userId).catch(() => null),
+      prisma.agentRecommendation.findMany({
+        where: { status: "PENDING" },
+      }).catch((err) => {
+        console.warn("prisma.agentRecommendation.findMany connection warning:", err?.message || err);
+        return [];
+      }),
     ]);
+
+    // Compute user scoped pending recommendations
+    const userPendingRecs = scope && scope.allEntityIds.length > 0
+      ? allPendingRecs.filter((r) => isRecommendationOwnedByUser(r.payload, scope))
+      : [];
+    const pendingRecsCount = userPendingRecs.length;
+
+    // Goals calculation
+    const goalsCount = goals.length;
+    const topGoal = goals[0] || null;
+    const topGoalName = topGoal ? topGoal.name : "No active goals created yet";
+    const topGoalProgress = topGoal && topGoal.targetAmount && Number(topGoal.targetAmount) > 0
+      ? Math.min(100, Math.round((Number(topGoal.currentAmount) / Number(topGoal.targetAmount)) * 100))
+      : 0;
 
     const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
 
@@ -101,8 +132,10 @@ export async function GET(req: NextRequest) {
     const effectiveTotalDebt = totalDebt;
     const netWorth = totalAssets - effectiveTotalDebt;
 
+    const hasUserData = accounts.length > 0 || debts.length > 0 || incomes.length > 0 || dbAssets.length > 0 || (budgetItems && budgetItems.length > 0);
+
     // Income & budget margins
-    const totalRecurringIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0) || 54000;
+    const totalRecurringIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0);
     const recurringItems = budgetItems.filter((i) => i.category !== "ONE_OFF_UNEXPECTED");
     const oneOffItems = budgetItems.filter((i) => i.category === "ONE_OFF_UNEXPECTED");
     const totalRecurringExpenses = recurringItems.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -128,13 +161,6 @@ export async function GET(req: NextRequest) {
         }
       });
     }
-
-    // Fallbacks if zero items so charts are visually stunning
-    if (categoryTotals.FIXED_HOUSEHOLD_OBLIGATIONS === 0) categoryTotals.FIXED_HOUSEHOLD_OBLIGATIONS = 24500;
-    if (categoryTotals.DEBT_ACCELERATION_PLAN === 0) categoryTotals.DEBT_ACCELERATION_PLAN = 16800;
-    if (categoryTotals.GOAL_CONTRIBUTIONS === 0) categoryTotals.GOAL_CONTRIBUTIONS = 4500;
-    if (categoryTotals.FAMILY_AND_DISCRETIONARY === 0) categoryTotals.FAMILY_AND_DISCRETIONARY = 6200;
-    if (categoryTotals.ONE_OFF_UNEXPECTED === 0) categoryTotals.ONE_OFF_UNEXPECTED = 2000;
 
     const totalSpending = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
 
@@ -165,11 +191,18 @@ export async function GET(req: NextRequest) {
     // Net Worth Trend History (6 Months)
     const monthNames = ["Mar 2026", "Apr 2026", "May 2026", "Jun 2026", "Jul 2026", "Aug 2026"];
     const netWorthHistory = monthNames.map((m, idx) => {
+      if (!hasUserData) {
+        return {
+          month: m,
+          netWorth: 0,
+          totalAssets: 0,
+          totalDebts: 0,
+        };
+      }
       const snap = snapshots[idx];
       const monthsFromCurrent = 5 - idx;
-      // Proportional historical trend (paying down debt ~R15k/mo, assets growing ~R10k/mo)
-      const estimatedAssets = Math.max(0, totalAssets - (monthsFromCurrent * 10000));
-      const estimatedDebts = Math.max(0, effectiveTotalDebt + (monthsFromCurrent * 15000));
+      const estimatedAssets = Math.max(0, totalAssets - (monthsFromCurrent * 5000));
+      const estimatedDebts = Math.max(0, effectiveTotalDebt + (monthsFromCurrent * 8000));
       
       const assetsVal = snap ? Number(snap.totalAssets) : estimatedAssets;
       const debtsVal = snap ? Number(snap.totalDebts) : estimatedDebts;
@@ -184,14 +217,19 @@ export async function GET(req: NextRequest) {
     });
 
     // Cash Flow History (6 Months Inflow vs Outflow)
-    const cashFlowHistory = [
-      { month: "Mar", income: 52000, expenses: 31000, debtService: 16500, netSurplus: 4500 },
-      { month: "Apr", income: 52000, expenses: 29500, debtService: 16500, netSurplus: 6000 },
-      { month: "May", income: 54000, expenses: 30800, debtService: 16800, netSurplus: 6400 },
-      { month: "Jun", income: 54000, expenses: 32000, debtService: 16800, netSurplus: 5200 },
-      { month: "Jul", income: 54000, expenses: 29800, debtService: 16800, netSurplus: 7400 },
-      { month: "Aug", income: totalRecurringIncome || 54000, expenses: totalRecurringExpenses || 30700, debtService: 16800, netSurplus: Math.max(0, netMarginRecurring) },
-    ];
+    const debtServiceTotal = debts.reduce((s, d) => s + Number(d.minimumPayment || 0), 0);
+    const cashFlowHistory = monthNames.map((m) => {
+      if (!hasUserData) {
+        return { month: m.split(" ")[0], income: 0, expenses: 0, debtService: 0, netSurplus: 0 };
+      }
+      return {
+        month: m.split(" ")[0],
+        income: totalRecurringIncome,
+        expenses: totalRecurringExpenses,
+        debtService: debtServiceTotal,
+        netSurplus: Math.max(0, netMarginRecurring),
+      };
+    });
 
     // 30-Day Daily Spending Intensity Heatmap
     const spendingHeatmap = [];
@@ -202,27 +240,11 @@ export async function GET(req: NextRequest) {
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split("T")[0];
       const dayName = dayLabels[d.getDay()];
-      
-      // Calculate spending based on weekday pattern + occasional spikes
-      const dayOfWeek = d.getDay();
-      let amount = 0;
-      let count = 0;
-      if (dayOfWeek === 5 || dayOfWeek === 6) {
-        amount = Math.floor(800 + Math.random() * 2200);
-        count = Math.floor(3 + Math.random() * 4);
-      } else if (dayOfWeek === 1) {
-        amount = Math.floor(150 + Math.random() * 600);
-        count = Math.floor(1 + Math.random() * 2);
-      } else {
-        amount = Math.floor(250 + Math.random() * 900);
-        count = Math.floor(1 + Math.random() * 3);
-      }
 
-      // Add a couple of high-spending salary/debit days
-      if (i === 12 || i === 27) {
-        amount = 14500;
-        count = 6;
-      }
+      // Aggregate actual flows on this date
+      const dateFlows = flows.filter((f) => f.createdAt.toISOString().split("T")[0] === dateStr);
+      const amount = dateFlows.reduce((sum, f) => sum + Number(f.amount), 0);
+      const count = dateFlows.length;
 
       let intensity = 0;
       if (amount > 10000) intensity = 4;
@@ -239,33 +261,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Geotagged Spending Intelligence across South African Hubs (with custom user overrides)
-    let userOverrides = {};
-    try {
-      const overridesPath = path.join(process.cwd(), "merchant_overrides.json");
-      if (fs.existsSync(overridesPath)) {
-        userOverrides = JSON.parse(fs.readFileSync(overridesPath, "utf-8"));
-      }
-    } catch (e) {
-      console.warn("Could not read merchant_overrides.json:", e);
-    }
-
-    const geoIntelligence = resolveSpendingLocations(flows, userOverrides);
-    const spendingLocations = geoIntelligence.physicalLocations.map((loc) => ({
-      id: loc.id,
-      merchant: loc.merchant,
-      locationName: loc.locationName,
-      lat: loc.lat,
-      lng: loc.lng,
-      amount: loc.totalAmount,
-      category: loc.category,
-      date: loc.lastDate,
-      city: loc.city,
-      suburb: loc.suburb,
-      region: loc.region,
-      transactionCount: loc.transactionCount,
-      recentTransactions: loc.recentTransactions,
-    }));
+    // Geotagged spending locations & radar
+    const geoIntelligence = resolveSpendingLocations(flows, debts);
+    const spendingLocations = geoIntelligence.locations;
 
     // Debt Breakdown Progress
     const debtDistribution = debts.map((d) => {
@@ -287,19 +285,42 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Financial Health Score Calculation
-    const healthScore = Math.min(950, Math.max(300, 785));
-    const financialHealth = {
-      score: healthScore,
-      tier: "EXPERT",
-      tierLabel: "Expert Wealth Strategist",
-      factors: [
-        { name: "Debt Paydown Velocity", status: "EXCELLENT", detail: "Accelerating via Snowball plan" },
-        { name: "Emergency Buffer", status: "MODERATE", detail: "22% of 3-month target reached" },
-        { name: "Recurring Net Surplus", status: "STRONG", detail: `R ${Math.round(netMarginRecurring).toLocaleString()} monthly surplus` },
-        { name: "Debt-to-Asset Ratio", status: "ATTENTION", detail: `${totalAssets > 0 ? Math.round((effectiveTotalDebt / totalAssets) * 100) : 0}% leverage ratio` },
-      ],
-    };
+    // Dynamic Financial Health Score Calculation
+    let financialHealth;
+    if (!hasUserData) {
+      financialHealth = {
+        score: 0,
+        tier: "ROOKIE",
+        tierLabel: "New Account (Unranked)",
+        factors: [
+          { name: "Account Setup", status: "ATTENTION", detail: "Awaiting statement or account creation" },
+          { name: "Emergency Buffer", status: "ATTENTION", detail: "R 0,00 emergency fund" },
+          { name: "Recurring Net Surplus", status: "ATTENTION", detail: "R 0,00 / month" },
+          { name: "Debt-to-Asset Ratio", status: "ATTENTION", detail: "0% leverage ratio" },
+        ],
+      };
+    } else {
+      let baseScore = 500;
+      if (netWorth > 0) baseScore += 150;
+      if (netMarginRecurring > 0) baseScore += 100;
+      if (effectiveTotalDebt === 0) baseScore += 100;
+      else if (totalAssets > 0 && effectiveTotalDebt / totalAssets < 0.5) baseScore += 50;
+
+      const healthScore = Math.min(950, Math.max(300, baseScore));
+      const tierLabel = healthScore >= 800 ? "Elite Wealth Strategist" : healthScore >= 700 ? "Expert Wealth Strategist" : healthScore >= 600 ? "Competitor" : "Enthusiast";
+
+      financialHealth = {
+        score: healthScore,
+        tier: healthScore >= 800 ? "ELITE" : healthScore >= 700 ? "EXPERT" : "ENTHUSIAST",
+        tierLabel,
+        factors: [
+          { name: "Debt Paydown Velocity", status: effectiveTotalDebt > 0 ? "EXCELLENT" : "STRONG", detail: effectiveTotalDebt > 0 ? "Active snowball plan" : "Zero debt liability" },
+          { name: "Emergency Buffer", status: bankAssetsTotal > 15000 ? "STRONG" : "MODERATE", detail: `${bankAssetsTotal > 0 ? "Funded" : "0%"} buffer` },
+          { name: "Recurring Net Surplus", status: netMarginRecurring > 0 ? "STRONG" : "ATTENTION", detail: `R ${Math.round(netMarginRecurring).toLocaleString("en-ZA")},00 monthly surplus` },
+          { name: "Debt-to-Asset Ratio", status: totalAssets > 0 && (effectiveTotalDebt / totalAssets) < 0.8 ? "EXCELLENT" : "ATTENTION", detail: `${totalAssets > 0 ? Math.round((effectiveTotalDebt / totalAssets) * 100) : 0}% leverage ratio` },
+        ],
+      };
+    }
 
     // Urgency-flagged debts
     const urgentDebts = debts.filter((d) => d.urgencyFlag !== "NONE");
@@ -320,6 +341,10 @@ export async function GET(req: NextRequest) {
       debtCount: debts.length,
       unknownDebtCount: unknownDebts.length,
       confirmedDebtCount: confirmedDebts.length,
+      pendingRecsCount,
+      goalsCount,
+      topGoalName,
+      topGoalProgress,
       currentMonth: currentMonthKey(),
       // Advanced Analytics Payload
       spendingByCategory,
@@ -338,4 +363,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch dashboard data", detail: message }, { status: 500 });
   }
 }
-

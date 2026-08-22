@@ -77,35 +77,34 @@ export function DashboardCharts({
   const [activeTab, setActiveTab] = useState<"SPENDING" | "NET_WORTH" | "CASH_FLOW" | "HEATMAP" | "DEBT">("SPENDING");
   const [hoveredSpendingIndex, setHoveredSpendingIndex] = useState<number | null>(null);
 
-  // Fallback defaults if props are loading or empty
+  const monthLabels = ["Mar", "Apr", "May", "Jun", "Jul", "Aug"];
+  const fullMonthLabels = ["Mar 2026", "Apr 2026", "May 2026", "Jun 2026", "Jul 2026", "Aug 2026"];
+
   const categoriesToRender = spendingByCategory && spendingByCategory.length > 0 ? spendingByCategory : [
-    { key: "FIXED_HOUSEHOLD_OBLIGATIONS", name: "Fixed Household", amount: 24500, percentage: 45, color: "#3b82f6" },
-    { key: "DEBT_ACCELERATION_PLAN", name: "Debt Acceleration", amount: 16800, percentage: 31, color: "#f43f5e" },
-    { key: "GOAL_CONTRIBUTIONS", name: "Goal Contributions", amount: 4500, percentage: 8, color: "#10b981" },
-    { key: "FAMILY_AND_DISCRETIONARY", name: "Discretionary & Family", amount: 6200, percentage: 12, color: "#f59e0b" },
-    { key: "ONE_OFF_UNEXPECTED", name: "One-off Unexpected", amount: 2000, percentage: 4, color: "#8b5cf6" },
+    { key: "FIXED_HOUSEHOLD_OBLIGATIONS", name: "Fixed Household", amount: 0, percentage: 0, color: "#3b82f6" },
+    { key: "DEBT_ACCELERATION_PLAN", name: "Debt Acceleration", amount: 0, percentage: 0, color: "#f43f5e" },
+    { key: "GOAL_CONTRIBUTIONS", name: "Goal Contributions", amount: 0, percentage: 0, color: "#10b981" },
+    { key: "FAMILY_AND_DISCRETIONARY", name: "Discretionary & Family", amount: 0, percentage: 0, color: "#f59e0b" },
+    { key: "ONE_OFF_UNEXPECTED", name: "One-off Unexpected", amount: 0, percentage: 0, color: "#8b5cf6" },
   ];
 
   const activeSpendCategory = hoveredSpendingIndex !== null ? categoriesToRender[hoveredSpendingIndex] : null;
   const totalSpendingAmount = categoriesToRender.reduce((s, c) => s + c.amount, 0);
 
-  const netWorthToRender = netWorthHistory && netWorthHistory.length > 0 ? netWorthHistory : [
-    { month: "Mar 2026", netWorth: -470000, totalAssets: 1980000, totalDebts: 2450000 },
-    { month: "Apr 2026", netWorth: -390000, totalAssets: 2020000, totalDebts: 2410000 },
-    { month: "May 2026", netWorth: -310000, totalAssets: 2050000, totalDebts: 2360000 },
-    { month: "Jun 2026", netWorth: -220000, totalAssets: 2080000, totalDebts: 2300000 },
-    { month: "Jul 2026", netWorth: -148865, totalAssets: 2101135, totalDebts: 2250000 },
-    { month: "Aug 2026", netWorth: -113640, totalAssets: 2101135, totalDebts: 2214776 },
-  ];
+  const netWorthToRender = netWorthHistory && netWorthHistory.length > 0 ? netWorthHistory : fullMonthLabels.map((m) => ({
+    month: m,
+    netWorth: 0,
+    totalAssets: 0,
+    totalDebts: 0,
+  }));
 
-  const cashFlowToRender = cashFlowHistory && cashFlowHistory.length > 0 ? cashFlowHistory : [
-    { month: "Mar", income: 52000, expenses: 31000, debtService: 16500, netSurplus: 4500 },
-    { month: "Apr", income: 52000, expenses: 29500, debtService: 16500, netSurplus: 6000 },
-    { month: "May", income: 54000, expenses: 30800, debtService: 16800, netSurplus: 6400 },
-    { month: "Jun", income: 54000, expenses: 32000, debtService: 16800, netSurplus: 5200 },
-    { month: "Jul", income: 54000, expenses: 29800, debtService: 16800, netSurplus: 7400 },
-    { month: "Aug", income: 54000, expenses: 30700, debtService: 16800, netSurplus: 6500 },
-  ];
+  const cashFlowToRender = cashFlowHistory && cashFlowHistory.length > 0 ? cashFlowHistory : monthLabels.map((m) => ({
+    month: m,
+    income: 0,
+    expenses: 0,
+    debtService: 0,
+    netSurplus: 0,
+  }));
 
   // Custom Glass Tooltip Component
   const CustomTooltip = ({ active, payload, label }: any) => {

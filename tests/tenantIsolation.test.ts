@@ -1,13 +1,16 @@
-import { describe, it, expect, vi } from 'vitest';
-import { isEntityOwnedByUser, UserEntityScope } from '../src/lib/userEntityScope';
+import { describe, it, expect } from 'vitest';
+import { isEntityOwnedByUser, isRecommendationOwnedByUser, UserEntityScope } from '../src/lib/userEntityScope';
 
 describe('Multi-Tenant Data Isolation & Security Enforcement', () => {
   const mokhotmScope: UserEntityScope = {
     userId: 'user_mokhotm',
+    userProfileId: 'prof_mokhotm',
     accountIds: ['acc_m_1', 'acc_m_2', 'acc_m_3'],
     debtIds: ['debt_m_1', 'debt_m_2'],
     incomeIds: ['inc_m_1'],
     assetIds: ['asset_m_1'],
+    documentIds: ['doc_m_1', 'doc_m_2'],
+    incomeEventIds: ['inc_event_1'],
     allEntityIds: ['acc_m_1', 'acc_m_2', 'acc_m_3', 'debt_m_1', 'debt_m_2', 'inc_m_1', 'asset_m_1'],
     accountMap: new Map([
       ['acc_m_1', { id: 'acc_m_1', name: 'Cheque', institution: 'Standard Bank' }],
@@ -24,10 +27,13 @@ describe('Multi-Tenant Data Isolation & Security Enforcement', () => {
 
   const mokhotbScope: UserEntityScope = {
     userId: 'user_mokhotb',
+    userProfileId: 'prof_mokhotb',
     accountIds: [],
     debtIds: [],
     incomeIds: [],
     assetIds: [],
+    documentIds: [],
+    incomeEventIds: [],
     allEntityIds: [],
     accountMap: new Map(),
     debtMap: new Map(),
@@ -72,5 +78,31 @@ describe('Multi-Tenant Data Isolation & Security Enforcement', () => {
     expect(isEntityOwnedByUser(null, mokhotmScope)).toBe(false);
     expect(isEntityOwnedByUser(undefined, mokhotmScope)).toBe(false);
     expect(isEntityOwnedByUser('', mokhotmScope)).toBe(false);
+  });
+
+  it('Scenario 5: Agent Recommendation Inbox data isolation between mokhotm and mokhotb', () => {
+    const recSARS = {
+      incomeId: 'inc_m_1',
+      newRecurringAmount: 71026.9,
+    };
+    const recMuniDebt = {
+      sourceDebtId: 'debt_m_1',
+      targetDebtId: 'debt_m_2',
+      amount: 650,
+    };
+    const recLumpSum = {
+      incomeEventId: 'inc_event_1',
+      amount: 13645.44,
+    };
+
+    // Allowed for mokhotm
+    expect(isRecommendationOwnedByUser(recSARS, mokhotmScope)).toBe(true);
+    expect(isRecommendationOwnedByUser(recMuniDebt, mokhotmScope)).toBe(true);
+    expect(isRecommendationOwnedByUser(recLumpSum, mokhotmScope)).toBe(true);
+
+    // Blocked for mokhotb — 0 recommendations leaked!
+    expect(isRecommendationOwnedByUser(recSARS, mokhotbScope)).toBe(false);
+    expect(isRecommendationOwnedByUser(recMuniDebt, mokhotbScope)).toBe(false);
+    expect(isRecommendationOwnedByUser(recLumpSum, mokhotbScope)).toBe(false);
   });
 });

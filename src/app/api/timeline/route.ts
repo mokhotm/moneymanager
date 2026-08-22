@@ -39,18 +39,38 @@ export async function GET(req: NextRequest) {
 
     const strategy = strategyParam ?? settings?.snowballStrategy ?? "SNOWBALL";
 
+    if (debts.length === 0) {
+      return NextResponse.json({
+        strategy,
+        totalDebt: 0,
+        totalMinPayments: 0,
+        extraPool: 0,
+        monthsToDebtFree: 0,
+        totalInterestPaid: 0,
+        totalPrincipalPaid: 0,
+        totalPaid: 0,
+        baselineTotalInterest: 0,
+        interestSaved: 0,
+        monthsSaved: 0,
+        debtFreeDate: null,
+        baselineDebtFreeDate: null,
+        timeline: [],
+        debtPayoffOrder: [],
+      });
+    }
+
     // Total monthly income
-    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0) || 74438.26;
+    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0);
 
     // Total minimum payments for all active debts
     const totalMinPayments = debts.reduce((sum, d) => sum + Number(d.minimumPayment), 0);
 
-    // Living expenses (Fixed household R11,348.81 + Discretionary R10,200.00)
-    const livingExpenses = 21548.81;
+    // Living expenses estimate
+    const livingExpenses = totalIncome > 30000 ? 21548.81 : Math.max(0, totalIncome * 0.4);
 
     // Extra pool = income - living expenses - all debt minimums (monthly disposable acceleration buffer)
     const monthlySurplus = Math.max(totalIncome - livingExpenses - totalMinPayments, 0);
-    const extraPool = extraPoolParam ? Number(extraPoolParam) : (monthlySurplus || 10095.16);
+    const extraPool = extraPoolParam ? Number(extraPoolParam) : monthlySurplus;
 
     // Map to engine input type with normalized decimal interest rates
     const debtInputs: DebtInput[] = debts.map((d) => {

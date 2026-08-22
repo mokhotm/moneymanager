@@ -28,6 +28,10 @@ interface DashboardData {
   actualNetMargin?: number;
   netMarginRecurring?: number;
   netMarginActual?: number;
+  pendingRecsCount?: number;
+  goalsCount?: number;
+  topGoalName?: string;
+  topGoalProgress?: number;
   urgentDebts: Array<{
     id: string;
     accountName: string;
@@ -138,6 +142,10 @@ export default function Dashboard() {
   const recurringSurplus = data.recurringNetMargin ?? data.netMarginRecurring ?? 0;
   const actualSurplus = data.actualNetMargin ?? data.netMarginActual ?? 0;
   const activeDebtsCount = data.activeDebtsCount ?? data.debtCount ?? 0;
+  const pendingRecsCount = data.pendingRecsCount ?? 0;
+  const goalsCount = data.goalsCount ?? 0;
+  const topGoalName = data.topGoalName ?? "No active goals created yet";
+  const topGoalProgress = data.topGoalProgress ?? 0;
 
   return (
     <>
@@ -186,7 +194,7 @@ export default function Dashboard() {
           </Link>
           <Link href="/recommendations" className="btn btn-primary" style={{ borderRadius: "14px", boxShadow: "0 8px 20px rgba(245, 158, 11, 0.3)" }}>
             <Inbox size={16} />
-            <span>Agent Inbox (3)</span>
+            <span>Agent Inbox {pendingRecsCount > 0 ? `(${pendingRecsCount})` : "(0)"}</span>
           </Link>
         </div>
       </div>
@@ -217,8 +225,8 @@ export default function Dashboard() {
         <div className="stat-grid mb-6">
           <div className="stat-card warning">
             <div className="stat-label">Total Net Worth</div>
-            <div className="stat-value gold">{formatZAR(data.netWorth ?? -2169020.04)}</div>
-            <div className="stat-sub">Assets ({formatZAR(data.totalAssets ?? 45755.99)}) − Debts ({formatZAR(data.totalDebt ?? 2214776.03)})</div>
+            <div className="stat-value gold">{formatZAR(data.netWorth ?? 0)}</div>
+            <div className="stat-sub">Assets ({formatZAR(data.totalAssets ?? 0)}) − Debts ({formatZAR(data.totalDebt ?? 0)})</div>
             {/* Sparkline Decorative SVG */}
             <svg style={{ position: "absolute", bottom: 0, right: 0, width: "120px", height: "40px", opacity: 0.2, pointerEvents: "none" }}>
               <path d="M 0 30 Q 30 10 60 25 T 120 5" fill="none" stroke="#f59e0b" strokeWidth="2.5" />
@@ -227,7 +235,7 @@ export default function Dashboard() {
 
           <div className="stat-card danger">
             <div className="stat-label">Total Active Debt</div>
-            <div className="stat-value red">{formatZAR(data.totalDebt ?? 2214776.03)}</div>
+            <div className="stat-value red">{formatZAR(data.totalDebt ?? 0)}</div>
             <div className="stat-sub">{activeDebtsCount} active debt accounts</div>
             <svg style={{ position: "absolute", bottom: 0, right: 0, width: "120px", height: "40px", opacity: 0.2, pointerEvents: "none" }}>
               <path d="M 0 10 Q 40 35 80 15 T 120 30" fill="none" stroke="#f43f5e" strokeWidth="2.5" />
@@ -272,7 +280,7 @@ export default function Dashboard() {
               </p>
             </div>
             <Link href="/recommendations" className="btn btn-primary w-full" style={{ borderRadius: "14px", position: "relative", zIndex: 10 }}>
-              <span>Review 3 Agent Proposals</span>
+              <span>{pendingRecsCount > 0 ? `Review ${pendingRecsCount} Agent Proposal${pendingRecsCount > 1 ? "s" : ""}` : "Inbox is Clear (0 Proposals)"}</span>
               <ArrowRight size={15} />
             </Link>
           </div>
@@ -288,14 +296,14 @@ export default function Dashboard() {
                   </div>
                   <span className="card-title" style={{ color: "#f8fafc" }}>Goals Progress</span>
                 </div>
-                <span className="badge gold" style={{ boxShadow: "0 0 12px rgba(245, 158, 11, 0.2)" }}>3 Active Goals</span>
+                <span className="badge gold" style={{ boxShadow: "0 0 12px rgba(245, 158, 11, 0.2)" }}>{goalsCount} Active Goal{goalsCount !== 1 ? "s" : ""}</span>
               </div>
               <div className="flex justify-between text-sm font-semibold mb-3">
-                <span style={{ color: "#e2e8f0" }}>3-Month Emergency Fund</span>
-                <span className="text-green" style={{ textShadow: "0 0 10px rgba(16, 185, 129, 0.4)" }}>22% Funded</span>
+                <span style={{ color: "#e2e8f0" }}>{topGoalName}</span>
+                <span className="text-green" style={{ textShadow: "0 0 10px rgba(16, 185, 129, 0.4)" }}>{topGoalProgress}% Funded</span>
               </div>
               <div style={{ height: "10px", borderRadius: "99px", background: "rgba(0,0,0,0.4)", overflow: "hidden", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)" }}>
-                <div style={{ height: "100%", width: "22%", background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)", borderRadius: "99px", boxShadow: "0 0 10px rgba(245, 158, 11, 0.5)", transition: "width 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+                <div style={{ height: "100%", width: `${topGoalProgress}%`, background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)", borderRadius: "99px", boxShadow: "0 0 10px rgba(245, 158, 11, 0.5)", transition: "width 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }} />
               </div>
             </div>
             <Link href="/goals" className="btn btn-secondary w-full" style={{ borderRadius: "14px", position: "relative", zIndex: 10, background: "rgba(255,255,255,0.03)" }}>
@@ -306,8 +314,8 @@ export default function Dashboard() {
 
           {/* Financial Health Score Gauge */}
           <FinancialHealthGauge
-            score={data.financialHealth?.score ?? 785}
-            tierLabel={data.financialHealth?.tierLabel ?? "Expert Wealth Strategist"}
+            score={data.financialHealth?.score ?? 0}
+            tierLabel={data.financialHealth?.tierLabel ?? "New Account (Unranked)"}
             factors={data.financialHealth?.factors ?? []}
           />
         </div>

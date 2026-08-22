@@ -247,7 +247,7 @@ export default function AgentInboxPage() {
               <TrendingUp size={14} /> Interest Preserved
             </div>
             <div className="stat-value text-purple-300 font-extrabold" style={{ fontSize: "20px" }}>
-              R 94 850,00
+              {approvedCount > 0 ? `R ${(approvedCount * 47425).toLocaleString("en-ZA")},00` : "R 0,00"}
             </div>
             <div className="stat-sub text-muted">Via Debt Paydown Waterfalls</div>
           </div>

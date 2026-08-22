@@ -29,12 +29,25 @@ export async function GET(req: NextRequest) {
           accountNumberMasked: "CASH-WALLET-01",
           type: AccountType.CASH_WALLET,
           currency: "ZAR",
-          openingBalance: 850.0,
+          openingBalance: 0.0,
           isAsset: true,
           isDebt: false,
-          notes: "Physical cash on hand for domestic worker, garden services, and cash expenses",
+          notes: "Physical cash on hand for cash expenses",
         },
       });
+    } else if (Number(cashAccount.openingBalance) === 850) {
+      // Clean up legacy default balance for fresh users
+      const flowsCount = await prisma.moneyFlow.count({
+        where: {
+          OR: [{ destinationRef: cashAccount.id }, { sourceRef: cashAccount.id }],
+        },
+      });
+      if (flowsCount === 0) {
+        cashAccount = await prisma.account.update({
+          where: { id: cashAccount.id },
+          data: { openingBalance: 0.0 },
+        });
+      }
     }
 
     // Fetch live money flows for this cash wallet
