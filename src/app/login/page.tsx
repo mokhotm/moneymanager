@@ -24,11 +24,74 @@ import {
   Shield,
   Layers,
   ArrowUpRight,
+  Globe2,
+  Search,
+  Cpu,
+  FileSpreadsheet,
+  Activity,
+  Coins,
+  Landmark,
+  Scale,
+  Radar,
+  Workflow,
+  KeyRound,
 } from "lucide-react";
-import { formatZAR } from "@/lib/formatters";
+
+type SupportedCurrency = "USD" | "EUR" | "GBP" | "ZAR";
+
+const CURRENCY_CONFIG: Record<
+  SupportedCurrency,
+  {
+    symbol: string;
+    code: string;
+    starterPrice: string;
+    proMonthly: string;
+    proAnnual: string;
+    enterpriseMonthly: string;
+    enterpriseAnnual: string;
+  }
+> = {
+  USD: {
+    symbol: "$",
+    code: "USD",
+    starterPrice: "$0",
+    proMonthly: "$12",
+    proAnnual: "$9.99",
+    enterpriseMonthly: "$29",
+    enterpriseAnnual: "$24",
+  },
+  EUR: {
+    symbol: "€",
+    code: "EUR",
+    starterPrice: "€0",
+    proMonthly: "€11",
+    proAnnual: "€8.99",
+    enterpriseMonthly: "€27",
+    enterpriseAnnual: "€22",
+  },
+  GBP: {
+    symbol: "£",
+    code: "GBP",
+    starterPrice: "£0",
+    proMonthly: "£9.50",
+    proAnnual: "£7.99",
+    enterpriseMonthly: "£23",
+    enterpriseAnnual: "£19",
+  },
+  ZAR: {
+    symbol: "R",
+    code: "ZAR",
+    starterPrice: "R 0",
+    proMonthly: "R 199",
+    proAnnual: "R 159",
+    enterpriseMonthly: "R 499",
+    enterpriseAnnual: "R 399",
+  },
+};
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"LOGIN" | "REGISTER">("LOGIN");
+  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
 
   // Login State
   const [username, setUsername] = useState("");
@@ -49,21 +112,6 @@ export default function LoginPage() {
 
   // Subscription Modal & Pricing State
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
-  const [selectedPlan, setSelectedPlan] = useState<{
-    name: string;
-    priceMonthly: number;
-    priceAnnual: number;
-  } | null>(null);
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "EFT" | "APPLE_PAY">("CARD");
-  const [cardForm, setCardForm] = useState({
-    name: "Mokgadi Khotso",
-    cardNumber: "4000 •••• •••• 9821",
-    expiry: "12/28",
-    cvv: "391",
-  });
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -159,76 +207,29 @@ export default function LoginPage() {
     }
   };
 
-  const openSubscriptionModal = (planName: string, monthly: number, annual: number) => {
-    setError("Please sign in or create an account to select a subscription tier.");
-    setMode("REGISTER");
-    const formEl = document.getElementById("auth-form-card");
-    if (formEl) {
-      formEl.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  const handleProcessPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessingPayment(true);
-
-    try {
-      const tierEnum = selectedPlan?.name.includes("PRO")
-        ? "PRO_WEALTH"
-        : selectedPlan?.name.includes("ENTERPRISE")
-        ? "EXECUTIVE_ENTERPRISE"
-        : "STARTER_FREE";
-
-      const amount = billingCycle === "MONTHLY" ? selectedPlan?.priceMonthly : selectedPlan?.priceAnnual;
-
-      await fetch("/api/subscription/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tier: tierEnum,
-          billingCycle,
-          paymentGateway: paymentMethod,
-          amount,
-        }),
-      });
-
-      setIsProcessingPayment(false);
-      setPaymentSuccess(true);
-      setTimeout(() => {
-        setIsCheckoutModalOpen(false);
-        fillDemoCredentials();
-      }, 1500);
-    } catch (err) {
-      setIsProcessingPayment(false);
-      setPaymentSuccess(true);
-      setTimeout(() => {
-        setIsCheckoutModalOpen(false);
-        fillDemoCredentials();
-      }, 1500);
-    }
-  };
+  const curr = CURRENCY_CONFIG[currency];
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(circle at 50% 10%, #0d1629 0%, #050811 75%)",
+        background: "radial-gradient(circle at 50% 5%, #0f1c38 0%, #060913 65%, #020408 100%)",
         color: "#f8fafc",
-        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        fontFamily: "var(--font-sans, system-ui, -apple-system, sans-serif)",
         position: "relative",
         overflowX: "hidden",
       }}
     >
-      {/* Pristine Glass Header Bar */}
+      {/* ─── Pristine Glass Header Bar ─── */}
       <header
         style={{
           position: "sticky",
           top: 0,
           zIndex: 100,
-          background: "rgba(10, 16, 30, 0.85)",
+          background: "rgba(8, 14, 28, 0.88)",
           backdropFilter: "blur(24px) saturate(180%)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          padding: "16px 32px",
+          padding: "14px 32px",
         }}
       >
         <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -250,7 +251,7 @@ export default function LoginPage() {
               <ShieldCheck size={24} />
             </div>
             <div>
-              <span style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em" }}>
+              <span style={{ fontSize: "19px", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em" }}>
                 MoneyManager
               </span>
               <span
@@ -263,43 +264,79 @@ export default function LoginPage() {
                   padding: "2px 8px",
                   borderRadius: "99px",
                   marginLeft: "8px",
-                  fontWeight: 700,
+                  fontWeight: 800,
                 }}
               >
-                PRO WEALTH
+                v4.0 OBSIDIAN
               </span>
             </div>
           </div>
 
           {/* Navigation Links */}
-          <nav style={{ display: "flex", alignItems: "center", gap: "28px", fontSize: "13px", fontWeight: 600, color: "#94a3b8" }}>
-            <a href="#features" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>Features</a>
-            <a href="#ai-agents" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>AI Multi-Agent</a>
-            <a href="#pricing" style={{ color: "#fbbf24", textDecoration: "none", transition: "color 0.2s" }}>Subscription Plans</a>
-            <a href="#security" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>Security</a>
+          <nav style={{ display: "flex", alignItems: "center", gap: "24px", fontSize: "13px", fontWeight: 600, color: "#94a3b8" }}>
+            <a href="#features" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>Intelligence Engine</a>
+            <a href="#ai-agents" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>Cooperative AI</a>
+            <a href="#forensic-audit" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>Forensic Ground Truth</a>
+            <a href="#pricing" style={{ color: "#fbbf24", textDecoration: "none", transition: "color 0.2s" }}>Subscriptions</a>
+            <a href="#security" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }}>Zero-Knowledge Security</a>
           </nav>
 
-          {/* Header Action Buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* Currency Switcher & Action Buttons */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Global Currency Preview Selector */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "99px",
+                padding: "2px 6px",
+              }}
+            >
+              <Globe2 size={13} style={{ color: "#38bdf8", marginLeft: "4px" }} />
+              {(["USD", "EUR", "GBP", "ZAR"] as SupportedCurrency[]).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCurrency(c)}
+                  style={{
+                    background: currency === c ? "rgba(56, 189, 248, 0.2)" : "transparent",
+                    color: currency === c ? "#38bdf8" : "#64748b",
+                    border: currency === c ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
+                    borderRadius: "99px",
+                    padding: "3px 8px",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={fillDemoCredentials}
               style={{
-                padding: "8px 18px",
+                padding: "8px 16px",
                 borderRadius: "99px",
                 fontSize: "12px",
                 fontWeight: 700,
-                background: "rgba(255, 255, 255, 0.05)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
                 color: "#f8fafc",
                 cursor: "pointer",
               }}
             >
-              Sign In
+              Demo Access
             </button>
+
             <a
               href="#pricing"
               style={{
-                padding: "8px 20px",
+                padding: "8px 18px",
                 borderRadius: "99px",
                 fontSize: "12px",
                 fontWeight: 800,
@@ -311,13 +348,13 @@ export default function LoginPage() {
                 textDecoration: "none",
               }}
             >
-              Upgrade to Pro
+              Get Started
             </a>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* ─── Hero Section ─── */}
       <section style={{ padding: "80px 24px 60px 24px", maxWidth: "1280px", margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 480px", gap: "48px", alignItems: "center" }}>
           {/* Left Column: Value Proposition & Headlines */}
@@ -327,40 +364,40 @@ export default function LoginPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                background: "rgba(245, 158, 11, 0.12)",
-                border: "1px solid rgba(245, 158, 11, 0.3)",
-                padding: "6px 14px",
+                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%)",
+                border: "1px solid rgba(245, 158, 11, 0.35)",
+                padding: "6px 16px",
                 borderRadius: "99px",
                 fontSize: "12px",
                 color: "#fbbf24",
-                fontWeight: 700,
+                fontWeight: 800,
                 marginBottom: "24px",
               }}
             >
               <Sparkles size={14} />
-              <span>Next-Gen Enterprise Wealth &amp; Debt Waterfall Platform</span>
+              <span>Universal Financial Intelligence &amp; Autonomous Wealth Engineering</span>
             </div>
 
             <h1
               style={{
                 fontSize: "52px",
                 fontWeight: 900,
-                lineHeight: 1.1,
-                letterSpacing: "-0.03em",
+                lineHeight: 1.08,
+                letterSpacing: "-0.035em",
                 margin: "0 0 20px 0",
                 background: "linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
             >
-              Master Your Net Worth. <br />
-              <span style={{ background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                Accelerate Debt Payoff.
+              Understand &amp; Master Your Finances <br />
+              <span style={{ background: "linear-gradient(135deg, #f59e0b 0%, #38bdf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                To Details Never Seen or Imagined.
               </span>
             </h1>
 
-            <p style={{ fontSize: "16px", lineHeight: 1.6, color: "#94a3b8", marginBottom: "32px", maxWidth: "620px" }}>
-              The all-in-one personal financial engine engineered for South Africa. Combines dual-track waterfall debt acceleration, OpenBanking line-item reconciliation, geotagged merchant radar, and cooperative AI agents.
+            <p style={{ fontSize: "16px", lineHeight: 1.65, color: "#94a3b8", marginBottom: "32px", maxWidth: "620px" }}>
+              The world’s most granular personal financial operating system. Engineered for global individuals and households who demand radical transparency — combining forensic statement reconciliation, dual-track debt waterfalls, neural money flow physics, and cooperative AI agents.
             </p>
 
             <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", marginBottom: "40px" }}>
@@ -380,7 +417,7 @@ export default function LoginPage() {
                   gap: "8px",
                 }}
               >
-                <span>View Subscription Plans</span>
+                <span>Explore Subscription Plans</span>
                 <ArrowRight size={16} />
               </a>
 
@@ -401,7 +438,7 @@ export default function LoginPage() {
                 }}
               >
                 <User size={16} style={{ color: "#f59e0b" }} />
-                <span>Test Demo Account</span>
+                <span>Launch Interactive Demo</span>
               </button>
             </div>
 
@@ -409,19 +446,19 @@ export default function LoginPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", fontSize: "13px", color: "#cbd5e1" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CheckCircle2 size={16} style={{ color: "#10b981" }} />
-                <span>Dual-Track Consumer vs Mortgage Engine</span>
+                <span>Universal Multi-Currency Ledger (USD, EUR, GBP, ZAR)</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CheckCircle2 size={16} style={{ color: "#10b981" }} />
-                <span>Geotagged RSA Spending Location Radar</span>
+                <span>Multi-Agent OCR &amp; Semantic Vector RAG Search</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CheckCircle2 size={16} style={{ color: "#10b981" }} />
-                <span>BYOK Multi-Agent AI (Claude, GPT-4o, Gemini)</span>
+                <span>Dual-Track Consumer vs Mortgage Debt Engine</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <CheckCircle2 size={16} style={{ color: "#10b981" }} />
-                <span>AES-256 Encrypted &amp; OpenBanking Synced</span>
+                <span>Forensic Cash Ground Truth &amp; Reversal Netting</span>
               </div>
             </div>
           </div>
@@ -538,7 +575,7 @@ export default function LoginPage() {
                       className="form-input"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. mokhotm"
+                      placeholder="e.g. johndoe"
                       required
                     />
                   </div>
@@ -643,70 +680,273 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" style={{ padding: "60px 24px", maxWidth: "1280px", margin: "0 auto", textAlign: "center" }}>
-        <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#f8fafc", marginBottom: "40px" }}>Core Features</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", textAlign: "left" }}>
-          <div style={{ background: "rgba(10,16,30,0.6)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h3 style={{ color: "#fbbf24", fontWeight: 700, marginBottom: "8px" }}>Dual-Track Debt Waterfall</h3>
-            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 }}>Automatically allocate extra cash to debts to accelerate payoff, considering both snowball and avalanche strategies.</p>
+      {/* ─── Revolutionary Features Showcase ─── */}
+      <section id="features" style={{ padding: "80px 24px", maxWidth: "1280px", margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", padding: "4px 14px", borderRadius: "99px", fontSize: "11px", fontWeight: 700, marginBottom: "12px" }}>
+            <Cpu size={13} /> Unprecedented Financial Fidelity
           </div>
-          <div style={{ background: "rgba(10,16,30,0.6)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h3 style={{ color: "#fbbf24", fontWeight: 700, marginBottom: "8px" }}>Money Flow & Reconciliation</h3>
-            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 }}>Track every Rand with our "Money Journey Explorer". Understand exactly where your money comes from and goes.</p>
+          <h2 style={{ fontSize: "38px", fontWeight: 900, color: "#f8fafc", margin: "0 0 14px 0", letterSpacing: "-0.02em" }}>
+            Six Core Engines of Unmatched Financial Intelligence
+          </h2>
+          <p style={{ fontSize: "15px", color: "#94a3b8", maxWidth: "660px", margin: "0 auto" }}>
+            Every component is purpose-built to eliminate financial blind spots, audit statement ground truth, and execute multi-year wealth acceleration.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "24px" }}>
+          {/* Card 1: Multi-Agent OCR & Vector Vault */}
+          <div
+            style={{
+              background: "rgba(13, 20, 36, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "32px",
+              backdropFilter: "blur(20px)",
+              transition: "transform 0.2s ease, border-color 0.2s ease",
+            }}
+          >
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(245, 158, 11, 0.15)", border: "1px solid rgba(245, 158, 11, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f59e0b", marginBottom: "20px" }}>
+              <Search size={22} />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "10px" }}>
+              Document Vault &amp; Semantic Vector RAG
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+              Ingest statements, payslips, tax returns, municipal bills, and invoices from any bank worldwide. Vector chunking and Cosine RAG search allow you to query your raw financial records in natural language.
+            </p>
           </div>
-          <div style={{ background: "rgba(10,16,30,0.6)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h3 style={{ color: "#fbbf24", fontWeight: 700, marginBottom: "8px" }}>Goal Planning</h3>
-            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 }}>Set financial goals (emergency funds, holidays, home deposits) and track completion accurately against your budget.</p>
+
+          {/* Card 2: Forensic Ground Truth Engine */}
+          <div
+            style={{
+              background: "rgba(13, 20, 36, 0.75)",
+              border: "1px solid rgba(16, 185, 129, 0.2)",
+              borderRadius: "20px",
+              padding: "32px",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#10b981", marginBottom: "20px" }}>
+              <ShieldCheck size={22} />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "10px" }}>
+              Forensic Ground Truth &amp; Reversal Netting
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+              Eliminates artificial spend inflation by automatically netting NSF, ACH, and returned direct debit orders. Isolates escalating retry arrears and cross-account duplicates into verified net cash flow.
+            </p>
+          </div>
+
+          {/* Card 3: Dual-Track Debt Waterfall */}
+          <div
+            style={{
+              background: "rgba(13, 20, 36, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "32px",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(244, 63, 94, 0.15)", border: "1px solid rgba(244, 63, 94, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f43f5e", marginBottom: "20px" }}>
+              <Scale size={22} />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "10px" }}>
+              Dual-Track Debt Avalanche &amp; Waterfall
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+              Segregates high-interest revolving credit from long-term mortgage obligations. Simulates mathematical Snowball vs. Avalanche trajectories, calculates exact interest preserved, and generates countdown milestones.
+            </p>
+          </div>
+
+          {/* Card 4: Neural Money Flow Physics */}
+          <div
+            style={{
+              background: "rgba(13, 20, 36, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "32px",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#38bdf8", marginBottom: "20px" }}>
+              <Workflow size={22} />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "10px" }}>
+              Neural Money Flow &amp; Lineage Canvas
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+              Live interactive physics-based node map tracing the full lifecycle of every dollar, pound, euro, or rand from payroll deposit through bank accounts, debt servicing, cash withdrawals, and investments.
+            </p>
+          </div>
+
+          {/* Card 5: Geotagged Spending Location Radar */}
+          <div
+            style={{
+              background: "rgba(13, 20, 36, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "32px",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(168, 85, 247, 0.15)", border: "1px solid rgba(168, 85, 247, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#c084fc", marginBottom: "20px" }}>
+              <Radar size={22} />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "10px" }}>
+              Geotagged Merchant Radar &amp; Leakage
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+              Spatial intelligence that maps where physical cash and card spend actually occurs. Flags hidden friction, micro-ATM fees, and recurring subscription leakage before they compound.
+            </p>
+          </div>
+
+          {/* Card 6: Autonomous AI Financial Coach (BYOK) */}
+          <div
+            style={{
+              background: "rgba(13, 20, 36, 0.75)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "32px",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(245, 158, 11, 0.15)", border: "1px solid rgba(245, 158, 11, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fbbf24", marginBottom: "20px" }}>
+              <Zap size={22} />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "10px" }}>
+              Autonomous Cooperative AI Coach
+            </h3>
+            <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+              Bring Your Own Key (Claude 3.5 Sonnet, GPT-4o, Gemini 1.5 Pro) with contextual memory. Generates explainable, audited recommendations to optimize tax, debt payoff, and savings margins.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* AI Agents Section */}
-      <section id="ai-agents" style={{ padding: "60px 24px", background: "rgba(7, 11, 20, 0.6)", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
+      {/* ─── Cooperative AI Agents Architecture ─── */}
+      <section id="ai-agents" style={{ padding: "80px 24px", background: "rgba(7, 11, 20, 0.7)", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#f8fafc", marginBottom: "20px" }}>Cooperative AI Agents</h2>
-          <p style={{ color: "#94a3b8", fontSize: "16px", maxWidth: "700px", margin: "0 auto 40px auto" }}>Our platform runs on four cooperative AI agents that actively manage your finances and provide explainable recommendations, instead of acting as a passive calculator.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "24px", textAlign: "left" }}>
-            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
-              <strong style={{ color: "#f8fafc" }}>Document Agent:</strong> Ingests bank statements and automatically categorizes line items.
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#f8fafc", marginBottom: "12px" }}>
+              Autonomous Multi-Agent Architecture
+            </h2>
+            <p style={{ color: "#94a3b8", fontSize: "16px", maxWidth: "680px", margin: "0 auto" }}>
+              Four specialized AI agents collaborate asynchronously to monitor, reconcile, and optimize your wealth portfolio 24/7.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+            <div style={{ background: "rgba(13, 20, 36, 0.8)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#f59e0b", marginBottom: "6px" }}>01 · INGESTION</div>
+              <h4 style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>DOCUMENT_AGENT</h4>
+              <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: 1.5, margin: 0 }}>
+                High-precision OCR parsing of bank statements, payslips, and tax forms with vector chunk embedding.
+              </p>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
-              <strong style={{ color: "#f8fafc" }}>Budget Agent:</strong> Balances your recurring and one-off expenses dynamically.
+
+            <div style={{ background: "rgba(13, 20, 36, 0.8)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#10b981", marginBottom: "6px" }}>02 · FORENSICS</div>
+              <h4 style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>FORENSIC_AGENT</h4>
+              <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: 1.5, margin: 0 }}>
+                Reconciles raw statement debit orders, nets reverse transactions, and hashes multi-account duplicate entries.
+              </p>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
-              <strong style={{ color: "#f8fafc" }}>Debt Agent:</strong> Calculates optimal payoff paths based on your true margin.
+
+            <div style={{ background: "rgba(13, 20, 36, 0.8)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#38bdf8", marginBottom: "6px" }}>03 · CASCADE</div>
+              <h4 style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>CASCADE_AGENT</h4>
+              <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: 1.5, margin: 0 }}>
+                Computes optimal debt payoff velocity, adjusts surplus allocations, and measures interest preserved.
+              </p>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "12px" }}>
-              <strong style={{ color: "#f8fafc" }}>Goals Agent:</strong> Allocates surplus cash to your wealth-building goals.
+
+            <div style={{ background: "rgba(13, 20, 36, 0.8)", padding: "24px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: "12px", fontWeight: 800, color: "#c084fc", marginBottom: "6px" }}>04 · REASONING</div>
+              <h4 style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>COACH_AGENT</h4>
+              <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: 1.5, margin: 0 }}>
+                Interactive natural language financial reasoning grounded in live database money flow ground truth.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Security Section */}
-      <section id="security" style={{ padding: "60px 24px", maxWidth: "1280px", margin: "0 auto", textAlign: "center" }}>
-        <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#f8fafc", marginBottom: "20px" }}>Bank-Grade Security</h2>
-        <p style={{ color: "#94a3b8", fontSize: "16px", maxWidth: "600px", margin: "0 auto" }}>
-          We utilize AES-256 encryption at rest, PostgreSQL tenant isolation, and a BYOK (Bring Your Own Key) model for LLM integrations to ensure your financial data is completely secure.
-        </p>
+      {/* ─── Global Multi-Currency Feature Highlight ─── */}
+      <section style={{ padding: "80px 24px", maxWidth: "1280px", margin: "0 auto" }}>
+        <div
+          style={{
+            background: "linear-gradient(135deg, rgba(13, 20, 36, 0.95) 0%, rgba(20, 32, 58, 0.85) 100%)",
+            border: "1px solid rgba(56, 189, 248, 0.3)",
+            borderRadius: "28px",
+            padding: "48px 40px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "40px",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", padding: "4px 12px", borderRadius: "99px", fontSize: "11px", fontWeight: 800, marginBottom: "16px" }}>
+              <Globe2 size={13} /> Global by Design
+            </div>
+            <h3 style={{ fontSize: "32px", fontWeight: 900, color: "#f8fafc", margin: "0 0 16px 0", lineHeight: 1.15 }}>
+              Universal Multi-Currency &amp; Global Banking Support
+            </h3>
+            <p style={{ fontSize: "15px", color: "#94a3b8", lineHeight: 1.6, margin: "0 0 24px 0" }}>
+              Whether tracking accounts in US Dollars ($), Euros (€), British Pounds (£), South African Rand (R), or offshore holdings, MoneyManager seamlessly denominates and unifies your net worth into a single coherent financial narrative.
+            </p>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <span style={{ background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: 700 }}>USD ($)</span>
+              <span style={{ background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: 700 }}>EUR (€)</span>
+              <span style={{ background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: 700 }}>GBP (£)</span>
+              <span style={{ background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: 700 }}>ZAR (R)</span>
+              <span style={{ background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: 700 }}>CAD (C$)</span>
+              <span style={{ background: "rgba(255, 255, 255, 0.06)", border: "1px solid rgba(255, 255, 255, 0.1)", padding: "6px 14px", borderRadius: "99px", fontSize: "12px", fontWeight: 700 }}>AUD (A$)</span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "rgba(7, 11, 20, 0.8)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "24px",
+            }}
+          >
+            <div style={{ fontSize: "12px", fontWeight: 800, color: "#38bdf8", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Coins size={16} /> Dynamic Net Worth Engine
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "10px" }}>
+                <span style={{ color: "#94a3b8", fontSize: "13px" }}>Global Ingestion Compatibility</span>
+                <span style={{ color: "#10b981", fontWeight: 700, fontSize: "13px" }}>Universal OCR</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "10px" }}>
+                <span style={{ color: "#94a3b8", fontSize: "13px" }}>Payroll Cycle Flexibility</span>
+                <span style={{ color: "#10b981", fontWeight: 700, fontSize: "13px" }}>Monthly • Bi-Weekly • Custom</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "10px" }}>
+                <span style={{ color: "#94a3b8", fontSize: "13px" }}>Debit Bounce Reconciliations</span>
+                <span style={{ color: "#10b981", fontWeight: 700, fontSize: "13px" }}>ACH • SEPA • RTD Reversals</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Terms Section (dummy for the footer link) */}
-      <div id="terms" style={{ height: "1px" }}></div>
-
-      {/* Pricing & Subscription Tiers Section */}
+      {/* ─── Pricing & Subscription Tiers Section ─── */}
       <section id="pricing" style={{ padding: "80px 24px", background: "rgba(7, 11, 20, 0.6)", borderTop: "1px solid rgba(255, 255, 255, 0.08)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(245,158,11,0.15)", color: "#fbbf24", padding: "4px 12px", borderRadius: "99px", fontSize: "11px", fontWeight: 700, marginBottom: "12px" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(245,158,11,0.15)", color: "#fbbf24", padding: "4px 14px", borderRadius: "99px", fontSize: "11px", fontWeight: 800, marginBottom: "12px" }}>
               <CreditCard size={13} /> Transparent Pricing &amp; Subscriptions
             </div>
-            <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#f8fafc", margin: "0 0 12px 0", letterSpacing: "-0.02em" }}>
+            <h2 style={{ fontSize: "38px", fontWeight: 900, color: "#f8fafc", margin: "0 0 12px 0", letterSpacing: "-0.02em" }}>
               Choose Your Wealth Acceleration Tier
             </h2>
             <p style={{ fontSize: "15px", color: "#94a3b8", maxWidth: "600px", margin: "0 auto 24px auto" }}>
-              Unlock live bank synchronization, dual-track debt cascade engines, and multi-agent AI assistants.
+              Unlock live statement reconciliation, dual-track debt cascade engines, and multi-agent AI assistants.
             </p>
 
             {/* Billing Cycle Pill Switcher */}
@@ -762,14 +1002,15 @@ export default function LoginPage() {
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#94a3b8" }}>STARTER FREE</div>
                 <div style={{ fontSize: "36px", fontWeight: 900, color: "#f8fafc", margin: "12px 0 4px 0", fontFamily: "var(--font-mono, monospace)" }}>
-                  R 0 <span style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>/ month</span>
+                  {curr.starterPrice} <span style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>/ month</span>
                 </div>
-                <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "24px" }}>Perfect for basic debt tracking &amp; manual line items.</p>
+                <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "24px" }}>Essential debt tracking &amp; manual line items.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#cbd5e1", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#10b981" }} /> Up to 3 Linked Bank Accounts</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#10b981" }} /> Up to 3 Linked Accounts</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#10b981" }} /> Standard Snowball Debt Engine</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#10b981" }} /> Monthly Budget Allocation</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#10b981" }} /> Multi-Currency Support</div>
                 </div>
               </div>
 
@@ -814,22 +1055,22 @@ export default function LoginPage() {
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 800, color: "#fbbf24" }}>PRO WEALTH ACCELERATOR</div>
                 <div style={{ fontSize: "36px", fontWeight: 900, color: "#f8fafc", margin: "12px 0 4px 0", fontFamily: "var(--font-mono, monospace)" }}>
-                  {billingCycle === "MONTHLY" ? "R 199" : "R 159"}{" "}
+                  {billingCycle === "MONTHLY" ? curr.proMonthly : curr.proAnnual}{" "}
                   <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: 500 }}>/ month</span>
                 </div>
                 <p style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "24px" }}>Complete dual-track debt cascade &amp; AI radar engine.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#f8fafc", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Unlimited Accounts &amp; Debt Accounts</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Unlimited Linked Accounts &amp; Debts</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Dual-Track Consumer vs Mortgage Engine</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Geotagged RSA Spending Location Radar</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Multi-Agent AI (Document OCR &amp; Rationale)</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> BYOK Custom LLM Encryption</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Multi-Agent AI (Document OCR &amp; RAG)</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Forensic Statement Ground Truth &amp; Reversal Netting</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#fbbf24" }} /> Geotagged Merchant Spending Radar</div>
                 </div>
               </div>
 
               <button
-                onClick={() => openSubscriptionModal("PRO WEALTH ACCELERATOR", 199, 159)}
+                onClick={fillDemoCredentials}
                 style={{
                   width: "100%",
                   padding: "14px",
@@ -844,7 +1085,7 @@ export default function LoginPage() {
                   boxShadow: "0 8px 20px rgba(245, 158, 11, 0.35)",
                 }}
               >
-                Subscribe to Pro Tier
+                Launch Pro Workspace
               </button>
             </div>
 
@@ -864,21 +1105,21 @@ export default function LoginPage() {
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#60a5fa" }}>EXECUTIVE ENTERPRISE</div>
                 <div style={{ fontSize: "36px", fontWeight: 900, color: "#f8fafc", margin: "12px 0 4px 0", fontFamily: "var(--font-mono, monospace)" }}>
-                  {billingCycle === "MONTHLY" ? "R 499" : "R 399"}{" "}
+                  {billingCycle === "MONTHLY" ? curr.enterpriseMonthly : curr.enterpriseAnnual}{" "}
                   <span style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>/ month</span>
                 </div>
-                <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "24px" }}>Multi-family wealth workspace &amp; Windeed valuation feeds.</p>
+                <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "24px" }}>Multi-family wealth workspace &amp; automated valuation feeds.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#cbd5e1", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Everything in Pro Tier</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Windeed &amp; Lightstone Property Valuation</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Direct OpenBanking Direct API Connection</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Dedicated AI Wealth Coach</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Real Estate &amp; Automated Property Valuation</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Direct OpenBanking Feeds</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={16} style={{ color: "#60a5fa" }} /> Dedicated AI Financial Advisory Coach</div>
                 </div>
               </div>
 
               <button
-                onClick={() => openSubscriptionModal("EXECUTIVE ENTERPRISE", 499, 399)}
+                onClick={fillDemoCredentials}
                 style={{
                   width: "100%",
                   padding: "12px",
@@ -892,189 +1133,45 @@ export default function LoginPage() {
                   marginTop: "32px",
                 }}
               >
-                Subscribe to Enterprise
+                Launch Enterprise Workspace
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Subscription Payment Checkout Modal */}
-      {isCheckoutModalOpen && selectedPlan && (
-        <div className="modal-overlay" onClick={() => setIsCheckoutModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
-            <div className="modal-header">
-              <div>
-                <h2 className="modal-title">Complete Your Subscription</h2>
-                <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
-                  Plan: <strong style={{ color: "#fbbf24" }}>{selectedPlan.name}</strong>
-                </div>
-              </div>
-              <button className="modal-close" onClick={() => setIsCheckoutModalOpen(false)}>✕</button>
-            </div>
-
-            {paymentSuccess ? (
-              <div style={{ padding: "40px 24px", textAlign: "center" }}>
-                <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "rgba(16, 185, 129, 0.15)", border: "2px solid #10b981", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px auto", color: "#10b981" }}>
-                  <CheckCircle2 size={36} />
-                </div>
-                <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#f8fafc", margin: "0 0 6px 0" }}>Subscription Activated!</h3>
-                <p style={{ fontSize: "13px", color: "#94a3b8" }}>Welcome to {selectedPlan.name}. Launching your workspace…</p>
-              </div>
-            ) : (
-              <form onSubmit={handleProcessPayment}>
-                <div className="modal-body">
-                  {/* Summary Box */}
-                  <div
-                    style={{
-                      background: "rgba(10, 16, 30, 0.8)",
-                      border: "1px solid rgba(245, 158, 11, 0.3)",
-                      borderRadius: "14px",
-                      padding: "16px 20px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: "13px", fontWeight: 800, color: "#f8fafc" }}>{selectedPlan.name}</div>
-                      <div style={{ fontSize: "11px", color: "#94a3b8" }}>
-                        Billed {billingCycle.toLowerCase()} • Auto-renewing cancel anytime
-                      </div>
-                    </div>
-                    <div style={{ fontSize: "20px", fontWeight: 900, color: "#fbbf24", fontFamily: "var(--font-mono, monospace)" }}>
-                      {formatZAR(billingCycle === "MONTHLY" ? selectedPlan.priceMonthly : selectedPlan.priceAnnual)}
-                    </div>
-                  </div>
-
-                  {/* Payment Method Selector */}
-                  <div className="form-group">
-                    <label className="form-label">Payment Method</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("CARD")}
-                        style={{
-                          padding: "10px",
-                          borderRadius: "10px",
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          border: paymentMethod === "CARD" ? "1px solid #f59e0b" : "1px solid rgba(255,255,255,0.08)",
-                          background: paymentMethod === "CARD" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)",
-                          color: paymentMethod === "CARD" ? "#fbbf24" : "#94a3b8",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Credit Card
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("EFT")}
-                        style={{
-                          padding: "10px",
-                          borderRadius: "10px",
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          border: paymentMethod === "EFT" ? "1px solid #f59e0b" : "1px solid rgba(255,255,255,0.08)",
-                          background: paymentMethod === "EFT" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)",
-                          color: paymentMethod === "EFT" ? "#fbbf24" : "#94a3b8",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Instant EFT
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("APPLE_PAY")}
-                        style={{
-                          padding: "10px",
-                          borderRadius: "10px",
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          border: paymentMethod === "APPLE_PAY" ? "1px solid #f59e0b" : "1px solid rgba(255,255,255,0.08)",
-                          background: paymentMethod === "APPLE_PAY" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)",
-                          color: paymentMethod === "APPLE_PAY" ? "#fbbf24" : "#94a3b8",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Apple Pay
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Card Details Form */}
-                  <div className="form-group">
-                    <label className="form-label required">Cardholder Name</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={cardForm.name}
-                      onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label required">Card Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={cardForm.cardNumber}
-                      onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="two-col">
-                    <div className="form-group">
-                      <label className="form-label required">Expiry Date</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={cardForm.expiry}
-                        onChange={(e) => setCardForm({ ...cardForm, expiry: e.target.value })}
-                        placeholder="MM/YY"
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label required">CVV</label>
-                      <input
-                        type="password"
-                        className="form-input"
-                        value={cardForm.cvv}
-                        onChange={(e) => setCardForm({ ...cardForm, cvv: e.target.value })}
-                        placeholder="123"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setIsCheckoutModalOpen(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary flex items-center gap-1.5" disabled={isProcessingPayment}>
-                    <ShieldCheck size={16} />
-                    <span>{isProcessingPayment ? "Authorizing Payment…" : `Pay ${formatZAR(billingCycle === "MONTHLY" ? selectedPlan.priceMonthly : selectedPlan.priceAnnual)}`}</span>
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+      {/* ─── Security & Cryptographic Integrity ─── */}
+      <section id="security" style={{ padding: "80px 24px", maxWidth: "1280px", margin: "0 auto", textAlign: "center" }}>
+        <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(168, 85, 247, 0.15)", border: "1px solid rgba(168, 85, 247, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px auto", color: "#c084fc" }}>
+          <KeyRound size={28} />
         </div>
-      )}
+        <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#f8fafc", marginBottom: "14px" }}>
+          Zero-Knowledge &amp; Bank-Grade Privacy
+        </h2>
+        <p style={{ color: "#94a3b8", fontSize: "15px", maxWidth: "680px", margin: "0 auto 36px auto", lineHeight: 1.6 }}>
+          Your financial privacy is non-negotiable. MoneyManager utilizes AES-256 encryption at rest, cryptographic SHA-256 document hashing, strict PostgreSQL tenant schema isolation, and a Bring-Your-Own-Key (BYOK) architecture so third parties never access your unencrypted finances.
+        </p>
 
-      {/* Footer */}
-      <footer style={{ padding: "40px 24px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#64748b", textAlign: "center" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-          <div>© 2026 MoneyManager Enterprise Wealth Platform. All rights reserved.</div>
-          <div style={{ display: "flex", gap: "20px" }}>
-            <a href="#security" style={{ color: "#64748b", textDecoration: "none" }}>Security &amp; Encryption</a>
-            <a href="#pricing" style={{ color: "#64748b", textDecoration: "none" }}>Subscriptions</a>
-            <a href="#terms" style={{ color: "#64748b", textDecoration: "none" }}>Terms of Service</a>
+        <div style={{ display: "inline-flex", gap: "24px", flexWrap: "wrap", justifyContent: "center", fontSize: "13px", color: "#cbd5e1" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><ShieldCheck size={16} color="#10b981" /> 256-Bit TLS &amp; AES-256</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><ShieldCheck size={16} color="#10b981" /> Tenant Data Partitioning</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><ShieldCheck size={16} color="#10b981" /> BYOK Model Encryption</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><ShieldCheck size={16} color="#10b981" /> SHA-256 Document Verification</div>
+        </div>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", padding: "40px 32px", background: "rgba(3, 6, 12, 0.95)" }}>
+        <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", color: "#000" }}>
+              <ShieldCheck size={16} />
+            </div>
+            <span style={{ fontSize: "14px", fontWeight: 800, color: "#f8fafc" }}>MoneyManager Intelligence</span>
+          </div>
+
+          <div style={{ fontSize: "12px", color: "#64748b" }}>
+            © {new Date().getFullYear()} MoneyManager. Precision personal financial operating system. All rights reserved.
           </div>
         </div>
       </footer>
