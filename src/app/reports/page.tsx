@@ -1133,18 +1133,24 @@ export default function ReportsPage() {
               Reconciled historical performance across official SARS payslips and bank statement cycles:
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
-              {historicalTrends.map((t, idx) => (
-                <div key={idx} style={{ background: "rgba(7, 11, 20, 0.6)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "16px", minWidth: 0 }}>
-                  <div style={{ fontSize: "13px", fontWeight: 800, color: "#ffffff", marginBottom: "8px" }}>{t.period}</div>
-                  <div style={{ fontSize: "11px", color: "#94a3b8" }}>Income:</div>
-                  <div style={{ fontSize: "15px", fontWeight: 700, color: "#38bdf8", fontFamily: "var(--font-mono, monospace)" }}>{formatZAR(t.income)}</div>
-                  <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "6px" }}>Surplus:</div>
-                  <div style={{ fontSize: "15px", fontWeight: 700, color: "#10b981", fontFamily: "var(--font-mono, monospace)" }}>+{formatZAR(t.surplus)}</div>
-                  <div style={{ fontSize: "10px", color: "#a855f7", marginTop: "4px" }}>Savings Rate: {t.savingsRate}%</div>
-                </div>
-              ))}
-            </div>
+            {historicalTrends.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", fontSize: "13px", background: "rgba(7, 11, 20, 0.4)", borderRadius: "14px", border: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                No historical statement or payslip trends recorded yet. Ingest statements to view multi-month trajectory.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
+                {historicalTrends.map((t, idx) => (
+                  <div key={idx} style={{ background: "rgba(7, 11, 20, 0.6)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "16px", minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 800, color: "#ffffff", marginBottom: "8px" }}>{t.period}</div>
+                    <div style={{ fontSize: "11px", color: "#94a3b8" }}>Income:</div>
+                    <div style={{ fontSize: "15px", fontWeight: 700, color: "#38bdf8", fontFamily: "var(--font-mono, monospace)" }}>{formatZAR(t.income)}</div>
+                    <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "6px" }}>Surplus:</div>
+                    <div style={{ fontSize: "15px", fontWeight: 700, color: "#10b981", fontFamily: "var(--font-mono, monospace)" }}>+{formatZAR(t.surplus)}</div>
+                    <div style={{ fontSize: "10px", color: "#a855f7", marginTop: "4px" }}>Savings Rate: {t.savingsRate}%</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
