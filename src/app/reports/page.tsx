@@ -493,7 +493,7 @@ export default function ReportsPage() {
               fontWeight: 800,
             }}
           >
-            100% Match
+            {auditAccounts.length > 0 ? "100% Match" : "0 Accounts"}
           </span>
         </button>
 
@@ -647,10 +647,10 @@ export default function ReportsPage() {
                 <ShieldCheck size={20} color="#10b981" />
               </div>
               <div style={{ fontSize: "26px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                100% Certified
+                {auditAccounts.length > 0 ? "100% Certified" : "Unranked"}
               </div>
               <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "6px" }}>
-                All 14 active accounts & liabilities reconciled
+                {auditAccounts.length > 0 ? `All ${auditAccounts.length} active accounts & liabilities reconciled` : "No accounts linked yet"}
               </div>
             </div>
 
@@ -671,10 +671,10 @@ export default function ReportsPage() {
                 <CreditCard size={20} color="#f59e0b" />
               </div>
               <div style={{ fontSize: "26px", fontWeight: 800, color: "#ffffff", fontFamily: "var(--font-mono, monospace)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {formatZAR(data?.auditData?.totalDebtsValue ?? 2416724.84)}
+                {formatZAR(data?.auditData?.totalDebtsValue ?? 0)}
               </div>
               <div style={{ fontSize: "12px", color: "#f59e0b", marginTop: "6px" }}>
-                R 36,444.44 / mo contractual servicing
+                {data?.auditData?.totalServicingMonthly ? `${formatZAR(data.auditData.totalServicingMonthly)} / mo contractual servicing` : "R 0,00 / mo contractual servicing"}
               </div>
             </div>
 
@@ -695,10 +695,10 @@ export default function ReportsPage() {
                 <Coins size={20} color="#38bdf8" />
               </div>
               <div style={{ fontSize: "26px", fontWeight: 800, color: "#ffffff", fontFamily: "var(--font-mono, monospace)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                R 599.04
+                {formatZAR(data?.auditData?.liquidReserves ?? 0)}
               </div>
               <div style={{ fontSize: "12px", color: "#38bdf8", marginTop: "6px" }}>
-                MyMo Current (+R599) & Cash Wallet (+R850)
+                {data?.auditData?.liquidAccountsSummary || (auditAccounts.length > 0 ? "Linked liquid accounts" : "No cash reserves recorded")}
               </div>
             </div>
 
@@ -719,10 +719,10 @@ export default function ReportsPage() {
                 <Activity size={20} color="#10b981" />
               </div>
               <div style={{ fontSize: "26px", fontWeight: 800, color: "#10b981", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                100% Settled
+                {homeLoanCrossAccountEvents.length > 0 ? "100% Settled" : "No Bounces"}
               </div>
               <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "6px" }}>
-                All returned debit orders recovered via MyMo EFT
+                {homeLoanCrossAccountEvents.length > 0 ? "All returned debit orders recovered via manual EFT" : "Zero debit bounce incidents detected"}
               </div>
             </div>
           </div>
@@ -740,7 +740,7 @@ export default function ReportsPage() {
               <div>
                 <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#ffffff", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
                   <Landmark size={20} color="#f59e0b" />
-                  Cross-Account Lineage & Debt Bounce Recovery Audit
+                  Cross-Account Lineage &amp; Debt Bounce Recovery Audit
                 </h3>
                 <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px", margin: 0 }}>
                   Automated forensic tracking of returned debit order presentations and matching cross-account manual recovery EFT settlements across linked accounts:
@@ -762,73 +762,79 @@ export default function ReportsPage() {
               </span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {homeLoanCrossAccountEvents.map((evt, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "16px 20px",
-                    borderRadius: "14px",
-                    background: "rgba(7, 11, 20, 0.6)",
-                    border: "1px solid rgba(255, 255, 255, 0.06)",
-                    flexWrap: "wrap",
-                    gap: "14px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "10px",
-                        background:
-                          evt.status === "RECONCILED_AND_PAID"
-                            ? "rgba(245, 158, 11, 0.15)"
-                            : "rgba(16, 185, 129, 0.15)",
-                        border:
-                          evt.status === "RECONCILED_AND_PAID"
-                            ? "1px solid rgba(245, 158, 11, 0.3)"
-                            : "1px solid rgba(16, 185, 129, 0.3)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: evt.status === "RECONCILED_AND_PAID" ? "#f59e0b" : "#10b981",
-                        fontSize: "12px",
-                        fontWeight: 800,
-                      }}
-                    >
-                      {idx + 1}
+            {homeLoanCrossAccountEvents.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", fontSize: "13px", background: "rgba(7, 11, 20, 0.4)", borderRadius: "14px", border: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                No cross-account debt orders or bounce recovery settlements detected.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {homeLoanCrossAccountEvents.map((evt, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "16px 20px",
+                      borderRadius: "14px",
+                      background: "rgba(7, 11, 20, 0.6)",
+                      border: "1px solid rgba(255, 255, 255, 0.06)",
+                      flexWrap: "wrap",
+                      gap: "14px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "10px",
+                          background:
+                            evt.status === "RECONCILED_AND_PAID"
+                              ? "rgba(245, 158, 11, 0.15)"
+                              : "rgba(16, 185, 129, 0.15)",
+                          border:
+                            evt.status === "RECONCILED_AND_PAID"
+                              ? "1px solid rgba(245, 158, 11, 0.3)"
+                              : "1px solid rgba(16, 185, 129, 0.3)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: evt.status === "RECONCILED_AND_PAID" ? "#f59e0b" : "#10b981",
+                          fontSize: "12px",
+                          fontWeight: 800,
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff" }}>{evt.month}</div>
+                        <div style={{ fontSize: "12px", color: "#cbd5e1", marginTop: "3px" }}>
+                          <span style={{ color: "#94a3b8" }}>Prestige Account:</span> {evt.prestigeEvent}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#38bdf8", marginTop: "3px" }}>
+                          <span style={{ color: "#94a3b8" }}>MyMo Settlement:</span> {evt.mymoRecoveryEvent}
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <div style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff" }}>{evt.month}</div>
-                      <div style={{ fontSize: "12px", color: "#cbd5e1", marginTop: "3px" }}>
-                        <span style={{ color: "#94a3b8" }}>Prestige Account:</span> {evt.prestigeEvent}
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "16px", fontWeight: 800, color: "#ffffff", fontFamily: "var(--font-mono, monospace)" }}>
+                          {formatZAR(evt.amount)}
+                        </div>
+                        <div style={{ fontSize: "11px", color: evt.status === "RECONCILED_AND_PAID" ? "#fbbf24" : "#10b981", fontWeight: 700 }}>
+                          {evt.status === "RECONCILED_AND_PAID" ? "🔄 Settled via MyMo EFT" : "✅ Paid on Schedule"}
+                        </div>
                       </div>
-                      <div style={{ fontSize: "12px", color: "#38bdf8", marginTop: "3px" }}>
-                        <span style={{ color: "#94a3b8" }}>MyMo Settlement:</span> {evt.mymoRecoveryEvent}
-                      </div>
+
+                      <CheckCircle size={20} color="#10b981" />
                     </div>
                   </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#ffffff", fontFamily: "var(--font-mono, monospace)" }}>
-                        {formatZAR(evt.amount)}
-                      </div>
-                      <div style={{ fontSize: "11px", color: evt.status === "RECONCILED_AND_PAID" ? "#fbbf24" : "#10b981", fontWeight: 700 }}>
-                        {evt.status === "RECONCILED_AND_PAID" ? "🔄 Settled via MyMo EFT" : "✅ Paid on Schedule"}
-                      </div>
-                    </div>
-
-                    <CheckCircle size={20} color="#10b981" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Master Multi-Account Statement Reconciliation Grid */}
@@ -870,57 +876,65 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {auditAccounts.map((acc, idx) => (
-                    <tr
-                      key={idx}
-                      style={{
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        background: idx % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent",
-                      }}
-                    >
-                      <td style={{ padding: "14px", fontWeight: 700, color: "#ffffff" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: acc.isDebt ? "#f59e0b" : "#38bdf8" }} />
-                          {acc.name}
-                        </div>
-                      </td>
-                      <td style={{ padding: "14px", fontFamily: "var(--font-mono, monospace)", color: "#cbd5e1" }}>
-                        {acc.accountNumberMasked || "N/A"}
-                      </td>
-                      <td style={{ padding: "14px", color: "#94a3b8" }}>
-                        <span style={{ background: "rgba(255,255,255,0.06)", padding: "3px 8px", borderRadius: "6px", fontSize: "11px", color: "#e2e8f0" }}>
-                          {acc.institution} · {acc.type}
-                        </span>
-                      </td>
-                      <td style={{ padding: "14px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: acc.currentBalance < 0 ? "#f43f5e" : "#10b981" }}>
-                        {formatZAR(acc.currentBalance)}
-                      </td>
-                      <td style={{ padding: "14px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", color: acc.debtBalance ? "#f59e0b" : "#94a3b8" }}>
-                        {acc.debtBalance ? formatZAR(acc.debtBalance) : "—"}
-                      </td>
-                      <td style={{ padding: "14px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", color: acc.minimumPayment ? "#38bdf8" : "#94a3b8" }}>
-                        {acc.minimumPayment ? formatZAR(acc.minimumPayment) : "—"}
-                      </td>
-                      <td style={{ padding: "14px", textAlign: "center" }}>
-                        <span
-                          style={{
-                            background: "rgba(16, 185, 129, 0.15)",
-                            color: "#10b981",
-                            border: "1px solid rgba(16, 185, 129, 0.3)",
-                            padding: "3px 10px",
-                            borderRadius: "99px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <ShieldCheck size={12} /> 100% Reconciled
-                        </span>
+                  {auditAccounts.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: "center", padding: "36px 14px", color: "#94a3b8", fontSize: "13px" }}>
+                        No financial accounts linked yet. Ingest statements or register accounts to generate reconciliation audit.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    auditAccounts.map((acc, idx) => (
+                      <tr
+                        key={idx}
+                        style={{
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          background: idx % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent",
+                        }}
+                      >
+                        <td style={{ padding: "14px", fontWeight: 700, color: "#ffffff" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: acc.isDebt ? "#f59e0b" : "#38bdf8" }} />
+                            {acc.name}
+                          </div>
+                        </td>
+                        <td style={{ padding: "14px", fontFamily: "var(--font-mono, monospace)", color: "#cbd5e1" }}>
+                          {acc.accountNumberMasked || "N/A"}
+                        </td>
+                        <td style={{ padding: "14px", color: "#94a3b8" }}>
+                          <span style={{ background: "rgba(255,255,255,0.06)", padding: "3px 8px", borderRadius: "6px", fontSize: "11px", color: "#e2e8f0" }}>
+                            {acc.institution} · {acc.type}
+                          </span>
+                        </td>
+                        <td style={{ padding: "14px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: acc.currentBalance < 0 ? "#f43f5e" : "#10b981" }}>
+                          {formatZAR(acc.currentBalance)}
+                        </td>
+                        <td style={{ padding: "14px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", color: acc.debtBalance ? "#f59e0b" : "#94a3b8" }}>
+                          {acc.debtBalance ? formatZAR(acc.debtBalance) : "—"}
+                        </td>
+                        <td style={{ padding: "14px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", color: acc.minimumPayment ? "#38bdf8" : "#94a3b8" }}>
+                          {acc.minimumPayment ? formatZAR(acc.minimumPayment) : "—"}
+                        </td>
+                        <td style={{ padding: "14px", textAlign: "center" }}>
+                          <span
+                            style={{
+                              background: "rgba(16, 185, 129, 0.15)",
+                              color: "#10b981",
+                              border: "1px solid rgba(16, 185, 129, 0.3)",
+                              padding: "3px 10px",
+                              borderRadius: "99px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <ShieldCheck size={12} /> 100% Reconciled
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -961,8 +975,13 @@ export default function ReportsPage() {
               </span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-              {ingestedDocs.slice(0, 8).map((doc, idx) => (
+            {ingestedDocs.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", fontSize: "13px", background: "rgba(7, 11, 20, 0.4)", borderRadius: "14px", border: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                No verified statement artifacts uploaded yet. Upload a statement in Document Vault to enable cryptographic verification audit trails.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+                {ingestedDocs.slice(0, 8).map((doc, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -1021,6 +1040,7 @@ export default function ReportsPage() {
                 </div>
               ))}
             </div>
+            )}
           </div>
         </div>
       )}

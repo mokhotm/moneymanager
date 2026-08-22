@@ -537,6 +537,15 @@ export async function GET(request: NextRequest) {
         }),
         totalAssetsValue: assets.reduce((sum, a) => sum + Number(a.currentValue), 0),
         totalDebtsValue: debts.reduce((sum, d) => sum + Number(d.currentBalance), 0),
+        totalServicingMonthly: debts.reduce((sum, d) => sum + Number(d.minimumPayment || 0), 0),
+        liquidReserves: accounts
+          .filter((a) => !a.isDebt && (a.type === "CURRENT" || a.type === "SAVINGS" || a.type === "CASH_WALLET"))
+          .reduce((sum, a) => sum + Math.max(0, Number(a.openingBalance || 0)), 0),
+        liquidAccountsSummary:
+          accounts
+            .filter((a) => !a.isDebt && (a.type === "CURRENT" || a.type === "SAVINGS" || a.type === "CASH_WALLET") && Number(a.openingBalance) > 0)
+            .map((a) => `${a.name} (+R${Math.round(Number(a.openingBalance))})`)
+            .join(" & ") || (accounts.length > 0 ? "Accounts linked" : "No cash reserves recorded"),
         netWorth:
           assets.reduce((sum, a) => sum + Number(a.currentValue), 0) -
           debts.reduce((sum, d) => sum + Number(d.currentBalance), 0),
