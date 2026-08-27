@@ -1,5 +1,5 @@
 .custom-map-tiles {
-  /* No filters needed for Voyager */
+  filter: brightness(0.96) contrast(1.04);
 }
 
 /* ── Custom Rich Dark Glassmorphism Anchored Popup ────── */
