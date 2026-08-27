@@ -37,6 +37,7 @@
    - [System Readiness & Zero-Trust Verification](#82-system-readiness)
    - [Billing & Subscription Plans](#83-billing--plans)
    - [User Profile & Identity Credentials](#84-profile)
+   - [Enterprise Admin Portal & Governance](#85-admin-portal)
 9. [AI Agents Architecture & Model Routing](#9-ai-agents-architecture)
 10. [Security & Data Privacy](#10-security--data-privacy)
 11. [South African Financial Context](#11-south-african-financial-context)
@@ -968,6 +969,44 @@ View and manage your verified user identity, SARS tax metadata, and session secu
 | **Employer / Organization** | Employer for statutory payroll cycle anchoring (e.g. `South African Revenue Service (SARS)`) |
 | **SARS Tax Reference Number** | 10-digit tax number used for ITR12 tax reports |
 | **Preferred Currency** | Default monetary currency (defaults to `ZAR`) |
+
+---
+
+### 8.5 Enterprise Admin Portal & Governance
+
+**Navigation:** Sidebar → *Admin Portal* *(Visible only to users with `role: "admin"`)*
+
+The **Enterprise Admin Portal (`/admin`)** provides root platform administrators with centralized governance over users, commercial payment gateways, platform telemetry, and system cryptography.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 ENTERPRISE ADMIN PORTAL                     │
+├──────────────────────────┬──────────────────────────────────┤
+│ Platform Telemetry       │ User counts, 1,360+ transactions │
+│ User & Identity Directory│ Role switching (User ↔ Admin)   │
+│ Payment Gateways         │ PayFast, Peach Payments, Ozow    │
+│ Zero-Trust Readiness     │ AES-256 Vault & Session Signer   │
+└──────────────────────────┴──────────────────────────────────┘
+```
+
+#### Core Admin Capabilities
+
+1. **Platform Macro Telemetry:**
+   - Real-time aggregated KPIs: Total Registered Users, Total Cleared Transactions, Total Document Vault Files, and Monthly Recurring Revenue (MRR).
+   - Core subsystem status: Database connectivity, AES-256 vault encryption, and HMAC-SHA256 session signer.
+
+2. **User & Identity Directory:**
+   - Searchable table across all registered platform users.
+   - **Role Switching:** Instantly promote users to **`ADMIN`** (Root Authority) or demote to **`USER`**.
+   - **Subscription Tier Overrides:** Assign or override plans (`STARTER`, `PRO`, `EXECUTIVE_ENTERPRISE`).
+   - **Legal Identity Updates:** Update legal names, emails, and account associations.
+
+3. **South African Payment Gateways & FICA Settlements:**
+   - Configure credentials and webhook signing secrets for **PayFast SA**, **Peach Payments**, and **Ozow Instant EFT**.
+   - Set up FICA-compliant corporate settlement accounts (FNB, Standard Bank, ABSA, Nedbank, Investec).
+
+4. **Zero-Trust Cryptographic Infrastructure:**
+   - Direct status verification of all server-level cryptographic secrets and open-banking aggregation endpoints.
 
 ---
 

@@ -543,12 +543,28 @@ export default function SettingsPage() {
       }
 
       setEditingConfig(null);
-      setTestFeedback({
+      setConfigs((prev) =>
+        prev.map((c) =>
+          c.id === data.id
+            ? {
+                ...c,
+                displayName: data.displayName || editForm.displayName,
+                modelName: data.modelName || editForm.modelName,
+                baseUrl: data.baseUrl,
+                status: data.status || editForm.status,
+                supportsVision: data.supportsVision ?? c.supportsVision,
+                apiKeyMasked: editForm.apiKey ? "••••••••" : c.apiKeyMasked,
+                lastValidatedAt: new Date().toISOString(),
+              }
+            : c
+        )
+      );
+
+      triggerFeedback({
         id: data.id || "updated-key",
         ok: data.status === "ACTIVE" || data?.validation?.valid === true,
         message: `LLM Provider Key "${data.displayName || editForm.displayName}" updated successfully!`,
       });
-      await loadSettings();
     } catch (err: any) {
       setEditModalError(err.message || "Network error while updating key.");
     } finally {
@@ -586,6 +602,13 @@ export default function SettingsPage() {
 
   const [testFeedback, setTestFeedback] = useState<{ id: string; ok: boolean; message: string } | null>(null);
 
+  const triggerFeedback = (fb: { id: string; ok: boolean; message: string }) => {
+    setTestFeedback(fb);
+    setTimeout(() => {
+      setTestFeedback((current) => (current?.id === fb.id ? null : current));
+    }, 4500);
+  };
+
   const handleSelectPreset = (presetId: string) => {
     setSelectedPresetId(presetId);
     setIsCustomModelInput(false);
@@ -604,7 +627,6 @@ export default function SettingsPage() {
 
   const handleTestKey = async (id: string, displayName: string) => {
     setTestingId(id);
-    setTestFeedback(null);
     try {
       const res = await fetch("/api/settings/llm-providers", {
         method: "PUT",
@@ -614,7 +636,20 @@ export default function SettingsPage() {
       const data = await res.json();
       const isValid = data?.validation?.valid === true || data?.status === "ACTIVE";
 
-      setTestFeedback({
+      // Optimistic in-place update of specific key with zero layout flicker
+      setConfigs((prev) =>
+        prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                status: isValid ? "ACTIVE" : "INVALID",
+                lastValidatedAt: new Date().toISOString(),
+              }
+            : c
+        )
+      );
+
+      triggerFeedback({
         id,
         ok: isValid,
         message: isValid
@@ -622,21 +657,29 @@ export default function SettingsPage() {
           : `Key "${displayName}" validation returned: ${data?.validation?.message || data?.status || "Invalid Key"}.`,
       });
     } catch (err: any) {
-      setTestFeedback({
+      triggerFeedback({
         id,
         ok: false,
         message: `Network error testing key "${displayName}": ${err?.message}`,
       });
     } finally {
       setTestingId(null);
-      loadSettings();
     }
   };
 
   const handleDeleteKey = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete LLM Key "${name}"?`)) return;
-    await fetch(`/api/settings/llm-providers?id=${id}`, { method: "DELETE" });
-    loadSettings();
+    try {
+      await fetch(`/api/settings/llm-providers?id=${id}`, { method: "DELETE" });
+      setConfigs((prev) => prev.filter((c) => c.id !== id));
+      triggerFeedback({
+        id,
+        ok: true,
+        message: `LLM Provider Key "${name}" removed.`,
+      });
+    } catch (err: any) {
+      alert(err.message || "Failed to delete key");
+    }
   };
 
   const handleAddConfig = async (e: React.FormEvent) => {
@@ -885,28 +928,6 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-
-          {/* Test Key Feedback Banner */}
-          {testFeedback && (
-            <div
-              style={{
-                padding: "14px 20px",
-                borderRadius: "12px",
-                marginBottom: "24px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                background: testFeedback.ok ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
-                border: `1px solid ${testFeedback.ok ? "rgba(16, 185, 129, 0.35)" : "rgba(239, 68, 68, 0.35)"}`,
-                color: testFeedback.ok ? "#34d399" : "#f87171",
-                fontSize: "14px",
-                fontWeight: "600",
-              }}
-            >
-              {testFeedback.ok ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-              {testFeedback.message}
-            </div>
-          )}
 
           {/* Section 1: Configured Provider Keys */}
           <div
@@ -1883,6 +1904,49 @@ export default function SettingsPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Floating Zero-Shift Toast Notification */}
+      {testFeedback && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "28px",
+            right: "28px",
+            zIndex: 99999,
+            padding: "14px 20px",
+            borderRadius: "14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            background: testFeedback.ok ? "rgba(6, 78, 59, 0.95)" : "rgba(127, 29, 29, 0.95)",
+            border: `1px solid ${testFeedback.ok ? "rgba(16, 185, 129, 0.5)" : "rgba(239, 68, 68, 0.5)"}`,
+            color: "#ffffff",
+            fontSize: "13.5px",
+            fontWeight: "600",
+            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(20px)",
+            maxWidth: "440px",
+            transition: "all 0.2s ease",
+          }}
+        >
+          {testFeedback.ok ? <CheckCircle2 size={18} color="#34d399" /> : <AlertCircle size={18} color="#f87171" />}
+          <div style={{ flex: 1, lineHeight: 1.4 }}>{testFeedback.message}</div>
+          <button
+            type="button"
+            onClick={() => setTestFeedback(null)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "rgba(255, 255, 255, 0.7)",
+              cursor: "pointer",
+              fontSize: "16px",
+              padding: "0 0 0 8px",
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
       </div>

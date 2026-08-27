@@ -306,15 +306,37 @@ model TaxDeductionClaim {
 
 ---
 
-## 5. Phased Implementation Milestones
+---
+
+## 5. Enterprise Admin Portal & Root Governance Layer
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       ROOT GOVERNANCE & TELEMETRY                           │
+├───────────────────┬───────────────────┬───────────────────┬─────────────────┤
+│  IDENTITY & ROLES │ PAYMENT GATEWAYS  │ MACRO TELEMETRY   │ CRYPTO HEALTH   │
+├───────────────────┼───────────────────┼───────────────────┼─────────────────┤
+│ • User Directory  │ • PayFast SA      │ • Ingested Volume │ • AES-256 Vault │
+│ • Role Switcher   │ • Peach Payments  │ • Document Counts │ • HMAC Signer   │
+│ • Tier Overrides  │ • Ozow Instant EFT│ • MRR Run-Rate    │ • Webhook Secret│
+│ • Profile Updates │ • FICA Settlement │ • Account Counts  │ • Open Banking  │
+└───────────────────┴───────────────────┴───────────────────┴─────────────────┘
+```
+
+* **Role-Based Access Control (RBAC)**: Strict `admin` authorization gating for `/admin` routes and `/api/admin/*` endpoints.
+* **Payment Settlement Integrity**: Enforces strict FICA validation on linked corporate settlement bank accounts (rejecting unverified/crypto accounts).
+
+---
+
+## 6. Phased Implementation Milestones
 
 | Milestone | Target Horizon | Deliverables |
 | :--- | :--- | :--- |
 | **Phase 1: Ingestion & 365-Day Foresight** | Q1 | Inbound e-statement parser, 365-day balance projection canvas, Stitch/Plaid hybrid open-banking layer |
 | **Phase 2: Multi-Entity & Tax Intelligence** | Q2 | Multi-Entity workspace switcher (Personal/SME/Trust), SARS/IRS tax deduction engine, 1-click audit pack export |
 | **Phase 3: RAG Memory & Asset Automation** | Q3 | 5-Year vector semantic document Q&A, Lightstone deeds API, TransUnion vehicle depreciation curves, XIRR/TWR portfolio drift |
-| **Phase 4: Local-First & Ecosystem** | Q4 | PGlite/IndexedDB local-first synchronization, Tauri native desktop apps for Mac/Windows, biometric PWA |
+| **Phase 4: Admin Governance & Local-First** | Q4 | Enterprise Admin Portal (/admin), PGlite/IndexedDB local-first sync, Tauri native desktop apps for Mac/Windows, biometric PWA |
 
 ---
 
-*MoneyManager Specification v2.0 — Approved for Implementation.*
+*MoneyManager Specification v2.5 Obsidian — Approved for Implementation.*
