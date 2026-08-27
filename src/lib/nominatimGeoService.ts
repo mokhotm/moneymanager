@@ -16,8 +16,8 @@ export interface GeocodedAddress {
   osmType?: string;
 }
 
-export function cleanMerchantSearchQuery(rawQuery: string): string {
-  if (!rawQuery) return "";
+export function cleanMerchantSearchQuery(rawQuery: string): { query: string; isExplicitCountry: boolean } {
+  if (!rawQuery) return { query: "", isExplicitCountry: false };
   let clean = rawQuery
     // Remove bank prefix noise
     .replace(/^(pos|c\*|s2s\*|debit|purchase|eft|card|txn)\s*[-*:]?\s*/i, "")
@@ -28,35 +28,38 @@ export function cleanMerchantSearchQuery(rawQuery: string): string {
     .replace(/\s+/g, " ")
     .trim();
 
-  // If South Africa is not mentioned, append it for geographic context
-  if (!/south\s*africa|rsa|gauteng|pretoria|johannesburg|springs|cape\s*town|durban|bloemfontein/i.test(clean)) {
-    clean = `${clean}, South Africa`;
-  } else if (!/south\s*africa|rsa/i.test(clean)) {
+  const internationalRegex = /\b(united\s*states|usa|uk|united\s*kingdom|england|london|dubai|uae|australia|germany|france|botswana|gaborone|namibia|windhoek|lesotho|maseru|zimbabwe|harare|kenya|nairobi|canada|singapore|mauritius|japan|china)\b/i;
+  const isExplicitCountry = internationalRegex.test(clean) || /south\s*africa|rsa/i.test(clean);
+
+  // If no explicit country is found, default to South Africa for domestic statements
+  if (!isExplicitCountry) {
     clean = `${clean}, South Africa`;
   }
 
-  return clean;
+  return { query: clean, isExplicitCountry: internationalRegex.test(clean) };
 }
 
 /**
- * Searches OpenStreetMap Nominatim for South African places and addresses.
+ * Searches OpenStreetMap Nominatim globally (with smart South Africa prioritization).
  */
 export async function searchNominatimAddress(query: string, limit = 5): Promise<GeocodedAddress[]> {
   try {
-    const cleaned = cleanMerchantSearchQuery(query);
+    const { query: cleaned, isExplicitCountry } = cleanMerchantSearchQuery(query);
     if (!cleaned) return [];
 
     const url = new URL("https://nominatim.openstreetmap.org/search");
     url.searchParams.set("q", cleaned);
     url.searchParams.set("format", "json");
     url.searchParams.set("addressdetails", "1");
-    url.searchParams.set("countrycodes", "za"); // Strict South Africa restriction
+    if (!isExplicitCountry) {
+      url.searchParams.set("countrycodes", "za"); // Prioritize South Africa unless an international country is requested
+    }
     url.searchParams.set("limit", String(limit));
 
     const response = await fetch(url.toString(), {
       headers: {
-        "User-Agent": "MoneyManager-SARadar/2.5 (contact@moneymanager.local)",
-        "Accept-Language": "en-ZA,en",
+        "User-Agent": "MoneyManager-GlobalRadar/2.5 (contact@moneymanager.local)",
+        "Accept-Language": "en",
       },
     });
 
