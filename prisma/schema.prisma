@@ -22,6 +22,7 @@ model User {
   incomes            Income[]
   propertyDataConfig PropertyDataConfig?
   profile            UserProfile?
+  agentMemories      UserAgentMemory[]
 }
 
 model UserProfile {
@@ -278,6 +279,26 @@ model AgentModelAssignment {
   isDefault           Boolean           @default(false)
   updatedAt           DateTime          @updatedAt
   llmProviderConfig   LLMProviderConfig @relation(fields: [llmProviderConfigId], references: [id], onDelete: Cascade)
+}
+
+model UserAgentMemory {
+  id              String   @id @default(cuid())
+  userId          String
+  domain          String   // "GEO" | "DEBT" | "BUDGET" | "GOALS" | "DOCUMENT" | "PREFERENCE"
+  key             String   // e.g. "SEASON AND SPAR" or "PRIMARY_SALARY_CYCLE"
+  learnedPattern  String   // Detailed text of pattern
+  resolvedValue   Json     // e.g. { cleanMerchant: "Seasons Sport and Spa", lat: -25.7028, lng: 27.8425, region: "North West" }
+  confidence      Float    @default(1.0)
+  source          String   @default("USER_CORRECTION") // "USER_CORRECTION" | "PIN_CALIBRATION" | "AI_REFLECTION" | "SYSTEM_AUDIT"
+  usageCount      Int      @default(1)
+  lastUsedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domain, key])
+  @@index([userId, domain])
 }
 
 model AuditLogEntry {

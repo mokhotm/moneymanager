@@ -1065,6 +1065,35 @@ All agents communicate through the **LLM Provider Layer** (`llmProvider.ts`) whi
 
 ---
 
+### 9.1 Continuous Multi-Agent Learning & Memory Flywheel
+
+MoneyManager transforms your AI agents from static processors into **self-reinforcing financial intelligences**. Every time you interact with the platform, the agents learn and adapt.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 CONTINUOUS AGENT LEARNING & FEEDBACK LOOP                   │
+├──────────────────────────┬──────────────────────────┬───────────────────────┤
+│ 1. Continuous Feedback   │ 2. Agent Memory Vault    │ 3. System Ingestion   │
+├──────────────────────────┼──────────────────────────┼───────────────────────┤
+│ • Pin Calibrations       │ • UserAgentMemory Schema │ • Few-Shot Injection  │
+│ • Rebrandings (Astron)   │ • Key-Value Knowledge    │ • Fast Disambiguation │
+│ • Category Adjustments   │ • Confidence Scoring     │ • Zero Mistake Repeat │
+│ • Proposal Review        │ • Usage Frequency Count  │ • Custom Rules Engine │
+└──────────────────────────┴──────────────────────────┴───────────────────────┘
+```
+
+#### How the Learning Flywheel Works:
+1. **Geospatial & Merchant Memory:**
+   - When a bank statement contains legacy or ambiguous text (e.g. `SEASON AND SPAR`), the agent learns that it resolves to **Seasons Sport & Spa Resort in Hartbeespoort (North West)** and permanently stores the high-confidence mapping.
+2. **Preference & Strategy Memory:**
+   - Approving or declining agent proposals trains the model on your risk appetite (e.g. prioritizing municipal arrears before credit card balances).
+3. **In-Context System Prompt Injection:**
+   - Before executing inference, the active LLM agent pulls your learned memories and prepends them as few-shot constraints, guaranteeing that the agent **never repeats a past mistake**.
+4. **Interactive Memory Management:**
+   - Navigate to **Settings → Continuous Multi-Agent Learning & Memory** to view active learned rules, delete obsolete patterns, or proactively teach your agents new custom rules.
+
+---
+
 ## 10. Security & Data Privacy
 
 MoneyManager takes your financial data security seriously.

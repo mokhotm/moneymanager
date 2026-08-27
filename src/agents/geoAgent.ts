@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { decryptApiKey, resolveGoogleModel } from "./llmProvider";
+import { resolveAgentLLMConfig, resolveGoogleModel, decryptApiKey } from "./llmProvider";
+import { searchNominatimAddress } from "@/lib/nominatimGeoService";
+import { getPromptAugmentationMemories, recordAgentMemory } from "./agentMemoryService";
 
 export interface AIGeoLocationResult {
   merchant: string;
@@ -62,6 +64,9 @@ export async function calibrateLocationsWithAI(
   const modelName = config.modelName;
   const baseUrl = config.baseUrl;
 
+  const learnedMemories = userId ? await getPromptAugmentationMemories(userId, ["GEO", "PREFERENCE"]) : "";
+  const effectiveSystemPrompt = `${SA_GEO_SYSTEM_PROMPT}\n${learnedMemories}`;
+
   const userPrompt = `Analyze and geocode these South African bank transaction statement descriptions:\n${rawDescriptions
     .slice(0, 15)
     .map((d, i) => `${i + 1}. "${d}"`)
@@ -80,7 +85,7 @@ export async function calibrateLocationsWithAI(
           contents: [
             {
               role: "user",
-              parts: [{ text: `${SA_GEO_SYSTEM_PROMPT}\n\n${userPrompt}` }],
+              parts: [{ text: `${effectiveSystemPrompt}\n\n${userPrompt}` }],
             },
           ],
           generationConfig: {
@@ -108,7 +113,7 @@ export async function calibrateLocationsWithAI(
           model: modelName || "gpt-4o-mini",
           response_format: { type: "json_object" },
           messages: [
-            { role: "system", content: SA_GEO_SYSTEM_PROMPT },
+            { role: "system", content: effectiveSystemPrompt },
             { role: "user", content: userPrompt },
           ],
           temperature: 0.1,
@@ -132,7 +137,7 @@ export async function calibrateLocationsWithAI(
         body: JSON.stringify({
           model: modelName || "claude-3-5-sonnet-20241022",
           max_tokens: 2048,
-          system: SA_GEO_SYSTEM_PROMPT,
+          system: effectiveSystemPrompt,
           messages: [{ role: "user", content: userPrompt }],
         }),
       });
@@ -150,7 +155,26 @@ export async function calibrateLocationsWithAI(
     // Parse JSON
     const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleanJson);
-    return Array.isArray(parsed.results) ? parsed.results : [];
+    const results: AIGeoLocationResult[] = Array.isArray(parsed.results) ? parsed.results : [];
+
+    // Persist verified results to long-term Agent Memory
+    if (userId && results.length > 0) {
+      for (const item of results) {
+        if (item.confidence >= 0.8) {
+          recordAgentMemory({
+            userId,
+            domain: "GEO",
+            key: item.merchant,
+            learnedPattern: `${item.cleanMerchant} (${item.locationName}) in ${item.suburb || item.city}`,
+            resolvedValue: item,
+            confidence: item.confidence,
+            source: "AI_REFLECTION",
+          }).catch((err) => console.warn("Failed to persist learned agent memory:", err));
+        }
+      }
+    }
+
+    return results;
   } catch (err) {
     console.error("AI Geo Calibration failed:", err);
     return [];

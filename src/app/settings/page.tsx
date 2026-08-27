@@ -32,6 +32,7 @@ import {
   Edit2,
   X,
 } from "lucide-react";
+import { AgentMemoryManager } from "@/components/AgentMemoryManager";
 
 interface ProviderConfig {
   id: string;
@@ -1246,6 +1247,11 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Continuous Agent Learning & Memory Section */}
+          <div style={{ marginTop: "32px", marginBottom: "32px" }}>
+            <AgentMemoryManager />
           </div>
         </>
       )}

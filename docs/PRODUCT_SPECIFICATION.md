@@ -328,15 +328,53 @@ model TaxDeductionClaim {
 
 ---
 
-## 6. Phased Implementation Milestones
+---
+
+## 7. Continuous Multi-Agent Learning & Feedback Flywheel
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                      CONTINUOUS AGENT LEARNING & FEEDBACK FLYWHEEL                     │
+├──────────────────────────┬──────────────────────────┬──────────────────────────────────┤
+│ 1. REAL-TIME INPUTS      │ 2. AGENT MEMORY STORE    │ 3. DYNAMIC PROMPT AUGMENTATION   │
+├──────────────────────────┼──────────────────────────┼──────────────────────────────────┤
+│ • Pin Calibrations       │ • UserAgentMemory Schema │ • Few-Shot Prompt Prepending     │
+│ • Rebrandings (Astron)   │ • Key-Value Pattern Store│ • Zero-Latency Disambiguation    │
+│ • Category Adjustments   │ • Confidence Scoring (0-1│ • Elimination of Old Mistakes    │
+│ • HITL Accept/Reject     │ • Usage Frequency Counter│ • Contextual Risk Optimization   │
+└──────────────────────────┴──────────────────────────┴──────────────────────────────────┘
+```
+
+### 7.1 Architecture & Schema (`UserAgentMemory`)
+Agents evolve from stateless executors into self-reinforcing financial intelligences by maintaining long-term memory across 6 specialized domains:
+* `GEO`: Geotagged merchant aliases, physical venue mappings, and coordinate calibrations (e.g. `SEASON AND SPAR` $\rightarrow$ `Seasons Sport & Spa Resort, Hartbeespoort (North West)`).
+* `BUDGET`: Salary payment dates, mid-month weekend shifting rules, and discretionary spending margins.
+* `DEBT`: Priority debt acceleration preferences (e.g. accelerating municipal utility arrears before lower-risk obligations).
+* `GOALS`: Emergency fund targets, risk buffers, and savings thresholds.
+* `DOCUMENT`: Statement structure patterns, transaction descriptor formats, and institution-specific extraction rules.
+* `PREFERENCE`: General user behavioral rules, communication tone, and decision rationale.
+
+### 7.2 In-Context Dynamic Augmentation
+Prior to executing inference on any LLM provider (Google Gemini 3.7 Flash, Anthropic Claude 3.5 Sonnet, OpenAI GPT-4o), the system queries `getPromptAugmentationMemories` and injects verified learned rules directly into the agent's system prompt:
+
+```markdown
+### 🧠 Continuous Multi-Agent Learned Memories & User Corrections (DO NOT REPEAT OLD MISTAKES):
+1. [GEO] Pattern: "SEASON AND SPAR" -> Correct Interpretation: Seasons Sport & Spa Resort in Hartbeespoort (North West)
+2. [GEO] Pattern: "ENGEN BAKERTON" -> Correct Interpretation: Rebranded to Astron Energy Welgedacht Rd & 3rd Ave
+3. [BUDGET] Pattern: "PRIMARY_PAY_CYCLE" -> Correct Interpretation: Mid-Month 15th to 15th Salary Cycle
+```
+
+---
+
+## 8. Phased Implementation Milestones
 
 | Milestone | Target Horizon | Deliverables |
 | :--- | :--- | :--- |
 | **Phase 1: Ingestion & 365-Day Foresight** | Q1 | Inbound e-statement parser, 365-day balance projection canvas, Stitch/Plaid hybrid open-banking layer |
 | **Phase 2: Multi-Entity & Tax Intelligence** | Q2 | Multi-Entity workspace switcher (Personal/SME/Trust), SARS/IRS tax deduction engine, 1-click audit pack export |
 | **Phase 3: RAG Memory & Asset Automation** | Q3 | 5-Year vector semantic document Q&A, Lightstone deeds API, TransUnion vehicle depreciation curves, XIRR/TWR portfolio drift |
-| **Phase 4: Admin Governance & Local-First** | Q4 | Enterprise Admin Portal (/admin), PGlite/IndexedDB local-first sync, Tauri native desktop apps for Mac/Windows, biometric PWA |
+| **Phase 4: Continuous Agent Learning & Admin** | Q4 | Continuous Agent Memory Flywheel, Enterprise Admin Portal (/admin), PGlite/IndexedDB local-first sync, Tauri native desktop apps |
 
 ---
 
-*MoneyManager Specification v2.5 Obsidian — Approved for Implementation.*
+*MoneyManager Specification v2.6 Obsidian — Approved for Implementation.*

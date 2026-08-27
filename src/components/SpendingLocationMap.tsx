@@ -280,11 +280,11 @@ export function SpendingLocationMap({
   }, [cycleFilteredLocations, selectedRegion, selectedCategory]);
 
   const totalFilteredPhysicalSpend = useMemo(() => {
-    return filteredPhysical.reduce((s, l) => s + l.amount, 0);
+    return filteredPhysical.reduce((s, l) => s + (l.amount !== undefined && l.amount > 0 ? l.amount : ((l as any).totalAmount || 0)), 0);
   }, [filteredPhysical]);
 
   const totalDigitalSpend = useMemo(() => {
-    return cycleFilteredDigital.reduce((s, d) => s + d.totalAmount, 0);
+    return cycleFilteredDigital.reduce((s, d) => s + (d.totalAmount || (d as any).amount || 0), 0);
   }, [cycleFilteredDigital]);
 
   // Recalculate dynamic top spending geographic hub for active filter scope
@@ -292,7 +292,8 @@ export function SpendingLocationMap({
     const regionTotals: Record<string, number> = {};
     for (const loc of filteredPhysical) {
       if (loc.region) {
-        regionTotals[loc.region] = (regionTotals[loc.region] || 0) + loc.amount;
+        const val = loc.amount !== undefined && loc.amount > 0 ? loc.amount : ((loc as any).totalAmount || 0);
+        regionTotals[loc.region] = (regionTotals[loc.region] || 0) + val;
       }
     }
     const top = Object.entries(regionTotals).sort((a, b) => b[1] - a[1])[0];

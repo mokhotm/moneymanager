@@ -1,0 +1,1303 @@
+{
+  "timestamp": "2026-08-27T15:04:45.710Z",
+  "totalFlows": 1360,
+  "physicalCount": 33,
+  "digitalCount": 7,
+  "totalPhysicalSpend": 40673.659999999996,
+  "totalDigitalSpend": 40151.42,
+  "merchants": [
+    {
+      "id": "loc-15",
+      "merchant": "Giant Panelbeaters & Spraypainters",
+      "category": "Auto & Repairs",
+      "currentLocationName": "Commercial Rd, Boksburg Industrial",
+      "currentSuburb": "Boksburg",
+      "currentCity": "Boksburg",
+      "currentRegion": "East Rand",
+      "currentLat": -26.215,
+      "currentLng": 28.255,
+      "totalSpend": 5500,
+      "txCount": 1,
+      "sampleRawTx": "C*GIANT PANELBEATERS & BOKSB c*giant panelbeaters & boksb",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60s004ariarrqa3n718",
+          "date": "2026-07-29",
+          "amount": 5500,
+          "description": "C*GIANT PANELBEATERS & BOKSB c*giant panelbeaters & boksb"
+        }
+      ]
+    },
+    {
+      "id": "loc-10",
+      "merchant": "Seasons Sport and Spa Resort",
+      "category": "Entertainment",
+      "currentLocationName": "Seasons Eco Golf Estate, Old Rustenburg Rd, Hartbeespoort",
+      "currentSuburb": "Hartbeespoort / Brits",
+      "currentCity": "Hartbeespoort",
+      "currentRegion": "National / Other",
+      "currentLat": -25.7028,
+      "currentLng": 27.8425,
+      "totalSpend": 5000,
+      "txCount": 1,
+      "sampleRawTx": "SEASON AND SPAR IB PAYMENT TO",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60s0046riarg59fui5h",
+          "date": "2026-07-30",
+          "amount": 5000,
+          "description": "SEASON AND SPAR IB PAYMENT TO"
+        }
+      ]
+    },
+    {
+      "id": "loc-27",
+      "merchant": "University of the Free State",
+      "category": "Education & Tuition",
+      "currentLocationName": "Nelson Mandela Dr, Park West, Bloemfontein",
+      "currentSuburb": "Park West",
+      "currentCity": "Bloemfontein",
+      "currentRegion": "Bloemfontein",
+      "currentLat": -29.1107,
+      "currentLng": 26.185,
+      "totalSpend": 4000,
+      "txCount": 1,
+      "sampleRawTx": "UFS BLOEMFONTEIN TUI IB PAYMENT TO",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61s005uriary8jkthym",
+          "date": "2026-07-22",
+          "amount": 4000,
+          "description": "UFS BLOEMFONTEIN TUI IB PAYMENT TO"
+        }
+      ]
+    },
+    {
+      "id": "loc-4",
+      "merchant": "Al-Aswad Supermarket & Butchery",
+      "category": "Groceries & Household",
+      "currentLocationName": "Cnr Honeysuckle Drive & Pampas Road, Bakerton, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2249,
+      "currentLng": 28.4772,
+      "totalSpend": 3756.5,
+      "txCount": 39,
+      "sampleRawTx": "S2S*AlAswadSu 5196*8010 01 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6ft0102riar2p2ovwq0",
+          "date": "2026-02-03",
+          "amount": 50,
+          "description": "S2S*AlAswadSu 5196*8010 01 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6ft0101riar1gdzxjlo",
+          "date": "2026-02-03",
+          "amount": 21,
+          "description": "S2S*AlAswadSu 5196*8010 01 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6fs00zwriar1mmnf7l0",
+          "date": "2026-02-04",
+          "amount": 25,
+          "description": "S2S*AlAswadSu 5196*8010 02 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6ea00yxriar87h42hf5",
+          "date": "2026-02-10",
+          "amount": 50,
+          "description": "S2S*AlAswadSu 5196*8010 07 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6ea00yuriarw8o4u7ey",
+          "date": "2026-02-12",
+          "amount": 18,
+          "description": "S2S*AlAswadSu 5196*8010 11 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6ea00ytriarmg5a5zlc",
+          "date": "2026-02-12",
+          "amount": 83,
+          "description": "S2S*AlAswadSu 5196*8010 10 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c800w0riar6skwk8hm",
+          "date": "2026-03-03",
+          "amount": 13,
+          "description": "S2S*AlAswadSu 5196*8010 28 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c800vzriar3jwbhjiq",
+          "date": "2026-03-03",
+          "amount": 20,
+          "description": "S2S*AlAswadSu 5196*8010 01 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c800vyriarrkqffesf",
+          "date": "2026-03-03",
+          "amount": 21,
+          "description": "S2S*AlAswadSu 5196*8010 28 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c700vtriarym53p5gc",
+          "date": "2026-03-04",
+          "amount": 40,
+          "description": "S2S*AlAswadSu 5196*8010 03 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c800vuriartj6wn4j9",
+          "date": "2026-03-04",
+          "amount": 32,
+          "description": "S2S*AlAswadSu 5196*8010 03 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c700vlriarjx7d8dv2",
+          "date": "2026-03-12",
+          "amount": 150,
+          "description": "S2S*AlAswadSu 5196*8010 10 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69v00prriarz08dc4ek",
+          "date": "2026-04-22",
+          "amount": 42,
+          "description": "S2S*AlAswadSu 5196*8010 20 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69t00okriarb671dl0s",
+          "date": "2026-04-29",
+          "amount": 59,
+          "description": "S2S*AlAswadSu 5196*8010 25 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69t00olriareo1ik3ca",
+          "date": "2026-04-29",
+          "amount": 12,
+          "description": "S2S*AlAswadSu 5196*8010 27 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69t00osriarscnw7hdb",
+          "date": "2026-04-29",
+          "amount": 49,
+          "description": "S2S*AlAswadSu 5196*8010 27 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69t00omriarx0vghatn",
+          "date": "2026-04-29",
+          "amount": 94,
+          "description": "S2S*AlAswadSu 5196*8010 25 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y67s00kvriarshhg9gah",
+          "date": "2026-05-19",
+          "amount": 105,
+          "description": "S2S*AlAswadSu 5196*8010 17 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y66m00hrriarrr0bm932",
+          "date": "2026-06-04",
+          "amount": 237,
+          "description": "S2S*AlAswadSu 5196*8010 02 JUN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y64700c5riar22e0zkoa",
+          "date": "2026-06-30",
+          "amount": 1051,
+          "description": "S2S*AlAswadSupermarke Sprin s2s*alaswadsupermarke sprin"
+        },
+        {
+          "id": "cmtb5y64400b2riarbxj12hhh",
+          "date": "2026-07-03",
+          "amount": 87,
+          "description": "S2S*AlAswadSupermarke Sprin s2s*alaswadsupermarke sprin"
+        },
+        {
+          "id": "cmtb5y64400ayriarhlr7h52o",
+          "date": "2026-07-03",
+          "amount": 71,
+          "description": "S2S*AlAswadSu 5196*8010 01 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y64300amriarcudp8zar",
+          "date": "2026-07-04",
+          "amount": 45,
+          "description": "S2S*AlAswadSupermarke Sprin s2s*alaswadsupermarke sprin"
+        },
+        {
+          "id": "cmtb5y62w008jriarvpkjbpg6",
+          "date": "2026-07-14",
+          "amount": 53,
+          "description": "S2S*AlAswadSu 5196*8010 12 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62v0083riarercnk17c",
+          "date": "2026-07-15",
+          "amount": 58,
+          "description": "S2S*AlAswa Springs ZAF 15-07-2026 13H28:38 OUTSTANDING CARD AUTHORISATION"
+        },
+        {
+          "id": "cmtb5y62v0082riari5f830y6",
+          "date": "2026-07-15",
+          "amount": 309,
+          "description": "S2S*AlAswa Springs ZAF 15-07-2026 12H26:52 OUTSTANDING CARD AUTHORISATION"
+        },
+        {
+          "id": "cmtb5y62v0080riaryvd7ml9r",
+          "date": "2026-07-15",
+          "amount": 45,
+          "description": "S2S*AlAswadSu 5196*8010 13 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62u007yriarxg2d5ykr",
+          "date": "2026-07-15",
+          "amount": 42,
+          "description": "S2S*AlAswa Springs ZAF 14-07-2026 19H44:58 OUTSTANDING CARD AUTHORISATION"
+        },
+        {
+          "id": "cmtb5y62t007driarhlh6csp8",
+          "date": "2026-07-16",
+          "amount": 309,
+          "description": "S2S*AlAswadSu 5196*8010 15 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62t007briarblqtp79e",
+          "date": "2026-07-16",
+          "amount": 42,
+          "description": "S2S*AlAswadSu 5196*8010 14 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61u0072riarr75t9i2q",
+          "date": "2026-07-17",
+          "amount": 58,
+          "description": "S2S*AlAswadSu 5196*8010 15 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61t006triarj5ghi2ef",
+          "date": "2026-07-18",
+          "amount": 87,
+          "description": "S2S*AlAswadSu 5196*8010 17 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61t006criarzugwf69u",
+          "date": "2026-07-21",
+          "amount": 20,
+          "description": "S2S*AlAswadSu 5196*8010 18 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61t006driar7pbi78dn",
+          "date": "2026-07-21",
+          "amount": 58,
+          "description": "S2S*AlAswadSu 5196*8010 18 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61r005iriarnrfbiwo5",
+          "date": "2026-07-25",
+          "amount": 36,
+          "description": "S2S*AlAswadSu 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60s003xriarfj2vh0wu",
+          "date": "2026-07-31",
+          "amount": 163,
+          "description": "S2S*AlAswadSu 5196*8010 30 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60s003oriar505kf5ft",
+          "date": "2026-08-01",
+          "amount": 18,
+          "description": "S2S*AlAswadSu 5196*8010 30 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60r003eriararw9tifw",
+          "date": "2026-08-03",
+          "amount": 8.5,
+          "description": "S2S*AlAswa Springs ZAF 03-08-2026 18H22:40 FEE- POS DECLINED INSUFF FUNDS"
+        },
+        {
+          "id": "cmtb5y60q002qriaru5rj8ovl",
+          "date": "2026-08-05",
+          "amount": 75,
+          "description": "S2S*AlAswadSu 5196*8010 03 AUG DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-31",
+      "merchant": "Car Service City Springs",
+      "category": "Auto & Repairs",
+      "currentLocationName": "9 5th Avenue / 5th St, Springs CBD",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2519,
+      "currentLng": 28.4411,
+      "totalSpend": 3692.5,
+      "txCount": 1,
+      "sampleRawTx": "CAR SERVICE CITY SPRI SPRIN car service city spri sprin",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61s005rriarc7tqble4",
+          "date": "2026-07-22",
+          "amount": 3692.5,
+          "description": "CAR SERVICE CITY SPRI SPRIN car service city spri sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-22",
+      "merchant": "Harissa Grill & Takeaway",
+      "category": "Dining & Social",
+      "currentLocationName": "Springs Central Food Quarter",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2535,
+      "currentLng": 28.4375,
+      "totalSpend": 2509,
+      "txCount": 2,
+      "sampleRawTx": "HARISSA GRILL AND SHI Melvi harissa grill and shi melvi",
+      "allTransactions": [
+        {
+          "id": "cmtb5y68v00n1riargo98ck1e",
+          "date": "2026-05-15",
+          "amount": 1409,
+          "description": "HARISSA GRILL AND SHI Melvi harissa grill and shi melvi"
+        },
+        {
+          "id": "cmtb5y61r0051riar6myuncs9",
+          "date": "2026-07-28",
+          "amount": 1100,
+          "description": "HARISSA GRILL 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-19",
+      "merchant": "Pick n Pay Family Springs",
+      "category": "Groceries & Household",
+      "currentLocationName": "The Avenues Shopping Centre, 6th St, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.252,
+      "currentLng": 28.438,
+      "totalSpend": 2350.25,
+      "txCount": 8,
+      "sampleRawTx": "PnP Fam Sprin 5196*8010 17 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6h9012qriar3dajguff",
+          "date": "2026-01-20",
+          "amount": 650.1,
+          "description": "PnP Fam Sprin 5196*8010 17 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6fw0111riarw8yg7hmc",
+          "date": "2026-01-30",
+          "amount": 179.23,
+          "description": "PnP Fam Sprin 5196*8010 28 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6fq00z6riarwvtuyphu",
+          "date": "2026-02-09",
+          "amount": 475.38,
+          "description": "PnP Fam Sprin 5196*8010 06 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6ea00yyriarqi7m61in",
+          "date": "2026-02-10",
+          "amount": 115.83,
+          "description": "PnP Fam Sprin 5196*8010 07 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6e800yariar8w9rcq35",
+          "date": "2026-02-14",
+          "amount": 282.62,
+          "description": "PnP Fam Sprin 5196*8010 05 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69t00opriarixjb48nr",
+          "date": "2026-04-29",
+          "amount": 102.12,
+          "description": "PnP Fam Sprin 5196*8010 27 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61s0065riarxchof3lu",
+          "date": "2026-07-21",
+          "amount": 321.99,
+          "description": "PnP Fam Springs Gate SPRIN pnp fam springs gate sprin"
+        },
+        {
+          "id": "cmtb5y61q004yriardby4fzk2",
+          "date": "2026-07-28",
+          "amount": 222.98,
+          "description": "PnP Fam Sprin 5196*8010 26 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-7",
+      "merchant": "Astron Energy Welgedacht Rd",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Welgedacht Road & 3rd Ave, Welgedacht / Bakerton",
+      "currentSuburb": "Welgedacht",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2346,
+      "currentLng": 28.466,
+      "totalSpend": 1530,
+      "txCount": 14,
+      "sampleRawTx": "AE WELGEDACHT 5196*8010 16 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6ha0131riarjfjyywvy",
+          "date": "2026-01-19",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 16 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6h80129riar9hs6p3m4",
+          "date": "2026-01-24",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 22 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6fx011ariar7efj2g8a",
+          "date": "2026-01-28",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 26 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6fw0112riarlmj2v5ex",
+          "date": "2026-01-30",
+          "amount": 200,
+          "description": "AE WELGEDACHT 5196*8010 28 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6fs00zqriar8cer0tt9",
+          "date": "2026-02-05",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 03 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6e500x6riar1jzcu1ww",
+          "date": "2026-02-19",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 17 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6e500x1riarmjw4isnu",
+          "date": "2026-02-20",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 18 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6aw00tdriarru66tu80",
+          "date": "2026-03-26",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 24 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69w00q9riar809i7lrt",
+          "date": "2026-04-18",
+          "amount": 100,
+          "description": "AE WELGEDACHT RD Sprin ae welgedacht rd sprin"
+        },
+        {
+          "id": "cmtb5y67q00k2riar7a6btbai",
+          "date": "2026-05-23",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 21 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y65c00cvriarg4fypple",
+          "date": "2026-06-28",
+          "amount": 100,
+          "description": "AE WELGEDACHT RD Sprin ae welgedacht rd sprin"
+        },
+        {
+          "id": "cmtb5y64500b6riarile2y3xv",
+          "date": "2026-07-03",
+          "amount": 130,
+          "description": "AE WELGEDACHT RD Sprin ae welgedacht rd sprin"
+        },
+        {
+          "id": "cmtb5y61s005sriarqlikh705",
+          "date": "2026-07-22",
+          "amount": 100,
+          "description": "AE WELGEDACHT RD Sprin ae welgedacht rd sprin"
+        },
+        {
+          "id": "cmtb5y60s003nriarf7w76xjw",
+          "date": "2026-08-01",
+          "amount": 100,
+          "description": "AE WELGEDACHT 5196*8010 30 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-13",
+      "merchant": "Castle Gate Shopping Centre",
+      "category": "Dining & Retail",
+      "currentLocationName": "Castle Gate Mall, Erasmuskloof, Pretoria East",
+      "currentSuburb": "Erasmuskloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8085,
+      "currentLng": 28.2612,
+      "totalSpend": 1488.6399999999999,
+      "txCount": 4,
+      "sampleRawTx": "CX Castle Gat 5196*8010 18 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c300u2riarxi3l9wew",
+          "date": "2026-03-20",
+          "amount": 282.23,
+          "description": "CX Castle Gat 5196*8010 18 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y66m00hzriarlc36d329",
+          "date": "2026-06-03",
+          "amount": 372.4,
+          "description": "CX Castle Gat 5196*8010 01 JUN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y65i00f1riar5qhbnaqc",
+          "date": "2026-06-17",
+          "amount": 151,
+          "description": "BK CASTLE GATE U Gaute bk castle gate u gaute"
+        },
+        {
+          "id": "cmtb5y60t004driaruxtikkko",
+          "date": "2026-07-29",
+          "amount": 683.01,
+          "description": "CX Castle Gate SB085 cx castle gate sb085"
+        }
+      ]
+    },
+    {
+      "id": "loc-2",
+      "merchant": "SPAR Bakerton",
+      "category": "Groceries & Household",
+      "currentLocationName": "Blossom Rd & Honeysuckle Dr, Bakerton, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2235,
+      "currentLng": 28.478,
+      "totalSpend": 1450,
+      "txCount": 1,
+      "sampleRawTx": "SPAR BAKERTON DEBIT CARD PURCHASE",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60o001vriar79zr0d23",
+          "date": "2026-08-16",
+          "amount": 1450,
+          "description": "SPAR BAKERTON DEBIT CARD PURCHASE"
+        }
+      ]
+    },
+    {
+      "id": "loc-28",
+      "merchant": "Ackermans Springs The Avenues",
+      "category": "Retail & Shopping",
+      "currentLocationName": "The Avenues Centre, Springs",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2525,
+      "currentLng": 28.4385,
+      "totalSpend": 1317.35,
+      "txCount": 2,
+      "sampleRawTx": "Ackermans Spr 5196*8010 15 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69x00qnriarwqbbrzc1",
+          "date": "2026-04-17",
+          "amount": 293.8,
+          "description": "Ackermans Spr 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61s005wriar2ms6qe9x",
+          "date": "2026-07-22",
+          "amount": 1023.55,
+          "description": "Ackermans Spr 5196*8010 20 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-30",
+      "merchant": "Best Price Superette Ekurhuleni",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Ekurhuleni Commercial Node",
+      "currentSuburb": "Apex / Benoni",
+      "currentCity": "Benoni",
+      "currentRegion": "East Rand",
+      "currentLat": -26.23,
+      "currentLng": 28.35,
+      "totalSpend": 980,
+      "txCount": 4,
+      "sampleRawTx": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6au00sariar8ni672z9",
+          "date": "2026-04-15",
+          "amount": 320,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y65j00fjriarmn2yznyf",
+          "date": "2026-06-16",
+          "amount": 210,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y64300alriarblg4xmr4",
+          "date": "2026-07-04",
+          "amount": 210,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y61s005priarivsesdve",
+          "date": "2026-07-22",
+          "amount": 240,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        }
+      ]
+    },
+    {
+      "id": "loc-14",
+      "merchant": "Chicken Licken Springs",
+      "category": "Dining & Social",
+      "currentLocationName": "4th Avenue, Springs CBD",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.251,
+      "currentLng": 28.44,
+      "totalSpend": 914,
+      "txCount": 5,
+      "sampleRawTx": "CHICKEN LICKE 5196*8010 26 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69t00ooriar9f648ng2",
+          "date": "2026-04-29",
+          "amount": 201,
+          "description": "CHICKEN LICKE 5196*8010 26 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y67s00krriar7x92r59r",
+          "date": "2026-05-19",
+          "amount": 294,
+          "description": "Chicken Licke 5196*8010 16 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61q004wriarzd75bjt6",
+          "date": "2026-07-28",
+          "amount": 285,
+          "description": "CHICKEN LICKE 5196*8010 25 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60t004friar4g7yu7am",
+          "date": "2026-07-29",
+          "amount": 114,
+          "description": "C*CHICKEN LIC 5196*8010 28 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60t004eriaroms1ltq8",
+          "date": "2026-07-29",
+          "amount": 20,
+          "description": "C*CHICKEN LIC 5196*8010 28 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-1",
+      "merchant": "Engen Bakerton (now Astron Energy)",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Welgedacht Road & 3rd Ave, Welgedacht / Bakerton",
+      "currentSuburb": "Welgedacht / Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2346,
+      "currentLng": 28.466,
+      "totalSpend": 900,
+      "txCount": 1,
+      "sampleRawTx": "ENGEN BAKERTON CONVENIENCE DEBIT CARD PURCHASE",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60o001uriartf8hezm3",
+          "date": "2026-08-16",
+          "amount": 900,
+          "description": "ENGEN BAKERTON CONVENIENCE DEBIT CARD PURCHASE"
+        }
+      ]
+    },
+    {
+      "id": "loc-26",
+      "merchant": "Ocean Basket Springs Mall",
+      "category": "Dining & Social",
+      "currentLocationName": "Springs Mall, Casseldale, Springs",
+      "currentSuburb": "Casseldale",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2625,
+      "currentLng": 28.455,
+      "totalSpend": 728,
+      "txCount": 1,
+      "sampleRawTx": "OCEAN BASKET SPRINGS SPRIN ocean basket springs sprin",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61s005oriar00rfny6k",
+          "date": "2026-07-23",
+          "amount": 728,
+          "description": "OCEAN BASKET SPRINGS SPRIN ocean basket springs sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-3",
+      "merchant": "City of Ekurhuleni Municipality",
+      "category": "Municipal Utilities",
+      "currentLocationName": "Ekurhuleni Civic Centre, Springs & Germiston",
+      "currentSuburb": "Springs Civic",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2505,
+      "currentLng": 28.436,
+      "totalSpend": 650,
+      "txCount": 1,
+      "sampleRawTx": "EKURHULENI 3505137295 DEBICHECK DEBIT ORDER",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60o0021riarcqxhfmh1",
+          "date": "2026-08-15",
+          "amount": 650,
+          "description": "EKURHULENI 3505137295 DEBICHECK DEBIT ORDER"
+        }
+      ]
+    },
+    {
+      "id": "loc-9",
+      "merchant": "Engen Garstfontein Convenience",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Garsfontein Rd, Pretoria East",
+      "currentSuburb": "Garsfontein",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.792,
+      "currentLng": 28.295,
+      "totalSpend": 600,
+      "txCount": 3,
+      "sampleRawTx": "ENGEN GARSTKL 5196*8010 01 JUN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y66m00hyriar9psuhx1b",
+          "date": "2026-06-03",
+          "amount": 200,
+          "description": "ENGEN GARSTKL 5196*8010 01 JUN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62t007eriarbl97n259",
+          "date": "2026-07-16",
+          "amount": 200,
+          "description": "ENGEN GARSTKL 5196*8010 14 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60s0045riaru6oo520u",
+          "date": "2026-07-30",
+          "amount": 200,
+          "description": "ENGEN GARSTKL 5196*8010 28 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-32",
+      "merchant": "SuperSPAR Elardus Park",
+      "category": "Groceries & Household",
+      "currentLocationName": "Cnr Barnard St & Delphinus St, Elardus Park, Pretoria",
+      "currentSuburb": "Elardus Park",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8239,
+      "currentLng": 28.257,
+      "totalSpend": 575.56,
+      "txCount": 1,
+      "sampleRawTx": "SuperSpar Elardus Par PRETO superspar elardus par preto",
+      "allTransactions": [
+        {
+          "id": "cmtb5y64200aariar0fidrp7i",
+          "date": "2026-07-05",
+          "amount": 575.56,
+          "description": "SuperSpar Elardus Par PRETO superspar elardus par preto"
+        }
+      ]
+    },
+    {
+      "id": "loc-11",
+      "merchant": "Astron Energy Bapsfontein",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Cnr Delmas Rd (R50) & R25, Bapsfontein",
+      "currentSuburb": "Bapsfontein",
+      "currentCity": "Bapsfontein",
+      "currentRegion": "East Rand",
+      "currentLat": -25.9985,
+      "currentLng": 28.414,
+      "totalSpend": 500,
+      "txCount": 3,
+      "sampleRawTx": "C*AE BAPSFONT 5196*8010 27 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c900w9riaryhciswnu",
+          "date": "2026-03-02",
+          "amount": 100,
+          "description": "C*AE BAPSFONT 5196*8010 27 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y67r00kariarw5vc0gou",
+          "date": "2026-05-21",
+          "amount": 200,
+          "description": "C*AE BAPSFONT 5196*8010 19 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60t004griar6lv36ebe",
+          "date": "2026-07-29",
+          "amount": 200,
+          "description": "C*AE BAPSFONT 5196*8010 28 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-12",
+      "merchant": "Shell Ultra City Middelburg",
+      "category": "Fuel & Transport",
+      "currentLocationName": "N4 Highway, Middelburg",
+      "currentSuburb": "Middelburg",
+      "currentCity": "Middelburg",
+      "currentRegion": "National / Other",
+      "currentLat": -25.77,
+      "currentLng": 29.46,
+      "totalSpend": 350,
+      "txCount": 2,
+      "sampleRawTx": "SHELL MIDDELSTRAAT MO Water shell middelstraat mo water",
+      "allTransactions": [
+        {
+          "id": "cmtb5y64200abriartdjg30e3",
+          "date": "2026-07-05",
+          "amount": 150,
+          "description": "SHELL MIDDELSTRAAT MO Water shell middelstraat mo water"
+        },
+        {
+          "id": "cmtb5y60t004hriarg6a3dz5u",
+          "date": "2026-07-29",
+          "amount": 200,
+          "description": "SHELL MIDDELS 5196*8010 27 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-5",
+      "merchant": "Memo Petroleum Springs",
+      "category": "Fuel & Transport",
+      "currentLocationName": "East Geduld, Springs",
+      "currentSuburb": "East Geduld",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.25,
+      "currentLng": 28.44,
+      "totalSpend": 320,
+      "txCount": 3,
+      "sampleRawTx": "iK *Memo Petr 5196*8010 18 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c300u0riarj3c4pqd1",
+          "date": "2026-03-20",
+          "amount": 100,
+          "description": "iK *Memo Petr 5196*8010 18 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61r0057riaroblkmuss",
+          "date": "2026-07-27",
+          "amount": 100,
+          "description": "iK *Memo Petr 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60p002priarnc2jo2u9",
+          "date": "2026-08-05",
+          "amount": 120,
+          "description": "iK *Memo Petroleum Pt SPRIN ik *memo petroleum pt sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-6",
+      "merchant": "Bolt Ride Hailing Trip",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Johannesburg Metropolitan Transport",
+      "currentSuburb": "Metro Transit",
+      "currentCity": "Johannesburg",
+      "currentRegion": "Johannesburg Metro",
+      "currentLat": -26.2,
+      "currentLng": 28.04,
+      "totalSpend": 264,
+      "txCount": 3,
+      "sampleRawTx": "DL Bolt Maitl dl bolt maitl",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60r003jriarlkuqoxq2",
+          "date": "2026-08-01",
+          "amount": 105,
+          "description": "DL Bolt Maitl dl bolt maitl"
+        },
+        {
+          "id": "cmtb5y60r003iriar46qhwb5o",
+          "date": "2026-08-01",
+          "amount": 54,
+          "description": "DL Bolt Maitl dl bolt maitl"
+        },
+        {
+          "id": "cmtb5y60q0033riar5swhqjga",
+          "date": "2026-08-03",
+          "amount": 105,
+          "description": "DL Bolt Maitl dl bolt maitl"
+        }
+      ]
+    },
+    {
+      "id": "loc-18",
+      "merchant": "Kloofsig Quick Stop",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Kloofsig, Centurion, Pretoria",
+      "currentSuburb": "Kloofsig",
+      "currentCity": "Centurion",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.82,
+      "currentLng": 28.21,
+      "totalSpend": 244.97,
+      "txCount": 2,
+      "sampleRawTx": "C*KLOOFSIG KW 5196*8010 04 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y630009vriarjcfg08xo",
+          "date": "2026-07-06",
+          "amount": 231.98,
+          "description": "C*KLOOFSIG KW 5196*8010 04 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61q004xriarxj9kt0mx",
+          "date": "2026-07-28",
+          "amount": 12.99,
+          "description": "C*KLOOFSIG KW 5196*8010 27 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-17",
+      "merchant": "Brothers Convenience & Butchery",
+      "category": "Groceries & Household",
+      "currentLocationName": "Springs Local Market",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.248,
+      "currentLng": 28.442,
+      "totalSpend": 227,
+      "txCount": 5,
+      "sampleRawTx": "S2S*BrothersC 5196*8010 02 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fs00ztriart50gu4h7",
+          "date": "2026-02-04",
+          "amount": 6,
+          "description": "S2S*BrothersC 5196*8010 02 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6c300u5riarvy14xc4g",
+          "date": "2026-03-19",
+          "amount": 167,
+          "description": "S2S*BrothersC 5196*8010 17 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62z009priar3kjskxr4",
+          "date": "2026-07-07",
+          "amount": 18,
+          "description": "S2S*BrothersC 5196*8010 06 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61r0052riar64vqoqwl",
+          "date": "2026-07-28",
+          "amount": 6,
+          "description": "S2S*BrothersC 5196*8010 26 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61q004vriarf7t7k1jn",
+          "date": "2026-07-28",
+          "amount": 30,
+          "description": "S2S*BrothersC 5196*8010 26 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-16",
+      "merchant": "Astron Energy Olympia Rd",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Olympia Rd, Selection Park, Springs",
+      "currentSuburb": "Selection Park",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.26,
+      "currentLng": 28.43,
+      "totalSpend": 200,
+      "txCount": 2,
+      "sampleRawTx": "AE OLYMPIA RD FC BENON ae olympia rd fc benon",
+      "allTransactions": [
+        {
+          "id": "cmtb5y65c00cxriarez4u2kls",
+          "date": "2026-06-28",
+          "amount": 100,
+          "description": "AE OLYMPIA RD FC BENON ae olympia rd fc benon"
+        },
+        {
+          "id": "cmtb5y61q004uriar7qpox30i",
+          "date": "2026-07-28",
+          "amount": 100,
+          "description": "AE OLYMPIA RD 5196*8010 25 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-33",
+      "merchant": "Chicken Licken KwaThema Square",
+      "category": "Dining & Social",
+      "currentLocationName": "KwaThema Square, Springs",
+      "currentSuburb": "KwaThema",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.289,
+      "currentLng": 28.412,
+      "totalSpend": 176,
+      "txCount": 1,
+      "sampleRawTx": "CHICKEN LICKEN KWA TH SPRIN chicken licken kwa th sprin",
+      "allTransactions": [
+        {
+          "id": "cmtb5y65c00cwriare3ei9n82",
+          "date": "2026-06-28",
+          "amount": 176,
+          "description": "CHICKEN LICKEN KWA TH SPRIN chicken licken kwa th sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-20",
+      "merchant": "BP Bapsfontein Oasis",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Cnr Magic Ave & Delmas Rd (R50), Bapsfontein",
+      "currentSuburb": "Geestveld / Bapsfontein",
+      "currentCity": "Bapsfontein",
+      "currentRegion": "East Rand",
+      "currentLat": -26.0044,
+      "currentLng": 28.4133,
+      "totalSpend": 150,
+      "txCount": 2,
+      "sampleRawTx": "C*BP BAPSFONT 5196*8010 25 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6e400wsriar0d2fihew",
+          "date": "2026-02-26",
+          "amount": 100,
+          "description": "C*BP BAPSFONT 5196*8010 25 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61r004zriar31igdr9a",
+          "date": "2026-07-28",
+          "amount": 50,
+          "description": "C*BP BAPSFONT 5196*8010 27 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-25",
+      "merchant": "BP Tom Jones Service Station",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Tom Jones St, Benoni, East Rand",
+      "currentSuburb": "Benoni Central",
+      "currentCity": "Benoni",
+      "currentRegion": "East Rand",
+      "currentLat": -26.195,
+      "currentLng": 28.32,
+      "totalSpend": 99.99,
+      "txCount": 1,
+      "sampleRawTx": "C*BP TOM JONE 5196*8010 24 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61r005hriarcms5a4fs",
+          "date": "2026-07-25",
+          "amount": 99.99,
+          "description": "C*BP TOM JONE 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-8",
+      "merchant": "RK Store Bakerton",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Pampas Rd, Bakerton, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2252,
+      "currentLng": 28.477,
+      "totalSpend": 50,
+      "txCount": 1,
+      "sampleRawTx": "Yoco *RkStore Sprin yoco *rkstore sprin",
+      "allTransactions": [
+        {
+          "id": "cmtb5y60s003triarxyvg8uu9",
+          "date": "2026-07-31",
+          "amount": 50,
+          "description": "Yoco *RkStore Sprin yoco *rkstore sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-29",
+      "merchant": "God Bless Africa Store Johannesburg",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Bree / Market Street Node, Johannesburg CBD",
+      "currentSuburb": "Johannesburg CBD",
+      "currentCity": "Johannesburg",
+      "currentRegion": "Johannesburg Metro",
+      "currentLat": -26.2041,
+      "currentLng": 28.0473,
+      "totalSpend": 50,
+      "txCount": 1,
+      "sampleRawTx": "S2S*GodBlessAfricama Johan s2s*godblessafricama johan",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61s005qriar7hgiwn08",
+          "date": "2026-07-22",
+          "amount": 50,
+          "description": "S2S*GodBlessAfricama Johan s2s*godblessafricama johan"
+        }
+      ]
+    },
+    {
+      "id": "loc-21",
+      "merchant": "KFC Springs Gate",
+      "category": "Dining & Social",
+      "currentLocationName": "7th Street, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2515,
+      "currentLng": 28.441,
+      "totalSpend": 49.9,
+      "txCount": 1,
+      "sampleRawTx": "KFC SPRINGS G 5196*8010 25 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61r0050riarzkb40c3k",
+          "date": "2026-07-28",
+          "amount": 49.9,
+          "description": "KFC SPRINGS G 5196*8010 25 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-23",
+      "merchant": "Bakerton Veg & Fresh Market",
+      "category": "Groceries & Household",
+      "currentLocationName": "Blossom Rd & Honeysuckle Dr, Bakerton",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2235,
+      "currentLng": 28.478,
+      "totalSpend": 30,
+      "txCount": 1,
+      "sampleRawTx": "BAKERTON VEG 5196*8010 26 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61r0053riarz00zg81y",
+          "date": "2026-07-28",
+          "amount": 30,
+          "description": "BAKERTON VEG 5196*8010 26 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-24",
+      "merchant": "Faro Superette Springs",
+      "category": "Groceries & Household",
+      "currentLocationName": "3rd Street, Springs",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.253,
+      "currentLng": 28.439,
+      "totalSpend": 20,
+      "txCount": 1,
+      "sampleRawTx": "FARO SPRINGS 5196*8010 23 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61r005griar0jg8jzvs",
+          "date": "2026-07-25",
+          "amount": 20,
+          "description": "FARO SPRINGS 5196*8010 23 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    }
+  ],
+  "digitalServices": [
+    {
+      "name": "Telkom Broadband & Arrears",
+      "category": "Telecommunications",
+      "totalSpend": 20499.899999999998,
+      "txCount": 22,
+      "sampleRawTx": "TELKOMMOBI51062519801187462518 TELEPHONE ACCOUNT"
+    },
+    {
+      "name": "Vodacom Fibre & Mobile",
+      "category": "Telecommunications",
+      "totalSpend": 8837.220000000001,
+      "txCount": 7,
+      "sampleRawTx": "VODACOM PTY LTD IB PAYMENT TO"
+    },
+    {
+      "name": "Prepaid Electricity Tokens (Eskom/Municipal)",
+      "category": "Utilities",
+      "totalSpend": 6926.000000000002,
+      "txCount": 22,
+      "sampleRawTx": "FEE: ELECTRICITY PURCHASE FEE: ELECTRICITY PURCHASE"
+    },
+    {
+      "name": "Vehicle Telematics & Tracking",
+      "category": "Insurance & Security",
+      "totalSpend": 2557.8599999999997,
+      "txCount": 20,
+      "sampleRawTx": "TRACKER   00G85989      OG7876 SERVICE AGREEMENT"
+    },
+    {
+      "name": "Netflix ZA Digital Subscription",
+      "category": "Entertainment",
+      "totalSpend": 916,
+      "txCount": 4,
+      "sampleRawTx": "NETFLIX.COM Amste netflix.com amste"
+    },
+    {
+      "name": "Standard Bank Account Fees & Charges",
+      "category": "Banking Fees",
+      "totalSpend": 231.84,
+      "txCount": 14,
+      "sampleRawTx": "UCOUNT MEMBERSHIP FEE"
+    },
+    {
+      "name": "National Lottery Online Purchase",
+      "category": "Discretionary",
+      "totalSpend": 182.59999999999997,
+      "txCount": 16,
+      "sampleRawTx": "VAS00183415052 LOTTO LOTTERY PURCHASE"
+    }
+  ]
+}

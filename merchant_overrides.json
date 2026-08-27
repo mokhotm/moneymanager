@@ -13,6 +13,34 @@
       "confidence": 1,
       "verifiedByUser": true,
       "updatedAt": "2026-08-27T14:08:18.204Z"
+    },
+    "Astron Energy Welgedacht Rd": {
+      "cleanMerchant": "Astron Energy Welgedacht Rd",
+      "locationName": "Welgedacht Rd, Springs",
+      "address": "Welgedacht Rd, Springs",
+      "lat": -26.238343916294404,
+      "lng": 28.436136245727543,
+      "suburb": "Welgedacht",
+      "city": "Springs",
+      "region": "Springs & Bakerton",
+      "category": "Fuel & Transport",
+      "confidence": 1,
+      "verifiedByUser": true,
+      "updatedAt": "2026-08-27T14:36:27.685Z"
+    },
+    "Engen Bakerton (now Astron Energy)": {
+      "cleanMerchant": "Engen Bakerton (now Astron Energy)",
+      "locationName": "Welgedacht Road & 3rd Ave, Welgedacht / Bakerton",
+      "address": "Welgedacht Road & 3rd Ave, Welgedacht / Bakerton",
+      "lat": -26.22462981129381,
+      "lng": 28.466273546218872,
+      "suburb": "Welgedacht / Bakerton",
+      "city": "Springs",
+      "region": "Springs & Bakerton",
+      "category": "Fuel & Transport",
+      "confidence": 1,
+      "verifiedByUser": true,
+      "updatedAt": "2026-08-27T14:47:01.814Z"
     }
   }
 }
