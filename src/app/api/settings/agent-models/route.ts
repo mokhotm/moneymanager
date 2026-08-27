@@ -40,6 +40,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { agent, llmProviderConfigId } = body;
 
+    if (!agent || !llmProviderConfigId) {
+      return NextResponse.json({ error: "agent and llmProviderConfigId are required" }, { status: 400 });
+    }
+
+    const targetConfig = await prisma.lLMProviderConfig.findUnique({
+      where: { id: llmProviderConfigId },
+    });
+
+    if (!targetConfig) {
+      return NextResponse.json({ error: "Specified LLM provider config not found" }, { status: 404 });
+    }
+
     const assignment = await prisma.agentModelAssignment.upsert({
       where: { agent },
       update: { llmProviderConfigId },
@@ -47,8 +59,20 @@ export async function POST(req: NextRequest) {
       include: { llmProviderConfig: true },
     });
 
-    return NextResponse.json(assignment);
+    const mapped = {
+      id: assignment.id,
+      agent: assignment.agent,
+      configId: assignment.llmProviderConfigId,
+      provider: assignment.llmProviderConfig.provider,
+      displayName: assignment.llmProviderConfig.displayName,
+      modelName: assignment.llmProviderConfig.modelName,
+      supportsVision: assignment.llmProviderConfig.supportsVision,
+      status: assignment.llmProviderConfig.status,
+    };
+
+    return NextResponse.json(mapped);
   } catch (error: any) {
+    console.error("Error persisting agent model assignment:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -738,12 +738,58 @@ export default function SettingsPage() {
   };
 
   const handleAssignModel = async (agent: string, llmProviderConfigId: string) => {
-    await fetch("/api/settings/agent-models", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ agent, llmProviderConfigId }),
+    if (!llmProviderConfigId) return;
+
+    const selectedConfig = configs.find((c) => c.id === llmProviderConfigId);
+    if (!selectedConfig) return;
+
+    // 1. Instant optimistic state update
+    setAssignments((prev) => {
+      const idx = prev.findIndex((a) => a.agent === agent);
+      const newEntry = {
+        agent,
+        configId: llmProviderConfigId,
+        provider: selectedConfig.provider,
+        displayName: selectedConfig.displayName,
+        modelName: selectedConfig.modelName,
+        supportsVision: selectedConfig.supportsVision,
+        status: selectedConfig.status,
+      };
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = newEntry;
+        return copy;
+      }
+      return [...prev, newEntry];
     });
-    loadSettings();
+
+    // 2. Persist to API
+    try {
+      const res = await fetch("/api/settings/agent-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent, llmProviderConfigId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to persist model assignment");
+      }
+
+      const agentMeta = AGENT_LABELS[agent as keyof typeof AGENT_LABELS];
+      triggerFeedback({
+        id: `assign-${agent}`,
+        ok: true,
+        message: `${agentMeta?.label || agent} model updated to "${selectedConfig.displayName}"!`,
+      });
+    } catch (err: any) {
+      triggerFeedback({
+        id: `assign-err-${agent}`,
+        ok: false,
+        message: `Failed to persist assignment: ${err.message}`,
+      });
+      loadSettings();
+    }
   };
 
   const handleSavePropertyProvider = async (provider: "WINDEED" | "LIGHTSTONE") => {
@@ -1133,7 +1179,7 @@ export default function SettingsPage() {
                       <div style={{ fontSize: "12px", color: "#94a3b8" }}>{meta.desc}</div>
                     </div>
 
-                    <div style={{ width: "340px" }}>
+                    <div style={{ width: "360px", display: "flex", flexDirection: "column", gap: "6px" }}>
                       <select
                         value={currentAssigned?.configId || ""}
                         onChange={(e) => handleAssignModel(agentKey, e.target.value)}
@@ -1147,15 +1193,54 @@ export default function SettingsPage() {
                           fontSize: "13px",
                           fontWeight: "600",
                           outline: "none",
+                          cursor: "pointer",
                         }}
                       >
                         <option value="">Select LLM Provider model…</option>
                         {configs.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.displayName} ({c.modelName})
+                            {c.displayName} ({c.modelName}) — {c.status === "ACTIVE" ? "Active ✓" : c.status}
                           </option>
                         ))}
                       </select>
+
+                      {currentAssigned && (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", padding: "2px 4px" }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontWeight: "700",
+                              color: currentAssigned.status === "ACTIVE" ? "#34d399" : "#f87171",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: "6px",
+                                height: "6px",
+                                borderRadius: "50%",
+                                background: currentAssigned.status === "ACTIVE" ? "#10b981" : "#ef4444",
+                              }}
+                            />
+                            {currentAssigned.status === "ACTIVE" ? "Connected & Active" : currentAssigned.status}
+                          </span>
+
+                          {currentAssigned.supportsVision && (
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "3px",
+                                color: "#38bdf8",
+                                fontWeight: "700",
+                              }}
+                            >
+                              <VisionIcon size={11} /> Vision Multimodal
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
