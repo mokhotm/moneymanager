@@ -101,9 +101,13 @@ export function SpendingLocationMap({
   const [isAICalibrating, setIsAICalibrating] = useState<boolean>(false);
   const [aiStatusMessage, setAiStatusMessage] = useState<string>("");
 
-  // Sync with prop changes
+  // Sync with prop changes and normalize amount
   React.useEffect(() => {
-    setLocalLocations(locations);
+    const normalized = (locations || []).map((loc: any) => ({
+      ...loc,
+      amount: loc.amount !== undefined && loc.amount > 0 ? loc.amount : (loc.totalAmount || 0),
+    }));
+    setLocalLocations(normalized);
   }, [locations]);
 
   // Build cycle & calendar month options
@@ -140,7 +144,10 @@ export function SpendingLocationMap({
   // Filter physical locations by selected Pay Cycle or Calendar Month
   const cycleFilteredLocations = useMemo(() => {
     if (selectedCycleMonth === "ALL") {
-      return localLocations;
+      return localLocations.map((loc: any) => ({
+        ...loc,
+        amount: loc.amount !== undefined && loc.amount > 0 ? loc.amount : (loc.totalAmount || 0),
+      }));
     }
 
     let isDateInScope: (dateStr: string) => boolean;

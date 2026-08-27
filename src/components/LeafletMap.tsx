@@ -467,7 +467,7 @@ function AnchoredMapPopup({
               Total Recorded Spend
             </div>
             <div style={{ fontSize: "17px", fontWeight: 800, color: "#f59e0b", fontFamily: "var(--font-mono, monospace)" }}>
-              {isPrivacyMode ? "R ••••••" : formatZAR(location.amount)}
+              {isPrivacyMode ? "R ••••••" : formatZAR(location.amount !== undefined && location.amount > 0 ? location.amount : ((location as any).totalAmount || 0))}
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -588,14 +588,15 @@ export default function LeafletMap({
 
       {locations.map((loc) => {
         const isSelected = activeLocation?.id === loc.id;
-        const isHighSpend = loc.amount > 4000;
+        const locSpend = loc.amount !== undefined && loc.amount > 0 ? loc.amount : ((loc as any).totalAmount || 0);
+        const isHighSpend = locSpend > 4000;
 
         return (
           <Marker
             key={loc.id}
             position={[loc.lat, loc.lng]}
             icon={createCustomIcon(
-              loc.amount,
+              locSpend,
               isSelected,
               isHighSpend,
               loc.merchant,

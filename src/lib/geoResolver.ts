@@ -33,10 +33,12 @@ export interface SpendingLocationRecord {
   region: string;
   lat: number;
   lng: number;
+  amount: number;
   totalAmount: number;
   transactionCount: number;
   category: string;
   locationType: LocationType;
+  date: string;
   lastDate: string;
   firstDate: string;
   recentTransactions: Array<{
@@ -100,9 +102,9 @@ export const SA_MERCHANT_RULES: GeoMerchantRule[] = [
     locationType: "PHYSICAL_STORE",
   },
   {
-    pattern: /engen\s*bakerton/i,
+    pattern: /engen\s*bakerton|engen.*francolin/i,
     cleanMerchant: "Engen Bakerton Convenience Centre",
-    locationName: "Welgedacht Rd & 1st Ave, Bakerton Entrance, Springs",
+    locationName: "Francolin Street / Rd, Bakerton, Springs",
     city: "Springs",
     suburb: "Bakerton",
     region: "Springs & Bakerton",
@@ -734,6 +736,11 @@ export function resolveSpendingLocations(
 
   // Sort physical locations by total spend descending (filter out zero balances)
   const physicalLocations = Array.from(physicalLocationMap.values())
+    .map((l) => ({
+      ...l,
+      amount: l.totalAmount, // Ensure amount is populated for UI components
+      date: l.lastDate,
+    }))
     .filter((l) => l.totalAmount > 0 || l.transactionCount > 0)
     .sort((a, b) => b.totalAmount - a.totalAmount);
 
