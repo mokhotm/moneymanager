@@ -28,6 +28,7 @@ import {
   Activity,
   FileText,
   ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 
 interface NavGroup {
@@ -97,6 +98,7 @@ interface UserSession {
   username: string;
   fullName?: string;
   jobTitle?: string;
+  role?: string;
 }
 
 export default function Sidebar() {
@@ -178,67 +180,81 @@ export default function Sidebar() {
         <EntitySwitcher />
       </div>
 
-      <nav className="sidebar-nav" style={{ padding: "0 12px 14px", gap: "2px" }}>
-        {navGroups.map((group, groupIdx) => (
-          <div key={group.sectionTitle} style={{ marginBottom: groupIdx === navGroups.length - 1 ? 0 : "12px" }}>
-            <div
-              className="sidebar-section-label"
-              style={{
-                fontSize: "10.5px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "var(--text-muted)",
-                padding: "8px 12px 4px",
-                fontFamily: "var(--font-mono)",
-                opacity: 0.85,
-              }}
-            >
-              {group.sectionTitle}
-            </div>
+      {(() => {
+        const effectiveNavGroups = [...navGroups];
+        if (currentUser?.role === "admin") {
+          effectiveNavGroups.push({
+            sectionTitle: "Administration",
+            items: [
+              { href: "/admin", icon: ShieldAlert, label: "Admin Portal", badge: "Root" },
+            ],
+          });
+        }
+        return (
+          <nav className="sidebar-nav" style={{ padding: "0 12px 14px", gap: "2px" }}>
+            {effectiveNavGroups.map((group, groupIdx) => (
+              <div key={group.sectionTitle} style={{ marginBottom: groupIdx === effectiveNavGroups.length - 1 ? 0 : "12px" }}>
+                <div
+                  className="sidebar-section-label"
+                  style={{
+                    fontSize: "10.5px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "var(--text-muted)",
+                    padding: "8px 12px 4px",
+                    fontFamily: "var(--font-mono)",
+                    opacity: 0.85,
+                  }}
+                >
+                  {group.sectionTitle}
+                </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`nav-item ${isActive ? "active" : ""}`}
-                    id={`nav-${item.href.replace("/", "") || "dashboard"}`}
-                    style={{
-                      padding: "8px 12px",
-                      fontSize: "13.5px",
-                      gap: "10px",
-                    }}
-                  >
-                    <span className="nav-item-icon" style={{ display: "flex", alignItems: "center" }}>
-                      <Icon size={17} />
-                    </span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    {item.badge && (
-                      <span
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`nav-item ${isActive ? "active" : ""}`}
+                        id={`nav-${item.href.replace("/", "") || "dashboard"}`}
                         style={{
-                          fontSize: "10px",
-                          padding: "2px 6px",
-                          borderRadius: "999px",
-                          background: "var(--gold-dim)",
-                          color: "var(--gold)",
-                          fontWeight: 700,
-                          fontFamily: "var(--font-mono)",
+                          padding: "8px 12px",
+                          fontSize: "13.5px",
+                          gap: "10px",
                         }}
                       >
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
+                        <span className="nav-item-icon" style={{ display: "flex", alignItems: "center" }}>
+                          <Icon size={17} />
+                        </span>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        {item.badge && (
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              padding: "2px 6px",
+                              borderRadius: "999px",
+                              background: item.badge === "Root" ? "rgba(245, 158, 11, 0.2)" : "var(--gold-dim)",
+                              color: item.badge === "Root" ? "#fbbf24" : "var(--gold)",
+                              border: item.badge === "Root" ? "1px solid rgba(245, 158, 11, 0.4)" : "none",
+                              fontWeight: 700,
+                              fontFamily: "var(--font-mono)",
+                            }}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+        );
+      })()}
 
       {/* User Session Footer */}
       {currentUser && (
