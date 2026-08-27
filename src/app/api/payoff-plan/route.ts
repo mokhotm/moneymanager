@@ -54,7 +54,23 @@ export async function GET(req: NextRequest) {
 
     const totalIncome = incomes.reduce((sum, i) => sum + Number(i.recurringAmount), 0);
     const totalMinPayments = debts.reduce((sum, d) => sum + Number(d.minimumPayment), 0);
-    const extraPool = Math.max(totalIncome - totalMinPayments, 0);
+
+    const { getActiveCycleMonthKey } = await import("@/lib/budgetCycle");
+    const cycleMonth = await getActiveCycleMonthKey(userId).catch(() => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    });
+    const budgetItems = await prisma.budgetLineItem.findMany({
+      where: { userId, month: cycleMonth },
+      select: { category: true, amount: true },
+    });
+    // Subtract living obligations; if no budget exists yet, use income × 40% as a conservative floor
+    const livingExpenses = budgetItems.length > 0
+      ? budgetItems
+          .filter((b) => b.category !== "DEBT_ACCELERATION_PLAN" && b.category !== "GOAL_CONTRIBUTIONS")
+          .reduce((sum, b) => sum + Number(b.amount), 0)
+      : totalIncome * 0.4;
+    const extraPool = Math.max(totalIncome - livingExpenses - totalMinPayments, 0);
 
     const debtInputs: DebtInput[] = debts.map((d) => ({
       id: d.id,
@@ -69,8 +85,8 @@ export async function GET(req: NextRequest) {
       debtCategory: d.debtCategory as any,
     }));
 
-    const createdDate = new Date("2026-03-01");
     const currentDate = new Date();
+    const createdDate = currentDate;
 
     const plan = createPayoffPlan(debtInputs, extraPool, createdDate, { strategy });
 

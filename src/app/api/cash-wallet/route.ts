@@ -31,15 +31,42 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch live money flows for this cash wallet
-    const flows = await prisma.moneyFlow.findMany({
+    let flows = await prisma.moneyFlow.findMany({
       where: {
         OR: [
           { destinationRef: cashAccount.id },
           { sourceRef: cashAccount.id },
         ],
       },
+      include: {
+        childFlows: true,
+      },
       orderBy: { createdAt: "desc" },
     });
+
+    // Identify unallocated or partially allocated ATM withdrawal parent batches
+    const unallocatedBatches = flows
+      .filter(
+        (f) =>
+          f.flowType === FlowType.CASH_WITHDRAWAL &&
+          f.destinationRef === cashAccount.id &&
+          (f.status === FlowStatus.ACTIVE || f.status === FlowStatus.PARTIALLY_CONSUMED || Number(f.currentAmount) > 0)
+      )
+      .map((f) => ({
+        id: f.id,
+        date: f.createdAt.toISOString().split("T")[0],
+        sourceAccountName: "Linked Bank Account",
+        originalAmount: Number(f.amount),
+        unallocatedAmount: Number(f.currentAmount),
+        allocatedAmount: Number(f.amount) - Number(f.currentAmount),
+        status: f.status,
+        childSplits: (f.childFlows || []).map((c) => ({
+          id: c.id,
+          date: c.createdAt.toISOString().split("T")[0],
+          description: c.destinationRef || "Cash Expense",
+          amount: Number(c.amount),
+        })),
+      }));
 
     // Compute live balance: Sum of inflows - Sum of outflows
     let trackedBalance = 0;
@@ -54,6 +81,7 @@ export async function GET(req: NextRequest) {
 
       return {
         id: f.id,
+        parentFlowId: f.parentFlowId,
         date: f.createdAt.toISOString().split("T")[0],
         type: f.flowType,
         description: f.destinationRef?.startsWith("Domestic") || f.destinationRef?.startsWith("Garden")
@@ -65,10 +93,17 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    const totalUnallocatedCash = unallocatedBatches.reduce(
+      (sum, b) => sum + b.unallocatedAmount,
+      0
+    );
+
     return NextResponse.json({
       cashWalletAccountId: cashAccount.id,
       accountName: cashAccount.name,
       trackedBalance: Math.max(0, trackedBalance),
+      totalUnallocatedCash,
+      unallocatedBatches,
       lastReconciledAt: cashAccount.updatedAt,
       recentFlows,
     });
@@ -114,10 +149,16 @@ export async function POST(req: NextRequest) {
 
     if (action === "WITHDRAWAL") {
       const numAmount = parseFloat(amount);
+      if (!Number.isFinite(numAmount) || numAmount <= 0) {
+        return NextResponse.json({ error: "amount must be a positive number" }, { status: 400 });
+      }
+      if (!chequeAccount) {
+        return NextResponse.json({ error: "A linked current account is required for cash withdrawals" }, { status: 422 });
+      }
       await prisma.moneyFlow.create({
         data: {
           sourceType: FlowEndpointType.ACCOUNT,
-          sourceRef: chequeAccount?.id || "cheque-account",
+          sourceRef: chequeAccount.id,
           destinationType: FlowEndpointType.CASH_WALLET,
           destinationRef: cashAccount.id,
           amount: numAmount,
@@ -132,6 +173,9 @@ export async function POST(req: NextRequest) {
 
     if (action === "SPEND") {
       const numAmount = parseFloat(amount);
+      if (!Number.isFinite(numAmount) || numAmount <= 0) {
+        return NextResponse.json({ error: "amount must be a positive number" }, { status: 400 });
+      }
       const targetLabel = description ? `${category}: ${description}` : category;
       await prisma.moneyFlow.create({
         data: {

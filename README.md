@@ -121,16 +121,47 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 
 ---
 
-### 7. Cooperative Multi-Agent AI System & BYOK Integration
-- **4 Specialized AI Agents**:
+### 7. Cooperative Multi-Agent AI System & BYOK Multi-LLM Vault (`/settings`)
+- **5 Specialized AI Agents**:
   - **Document Agent**: Vision & OCR scanning for bank statements, payslips, and municipal bills.
   - **Budget Agent**: Analyzes monthly cash flow streams and calculates Dual Net Margins.
   - **Debt Acceleration Agent**: Simulates Snowball vs. Avalanche payoff timelines and interest savings.
   - **Goals & Wealth Agent**: Projects emergency fund targets and wealth accumulation.
+  - **Forensics & Audit Agent**: Reconciles cleared bank transactions against ground-truth statements and flags leakages.
+- **BYOK Multi-LLM Vault with AES-256-CBC Encryption**:
+  - Store and edit API keys for **Google Gemini 3.7 / 2.0**, **Anthropic Claude Opus 4.8 / 3.7 Sonnet**, **OpenAI GPT-5.6 / 4o**, **DeepSeek V4 / R1 Reasoner**, **Alibaba Qwen 3 Max**, **Zhipu GLM-4 Plus / Flash**, **Moonshot Kimi K3**, and **Local Ollama / LM Studio** (`http://localhost:11434/v1`).
+  - Interactive key editor allowing live key replacement, model ID changes, display labels, and active/disabled toggling.
+  - Per-agent model routing and dynamic `.env` key synchronization.
 - **Human-in-the-Loop Review Queue (`/recommendations`)**:
-  - Agent proposals with plain-language rationales and an **Approve & Apply** button.
-- **Bring Your Own Key (BYOK) Integration (`/settings`)**:
-  - Encrypted API key storage for Google Gemini, OpenAI, Anthropic, and Azure OpenAI with live endpoint authentication.
+  - AI proposals with plain-language rationales and an **Approve & Apply** button.
+
+---
+
+### 8. Multi-Entity & Family Office Workspace Switcher (`src/components/EntitySwitcher.tsx`)
+- **One-Click Workspace Switching in Sidebar**:
+  - Toggle between **Personal Wealth** (`PERSONAL`), **Family Trust** (`TRUST`), **Operating Company** (`BUSINESS`), and **Property SPV** (`SPV_PROPERTY`).
+- **Dynamic Ground-Truth Aggregation**:
+  - Automatically calculates live Net Worth, Total Assets, Total Liabilities, and account counts per legal entity without logging out.
+- **SARS Tax & Legal Ring-Fencing**:
+  - Strictly separates personal ITR12 records from corporate ITR14 and trust IT12TR filings.
+
+---
+
+### 9. Zero-Trust System Readiness Diagnostics (`/system/readiness`)
+- Real-time cryptographic diagnostic verification for `ENCRYPTION_KEY` (256-bit AES), `SESSION_SIGNING_SECRET` (HMAC-SHA256), `GATEWAY_WEBHOOK_SECRET`, and `OPEN_BANKING_SYNC_URL`.
+- Instant runtime re-testing with `VERIFIED PASS` status badges.
+
+---
+
+### 10. The 100x Architecture & Specification Matrix ([`docs/PRODUCT_SPECIFICATION.md`](docs/PRODUCT_SPECIFICATION.md))
+Detailed technical specifications for outperforming commercial platforms across 7 vectors:
+1. **Zero-Failure Hybrid Ingestion**: Direct Open Banking + Vision OCR Vault + Inbound E-Statement Webhooks.
+2. **Multi-Entity & Family Office**: Personal, SME / Side-Hustle, Property SPV, and Family Trust DAG lineage.
+3. **365-Day Neural Cashflow Simulation**: Daily liquid balance forecast curve with Monte Carlo interest rate and income shock stress tests.
+4. **Forensic 5-Year Vector RAG Memory**: Semantic cross-year queries across all uploaded financial PDFs and receipts.
+5. **Institutional Real Asset Analytics**: Automated Lightstone/Windeed deeds valuation and XIRR/TWR portfolio drift.
+6. **One-Click Tax & Audit Compliance**: SARS Section 11(a), Section 12B solar, RA 27.5% optimization, and 1-click audit pack exports.
+7. **Unified Global Layout & Local-First Ecosystem**: Standardized `.page-header` + `.page-body` across all 21 routes, PWA, and desktop integration.
 
 ---
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEffectiveUserId } from "@/lib/session";
 import { extractMetadataForTransaction } from "@/lib/documentMetadataExtractor";
+import { prisma } from "@/lib/prisma";
+import { getUserEntityScope, isEntityOwnedByUser } from "@/lib/userEntityScope";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +14,26 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { query, amount, documentId } = body;
 
-    const metadata = await extractMetadataForTransaction(query || "Standard Bank", amount);
+    if (!query || typeof query !== "string" || !query.trim()) {
+      return NextResponse.json({ error: "query is required" }, { status: 400 });
+    }
+
+    let scopedDocumentId: string | undefined;
+    if (documentId) {
+      if (typeof documentId !== "string") {
+        return NextResponse.json({ error: "documentId must be a string" }, { status: 400 });
+      }
+
+      const scope = await getUserEntityScope(userId);
+      const doc = await prisma.document.findUnique({ where: { id: documentId }, select: { id: true, relatedEntityId: true } });
+      if (!doc || !isEntityOwnedByUser(doc.relatedEntityId, scope)) {
+        return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      }
+
+      scopedDocumentId = doc.id;
+    }
+
+    const metadata = await extractMetadataForTransaction(query.trim(), amount, { documentId: scopedDocumentId });
 
     return NextResponse.json({
       success: true,

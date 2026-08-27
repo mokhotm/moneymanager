@@ -108,30 +108,9 @@ export default function BillingPage() {
         type: "success",
       });
 
-      // Simulate automatic webhook confirmation in demo mode
-      setTimeout(async () => {
-        try {
-          const webhookRes = await fetch("/api/webhooks/payment", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-gateway-signature": "mock_valid_signature",
-            },
-            body: JSON.stringify({
-              pendingPaymentId: data.pendingPaymentId,
-              status: "SUCCESS",
-              billingPeriod,
-            }),
-          });
-          if (webhookRes.ok) {
-            setNotification({
-              message: `Payment successful! Your account has been upgraded to ${tier.name}.`,
-              type: "success",
-            });
-            fetchData();
-          }
-        } catch {}
-      }, 1200);
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
 
     } catch (err: any) {
       setNotification({ message: err.message || "Checkout failed", type: "error" });
@@ -150,40 +129,27 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="page-container" style={{ padding: "32px 40px", maxWidth: "1280px", margin: "0 auto" }}>
-      {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-          <div
-            style={{
-              padding: "10px",
-              borderRadius: "12px",
-              background: "rgba(245, 158, 11, 0.15)",
-              color: "#fbbf24",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Crown size={26} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
-              Subscription &amp; Plans
-            </h1>
-            <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0, marginTop: "4px" }}>
-              Unlock full AI wealth intelligence, multi-hop Money Journey lineage, GPS Radar, and Deed Office valuations.
-            </p>
-          </div>
+    <>
+      {/* Page Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            Subscription &amp; Plans
+            <span className="badge badge-gold text-xs font-mono">v4.0 Obsidian</span>
+          </h1>
+          <p className="page-subtitle">
+            Unlock full AI wealth intelligence, multi-hop Money Journey lineage, GPS Radar, and Deed Office valuations.
+          </p>
         </div>
       </div>
 
-      {/* Notification banner */}
-      {notification && (
-        <div
-          style={{
-            padding: "14px 18px",
-            borderRadius: "10px",
+      <div className="page-body">
+        {/* Notification banner */}
+        {notification && (
+          <div
+            style={{
+              padding: "14px 18px",
+              borderRadius: "10px",
             marginBottom: "24px",
             display: "flex",
             alignItems: "center",
@@ -545,6 +511,7 @@ export default function BillingPage() {
           </span>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

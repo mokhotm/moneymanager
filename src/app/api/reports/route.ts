@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
 import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 import { buildForensicAuditReport } from "@/lib/forensicAudit";
+import { buildUserFlowWhere } from "@/lib/moneyFlowRefs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +14,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const timeframe = searchParams.get("timeframe") || "MONTHLY_CYCLE";
-    const selectedMonth = searchParams.get("month") || "2026-08";
-    const cycleBounds = resolveSalaryCycleRange(selectedMonth);
+    const selectedMonth = searchParams.get("month") || "ALL";
+    const cycleBounds = selectedMonth === "ALL" ? null : resolveSalaryCycleRange(selectedMonth);
 
     // Fetch user, budget line items, incomes, accounts, debts, assets, documents, and money flows
     const [user, budgetItems, incomes, accounts, debts, assets] = await Promise.all([
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
         include: { profile: true },
       }),
       prisma.budgetLineItem.findMany({
-        where: { userId, month: selectedMonth },
+        where: selectedMonth === "ALL" ? { userId } : { userId, month: selectedMonth },
         orderBy: [{ category: "asc" }, { amount: "desc" }],
       }),
       prisma.income.findMany({
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
       ...assets.map((a) => a.id),
       ...debts.map((d) => d.id),
     ];
+    const userFlowWhere = buildUserFlowWhere(accounts, debts);
 
     const [documents, flows] = await Promise.all([
       userEntityIds.length === 0
@@ -58,95 +60,22 @@ export async function GET(request: NextRequest) {
             where: { relatedEntityId: { in: userEntityIds } },
             orderBy: { uploadedAt: "desc" },
           }),
-      userEntityIds.length === 0
+      userFlowWhere.OR.length === 0
         ? Promise.resolve([])
         : prisma.moneyFlow.findMany({
             where: {
-              OR: [
-                { sourceRef: { in: userEntityIds } },
-                { destinationRef: { in: userEntityIds } },
-              ],
+              ...userFlowWhere,
               amount: { lte: 80000 },
             },
             orderBy: { createdAt: "desc" },
           }),
     ]);
 
-    const HISTORICAL_SALARIES: Record<
-      string,
-      { amount: number; label: string; plannedOutflows: number; debts: number; living: number; surplus: number }
-    > = {
-      "2026-08": {
-        amount: 74438.26,
-        label: "SARS Net Payslip Confirmed (Aug 2026)",
-        plannedOutflows: 64343.10,
-        debts: 42794.29,
-        living: 21548.81,
-        surplus: 10095.16,
-      },
-      "2026-07": {
-        amount: 71026.90,
-        label: "SARS Net Salary Deposit Confirmed (Jul 2026)",
-        plannedOutflows: 36033.84,
-        debts: 15657.84,
-        living: 20376.00,
-        surplus: 34993.06,
-      },
-      "2026-06": {
-        amount: 71326.43,
-        label: "SARS Net Salary Deposit Confirmed (Jun 2026)",
-        plannedOutflows: 68900.00,
-        debts: 38902.50,
-        living: 29997.50,
-        surplus: 2426.43,
-      },
-      "2026-05": {
-        amount: 74217.05,
-        label: "SARS Net Salary Deposit Confirmed (May 2026)",
-        plannedOutflows: 72100.00,
-        debts: 50607.48,
-        living: 21492.52,
-        surplus: 2117.05,
-      },
-      "2026-04": {
-        amount: 74550.25,
-        label: "SARS Net Salary Deposit Confirmed (Apr 2026)",
-        plannedOutflows: 69800.00,
-        debts: 38139.53,
-        living: 31660.47,
-        surplus: 4750.25,
-      },
-      "2026-03": {
-        amount: 81932.37,
-        label: "SARS Net Salary Deposit Confirmed (Mar 2026)",
-        plannedOutflows: 76450.00,
-        debts: 45000.00,
-        living: 31450.00,
-        surplus: 5482.37,
-      },
-      "2026-02": {
-        amount: 73750.62,
-        label: "SARS Net Salary Deposit Confirmed (Feb 2026)",
-        plannedOutflows: 68000.00,
-        debts: 42000.00,
-        living: 26000.00,
-        surplus: 5750.62,
-      },
-      "2026-01": {
-        amount: 73750.62,
-        label: "SARS Net Salary Deposit Confirmed (Jan 2026)",
-        plannedOutflows: 68000.00,
-        debts: 42000.00,
-        living: 26000.00,
-        surplus: 5750.62,
-      },
-    };
-
     const userRecurringIncome = incomes.reduce((s, i) => s + Number(i.recurringAmount), 0);
     const hasIncome = userRecurringIncome > 0;
     const netSalary = hasIncome ? userRecurringIncome : 0;
     const salarySourceLabel = hasIncome
-      ? `${incomes[0]?.sourceName || "Salary"} Confirmed (${selectedMonth})`
+      ? `${incomes[0]?.sourceName || "Salary"} Confirmed (${selectedMonth === "ALL" ? "All Months" : selectedMonth})`
       : "No confirmed income";
 
     // 1. Budget Planned Outflows
@@ -176,17 +105,15 @@ export async function GET(request: NextRequest) {
       plannedByCategory.FAMILY_AND_DISCRETIONARY +
       plannedByCategory.ONE_OFF_UNEXPECTED;
     const totalExpenseOutflows = debtsPlanned + livingPlanned;
-    const netSurplus = Math.max(0, netSalary - totalExpenseOutflows);
-    const savingsRatePct = netSalary > 0 ? (netSurplus / netSalary) * 100 : 0;
 
     // 2. Filter cycle flows (strict sanity bounds & inclusive start date)
-    const startDayStr = cycleBounds.startDate.toISOString().split("T")[0];
-    const endDayStr = cycleBounds.endDate.toISOString().split("T")[0];
-
     const cycleFlows = flows.filter((f) => {
       const amt = Number(f.amount);
       if (isNaN(amt) || amt <= 0 || amt > 80000) return false;
+      if (selectedMonth === "ALL" || !cycleBounds) return true;
       const d = new Date(f.createdAt);
+      const startDayStr = cycleBounds.startDate.toISOString().split("T")[0];
+      const endDayStr = cycleBounds.endDate.toISOString().split("T")[0];
       const fDayStr = d.toISOString().split("T")[0];
       const isTimeInRange = d.getTime() >= cycleBounds.startDate.getTime() && d.getTime() <= cycleBounds.endDate.getTime();
       const isDayInRange = fDayStr >= startDayStr && fDayStr <= endDayStr;
@@ -333,6 +260,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    const totalActualOutflows = Object.values(actualByCategory).reduce((sum, value) => sum + value, 0);
+    const netSurplusActual = Math.max(0, netSalary - totalActualOutflows);
+
     // Compute Leakage Totals
     const totalLeakage = leakageItems.reduce((s, l) => s + l.amount, 0);
     const annualizedLeakage = totalLeakage * 12;
@@ -351,12 +281,7 @@ export async function GET(request: NextRequest) {
     // Budget vs Actual Category Variance Table
     const categoryVariance = Object.keys(plannedByCategory).map((cat) => {
       const planned = plannedByCategory[cat] || 0;
-      let actual = actualByCategory[cat] || 0;
-      if (actual === 0 || actual > 100000) {
-        if (cat === "FAMILY_AND_DISCRETIONARY") actual = planned * 0.94;
-        else if (cat === "FIXED_HOUSEHOLD_OBLIGATIONS") actual = planned * 1.02;
-        else actual = planned;
-      }
+      const actual = actualByCategory[cat] || 0;
 
       const diff = actual - planned;
       const pct = planned > 0 ? ((diff / planned) * 100).toFixed(1) : "0.0";
@@ -374,35 +299,52 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const hasUserData = hasIncome || accounts.length > 0 || debts.length > 0;
+    const trendBuckets = new Map<string, { income: number; expenses: number }>();
+    for (const flow of flows) {
+      const amount = Number(flow.amount || 0);
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 80000) continue;
+      const date = flow.createdAt instanceof Date ? flow.createdAt : new Date(flow.createdAt);
+      const key = date.toISOString().slice(0, 7);
+      const bucket = trendBuckets.get(key) || { income: 0, expenses: 0 };
+      if (flow.flowType === "INCOME") {
+        bucket.income += amount;
+      } else {
+        bucket.expenses += amount;
+      }
+      trendBuckets.set(key, bucket);
+    }
 
-    const historicalTrends = hasUserData
-      ? [
-          { period: "Mar 2026", income: netSalary, expenses: totalExpenseOutflows, surplus: netSurplus, savingsRate: parseFloat(savingsRatePct.toFixed(1)) },
-          { period: "Apr 2026", income: netSalary, expenses: totalExpenseOutflows, surplus: netSurplus, savingsRate: parseFloat(savingsRatePct.toFixed(1)) },
-          { period: "May 2026", income: netSalary, expenses: totalExpenseOutflows, surplus: netSurplus, savingsRate: parseFloat(savingsRatePct.toFixed(1)) },
-          { period: "Jun 2026", income: netSalary, expenses: totalExpenseOutflows, surplus: netSurplus, savingsRate: parseFloat(savingsRatePct.toFixed(1)) },
-          { period: "Jul 2026", income: netSalary, expenses: totalExpenseOutflows, surplus: netSurplus, savingsRate: parseFloat(savingsRatePct.toFixed(1)) },
-          { period: `${selectedMonth} (Active)`, income: netSalary, expenses: totalExpenseOutflows, surplus: netSurplus, savingsRate: parseFloat(savingsRatePct.toFixed(1)) },
-        ]
-      : [];
+    const historicalTrends = [...trendBuckets.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([monthKey, bucket]) => {
+        const [year, month] = monthKey.split("-");
+        const date = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+        const surplus = bucket.income - bucket.expenses;
+        return {
+          period: date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" }),
+          income: bucket.income,
+          expenses: bucket.expenses,
+          surplus,
+          savingsRate: bucket.income > 0 ? parseFloat(((surplus / bucket.income) * 100).toFixed(1)) : 0,
+        };
+      });
 
-    const weeklyRunway = hasUserData
-      ? [
-          { week: "Week 1 (Days 1–7)", focus: "DebiCheck & Obligations", target: Math.round(debtsPlanned * 0.7), actual: Math.round(debtsPlanned * 0.7), remainingRunway: Math.max(0, netSalary - debtsPlanned * 0.7) },
-          { week: "Week 2 (Days 8–14)", focus: "Utilities & Fixed Living", target: Math.round(livingPlanned * 0.4), actual: Math.round(livingPlanned * 0.4), remainingRunway: Math.max(0, netSalary - debtsPlanned - livingPlanned * 0.4) },
-          { week: "Week 3 (Days 15–21)", focus: "Groceries & Daily Living", target: Math.round(livingPlanned * 0.4), actual: Math.round(livingPlanned * 0.4), remainingRunway: Math.max(0, netSalary - debtsPlanned - livingPlanned * 0.8) },
-          { week: "Week 4 (Days 22–30)", focus: "Month-End Acceleration", target: Math.round(livingPlanned * 0.2), actual: Math.round(livingPlanned * 0.2), remainingRunway: netSurplus },
-        ]
-      : [];
+    const weeklyRunway: Array<{ week: string; focus: string; target: number; actual: number; remainingRunway: number }> = [];
 
     // ─── 4. STATEMENT AUDIT & CROSS-ACCOUNT RECONCILIATION ENGINE ─────────────
     const auditAccounts = accounts.map((acc) => {
       const debt = debts.find((d) => d.accountId === acc.id);
-      let statementMatch = "VERIFIED_PERFECT";
-      let statementRef = `${acc.institution} Linked Account`;
-      let lastReconciled = new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
-      let notes = acc.notes || "Account verified";
+      const statementRef = acc.accountNumberMasked || `${acc.institution} linked account`;
+      const confidence = debt ? debt.balanceConfidence : "CONFIRMED";
+      const status = confidence === "CONFIRMED"
+        ? "CONFIRMED"
+        : confidence === "UNKNOWN"
+          ? "UNVERIFIED"
+          : "NEEDS_REVIEW";
+      const reconciledDate = acc.openingBalanceDate || debt?.updatedAt || acc.updatedAt;
+      const lastReconciled = new Date(reconciledDate).toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric" });
+      const notes = acc.notes || (status === "CONFIRMED" ? "Confirmed from linked records" : "Awaiting statement confirmation");
 
       return {
         id: acc.id,
@@ -416,52 +358,40 @@ export async function GET(request: NextRequest) {
         minimumPayment: debt ? Number(debt.minimumPayment) : null,
         annualInterestRate: debt ? Number(debt.annualInterestRate) : null,
         debtCategory: debt ? debt.debtCategory : null,
-        balanceConfidence: debt ? debt.balanceConfidence : "CONFIRMED",
+        balanceConfidence: confidence,
         statementRef,
         lastReconciled,
-        status: statementMatch,
+        status,
         notes,
       };
     });
 
-    // Dynamic Cross-Account Lineage & Debt Bounce Recovery Detection for ANY user
-    const detectedCrossAccountEvents: Array<{
+    const confirmedAccounts = auditAccounts.filter((a) => a.status === "CONFIRMED").length;
+    const reconciliationScore = auditAccounts.length > 0
+      ? Math.round((confirmedAccounts / auditAccounts.length) * 100)
+      : 0;
+
+    // Cross-account events derived from actual debt-payment transaction flows
+    const homeLoanCrossAccountEvents: Array<{
       month: string;
       prestigeEvent: string;
       mymoRecoveryEvent: string;
       status: string;
       amount: number;
-    }> = [];
-
-    // Find any mortgage/home loan or large debt for this user
-    const homeLoanDebt = debts.find(
-      (d) =>
-        d.account.name.toLowerCase().includes("home loan") ||
-        d.account.name.toLowerCase().includes("mortgage") ||
-        d.account.name.toLowerCase().includes("bond")
-    );
-
-    if (homeLoanDebt && accounts.length > 0) {
-      const primaryAccount = accounts.find((a) => a.type === "CURRENT") || accounts[0];
-      const secondaryAccount = accounts.find((a) => a.id !== primaryAccount?.id && a.type === "CURRENT") || accounts[1] || primaryAccount;
-
-      const primaryName = primaryAccount ? primaryAccount.name.split(" ")[0] : "Primary";
-      const secondaryName = secondaryAccount ? secondaryAccount.name.split(" ")[0] : "Secondary";
-      const bondAmount = Number(homeLoanDebt.minimumPayment) || 0;
-
-      const monthKeys = ["Aug 2026", "Jul 2026", "Jun 2026", "May 2026", "Apr 2026", "Mar 2026", "Feb 2026"];
-      for (const m of monthKeys) {
-        detectedCrossAccountEvents.push({
-          month: m,
-          prestigeEvent: `${primaryName} Account: ${homeLoanDebt.account.name} (${homeLoanDebt.account.accountNumberMasked || 'Bond'}) Payment -R${bondAmount.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`,
-          mymoRecoveryEvent: `${secondaryName} Reconciled Settlement Processed`,
-          status: "PAID_ON_SCHEDULE",
-          amount: bondAmount,
-        });
-      }
-    }
-
-    const homeLoanCrossAccountEvents = detectedCrossAccountEvents;
+    }> = cycleFlows
+      .filter((f) => f.flowType === "DEBT_PAYMENT")
+      .slice(0, 12)
+      .map((f) => {
+        const amount = Number(f.amount || 0);
+        const date = f.createdAt instanceof Date ? f.createdAt : new Date(f.createdAt);
+        return {
+          month: date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" }),
+          prestigeEvent: String(f.destinationRef || f.sourceRef || "Debt settlement flow"),
+          mymoRecoveryEvent: "Settlement reflected in transaction ledger",
+          status: "DETECTED_FROM_STATEMENT_FLOWS",
+          amount,
+        };
+      });
 
     return NextResponse.json({
       success: true,
@@ -472,16 +402,16 @@ export async function GET(request: NextRequest) {
         totalIncome: netSalary,
         salarySourceLabel,
         totalPlannedOutflows: totalExpenseOutflows,
-        totalActualOutflows: totalExpenseOutflows,
-        netSurplus,
+        totalActualOutflows,
+        netSurplus: netSurplusActual,
         debtsOutflow: debtsPlanned,
         livingOutflow: livingPlanned,
-        savingsRatePercentage: parseFloat(savingsRatePct.toFixed(1)),
+        savingsRatePercentage: netSalary > 0 ? parseFloat(((netSurplusActual / netSalary) * 100).toFixed(1)) : 0,
         totalLeakageMonthly: totalLeakage,
         annualizedLeakage: annualizedLeakage,
         phantomCashMonthly: phantomCash,
         totalVerifiedAccounts: auditAccounts.length,
-        reconciliationScore: 100,
+        reconciliationScore,
       },
       categoryVariance,
       leakageItems: leakageItems.length > 0 ? leakageItems.slice(0, 15) : [],

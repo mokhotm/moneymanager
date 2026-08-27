@@ -16,7 +16,7 @@ export async function extractPdfText(buffer: Buffer, password?: string): Promise
       const pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
       pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
     } catch {
-      // fallback
+      // Worker import can fail in some runtimes; continue with main parser path.
     }
 
     const loadingTask = pdfjs.getDocument({
@@ -59,8 +59,7 @@ export async function extractPdfText(buffer: Buffer, password?: string): Promise
     if (err?.name === "PasswordException") {
       throw err;
     }
-    console.warn("PDF text extraction warning:", err?.message || err);
-    return "";
+    throw new Error(`PDF_TEXT_EXTRACTION_FAILED: ${err?.message || String(err)}`);
   }
 }
 
@@ -139,10 +138,10 @@ function autoDetectAccountInfo(
 
   // Fallback
   const cleanName = fileName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim().slice(0, 30);
-  const instName = accountNumber ? `Account ${accountNumber}` : cleanName || "Service Provider";
+  const instName = accountNumber ? `Account ${accountNumber}` : cleanName || "UNRESOLVED";
   return {
     institution: instName,
-    name: `${instName} Account`,
+    name: instName === "UNRESOLVED" ? "Unresolved Account" : `${instName} Account`,
     type: "SERVICE_ACCOUNT",
     accountNumber,
   };
@@ -241,6 +240,15 @@ export async function POST(req: NextRequest) {
           { status: 422 }
         );
       }
+      if (String(err?.message || "").includes("PDF_TEXT_EXTRACTION_FAILED")) {
+        return NextResponse.json(
+          {
+            error: "EXTRACTION_FAILED",
+            message: "Unable to extract text from this PDF. Please upload a clearer statement PDF or select an existing account manually.",
+          },
+          { status: 422 }
+        );
+      }
       throw err;
     }
 
@@ -249,6 +257,15 @@ export async function POST(req: NextRequest) {
 
     if (accountId === "__AUTO__" || !accountId) {
       const detected = autoDetectAccountInfo(rawText, file.name);
+      if (detected.institution === "UNRESOLVED") {
+        return NextResponse.json(
+          {
+            error: "ACCOUNT_DETECTION_FAILED",
+            message: "Could not auto-detect the account from this document. Please choose an existing account or provide a new account explicitly.",
+          },
+          { status: 422 }
+        );
+      }
 
       let existingAccount = null;
       const userAccounts = await prisma.account.findMany({ where: { userId } });
@@ -271,10 +288,11 @@ export async function POST(req: NextRequest) {
         }) ?? null;
       }
 
-      if (!existingAccount && detected.institution) {
-        // 2. Match by institution name (fallback)
+      if (!existingAccount && detected.name) {
+        // 2. Match by strict name + institution combo only (no institution-only fallback)
         existingAccount = userAccounts.find((a) =>
-          a.institution.toLowerCase() === detected.institution.toLowerCase()
+          a.institution.toLowerCase() === detected.institution.toLowerCase() &&
+          a.name.toLowerCase() === detected.name.toLowerCase()
         ) ?? null;
       }
 
@@ -290,7 +308,17 @@ export async function POST(req: NextRequest) {
           });
         }
       } else {
-        // 3. Auto-create a brand new account only if no matching account exists
+        if (!detected.accountNumber) {
+          return NextResponse.json(
+            {
+              error: "ACCOUNT_RESOLUTION_REQUIRED",
+              message: "Auto mode could not confidently match an account. Please choose an existing account or create a new one with explicit details.",
+            },
+            { status: 422 }
+          );
+        }
+
+        // 3. Auto-create only when a concrete account number was detected.
         const newAccount = await prisma.account.create({
           data: {
             userId,
@@ -325,7 +353,7 @@ export async function POST(req: NextRequest) {
           userId,
           OR: [
             ...(detected.accountNumber ? [{ accountNumberMasked: detected.accountNumber }] : []),
-            { institution: { equals: inst, mode: "insensitive" as const } },
+            { name: { equals: acctName, mode: "insensitive" as const }, institution: { equals: inst, mode: "insensitive" as const } },
           ],
         },
       });

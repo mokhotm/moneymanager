@@ -13,103 +13,65 @@ export interface ExtractedDocumentMetadata {
   extractionNotes?: string;
 }
 
-const DOCUMENT_MAPPINGS: Record<string, ExtractedDocumentMetadata> = {
-  standard: {
-    documentType: "BANK_STATEMENT",
-    merchantName: "Standard Bank Savings Interest",
-    merchantAddress: "Standard Bank Centre, 5 Simmonds St, Selby, Johannesburg, 2001",
-    city: "Johannesburg",
-    flowType: "INCOME",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "Standard_Bank_Statement_Jul2026.pdf",
-    extractionNotes: "Matched via Standard Bank e-statement PDF (Statement #STB-99824)",
-  },
-  telkom: {
-    documentType: "INVOICE",
-    merchantName: "Telkom SA SOC Limited",
-    merchantAddress: "Telkom Park, 61 Oak Avenue, Highveld Techno Park, Centurion, 0157",
-    city: "Pretoria",
-    flowType: "CASH_SPENDING",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "Telkom_Fibre_Invoice_2026.pdf",
-    extractionNotes: "Extracted from Tax Invoice #TLK-88271 (VAT Reg: 4480101256)",
-  },
-  woolworths: {
-    documentType: "RECEIPT",
-    merchantName: "Woolworths Food Sandton City",
-    merchantAddress: "Sandton City Shopping Centre, 83 Rivonia Rd, Sandhurst, Sandton, 2196",
-    city: "Johannesburg",
-    flowType: "CASH_SPENDING",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "Woolworths_TaxReceipt_88192.pdf",
-    extractionNotes: "Extracted from Till Slip #88192 (Store 402 - Sandton City)",
-  },
-  ekurhuleni: {
-    documentType: "MUNICIPAL_BILL",
-    merchantName: "City of Ekurhuleni Municipality",
-    merchantAddress: "Corner Cross & Rose Streets, Germiston, 1401, Gauteng, South Africa",
-    city: "Johannesburg",
-    flowType: "DEBT_PAYMENT",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "Ekurhuleni_Rates_Taxes_Jul2026.pdf",
-    extractionNotes: "Extracted from Municipal Statement Account #EKU-772183",
-  },
-  sars: {
-    documentType: "PAYSLIP",
-    merchantName: "SARS Employer Salary Payroll",
-    merchantAddress: "Lehae la SARS, 299 Bronkhorst Street, Nieuw Muckleneuk, Pretoria, 0181",
-    city: "Pretoria",
-    flowType: "INCOME",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "SARS_IRP5_Tax_Certificate_2026.pdf",
-    extractionNotes: "Extracted from IRP5 Tax Certificate & Net Salary Voucher",
-  },
-  engen: {
-    documentType: "RECEIPT",
-    merchantName: "Engen 1-Stop Umhlanga Service Station",
-    merchantAddress: "N2 Highway Northbound, Umhlanga Ridge, Durban, 4319",
-    city: "Durban",
-    flowType: "CASH_SPENDING",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "Engen_Fuel_Receipt_2026.pdf",
-    extractionNotes: "Extracted from Service Station Receipt #ENG-99214",
-  },
-};
+function inferFlowType(documentType?: string): string | undefined {
+  if (documentType === "PAYSLIP") return "INCOME";
+  if (documentType === "BANK_STATEMENT") return "TRANSFER";
+  if (documentType === "MUNICIPAL_BILL" || documentType === "INVOICE" || documentType === "RECEIPT") return "CASH_SPENDING";
+  return undefined;
+}
 
 /**
  * Extract & pre-populate transaction metadata from uploaded document database
  */
 export async function extractMetadataForTransaction(
   query: string,
-  amount?: number
+  amount?: number,
+  options?: { documentId?: string }
 ): Promise<ExtractedDocumentMetadata> {
-  const q = (query || "").toLowerCase();
+  const safeQuery = query.trim();
 
-  if (q.includes("telkom") || q.includes("fibre") || q.includes("internet")) {
-    return DOCUMENT_MAPPINGS.telkom;
-  }
-  if (q.includes("woolworths") || q.includes("food") || q.includes("grocer")) {
-    return DOCUMENT_MAPPINGS.woolworths;
-  }
-  if (q.includes("ekurhuleni") || q.includes("rates") || q.includes("municipal")) {
-    return DOCUMENT_MAPPINGS.ekurhuleni;
-  }
-  if (q.includes("sars") || q.includes("salary") || q.includes("payroll")) {
-    return DOCUMENT_MAPPINGS.sars;
-  }
-  if (q.includes("engen") || q.includes("fuel") || q.includes("petrol")) {
-    return DOCUMENT_MAPPINGS.engen;
+  if (options?.documentId) {
+    const doc = await prisma.document.findUnique({
+      where: { id: options.documentId },
+      select: {
+        id: true,
+        documentType: true,
+        parsedData: true,
+        fileUrl: true,
+      },
+    });
+
+    if (doc) {
+      const parsedData = (doc.parsedData as any) || {};
+      const parsedFields = parsedData.parsedFields || parsedData;
+      const merchantName =
+        parsedFields.merchantName ||
+        parsedFields.payee ||
+        parsedFields.employer ||
+        parsedFields.institution ||
+        safeQuery;
+
+      return {
+        sourceDocumentId: doc.id,
+        sourceDocumentName: parsedFields.sourceDocumentName || (typeof doc.fileUrl === "string" ? doc.fileUrl : undefined),
+        documentType: doc.documentType,
+        merchantName,
+        merchantAddress: parsedFields.merchantAddress || parsedFields.address || "",
+        city: parsedFields.city || "",
+        amount,
+        flowType: parsedFields.flowType || inferFlowType(doc.documentType),
+        confidence: "ESTIMATED",
+        extractionNotes: "Metadata derived from parsed document fields.",
+      };
+    }
   }
 
-  // Default smart fallback from document vault
   return {
-    documentType: "BANK_STATEMENT",
-    merchantName: query || "Standard Bank Savings Interest",
-    merchantAddress: `${query || "Standard Bank"}, Sandton Central, Johannesburg, 2196`,
-    city: "Johannesburg",
-    flowType: "INCOME",
-    confidence: "CONFIRMED",
-    sourceDocumentName: "Uploaded_Financial_Document.pdf",
-    extractionNotes: "Extracted from parsed document vault & verified statement embeddings.",
+    merchantName: safeQuery,
+    merchantAddress: "",
+    city: "",
+    amount,
+    confidence: "ESTIMATED",
+    extractionNotes: "No mapped document metadata found for this query.",
   };
 }

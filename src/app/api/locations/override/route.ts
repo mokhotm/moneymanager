@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const overrides = loadOverrides();
-  return NextResponse.json({ overrides });
+  return NextResponse.json({ overrides: overrides[userId] || {} });
 }
 
 export async function POST(req: NextRequest) {
@@ -47,17 +47,20 @@ export async function POST(req: NextRequest) {
 
     const key = cleanMerchant || merchant;
     const overrides = loadOverrides();
+    if (!overrides[userId]) {
+      overrides[userId] = {};
+    }
 
-    overrides[key] = {
+    overrides[userId][key] = {
       cleanMerchant: key,
-      locationName: locationName || address || `${suburb || city}, South Africa`,
-      address: address || locationName,
+      locationName: locationName || address || merchant,
+      address: address || "",
       lat: Number(lat),
       lng: Number(lng),
       suburb: suburb || "",
-      city: city || "Springs",
-      region: region || "Springs & Bakerton",
-      category: category || "Groceries & Household",
+      city: city || "",
+      region: region || "",
+      category: category || "",
       updatedAt: new Date().toISOString(),
     };
 
@@ -66,15 +69,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Location for "${key}" saved successfully.`,
-      override: overrides[key],
+      override: overrides[userId][key],
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to save location override" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
+    const userId = await getEffectiveUserId(req);
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const merchant = searchParams.get("merchant");
 
@@ -83,7 +89,9 @@ export async function DELETE(req: Request) {
     }
 
     const overrides = loadOverrides();
-    delete overrides[merchant];
+    if (overrides[userId]) {
+      delete overrides[userId][merchant];
+    }
     saveOverrides(overrides);
 
     return NextResponse.json({ success: true, message: `Override for "${merchant}" removed.` });

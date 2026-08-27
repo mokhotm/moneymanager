@@ -97,6 +97,11 @@ export async function executeDocumentSyncPipeline(
     include: { debt: true }
   });
 
+  const currentDocument = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: { relatedEntityId: true },
+  });
+
   const availMatch = rawText.match(/Available\s*Balance[\s:]*R?\s*(-?[0-9.,\s]+)/i);
   const openBalMatch = rawText.match(/STATEMENT\s*OPENING\s*BALANCE[\s:]*(-?[0-9.,\s]+)/i);
 
@@ -384,8 +389,8 @@ export async function executeDocumentSyncPipeline(
   // ─── 7. LINE-ITEM BANK STATEMENT TRANSACTION INGESTION & AUTO-AUDIT ─────────
   if (docType === "BANK_STATEMENT" || docType === "CREDIT_CARD_STATEMENT" || lower.includes("transaction details") || lower.includes("available balance")) {
     const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    
-    // Determine source account context
+
+    // Determine source account context — resolve to CUID for proper MoneyFlow indexing
     let accountName = "Prestige Current Account (XXXX4469)";
     let institution = "Standard Bank";
     let accountType = "CURRENT";
@@ -403,111 +408,297 @@ export async function executeDocumentSyncPipeline(
       accountType = "CREDIT_CARD";
     }
 
+    // Prefer CUID as sourceRef so that MoneyFlow queries (which filter by account IDs) can find these flows
+    const matchedAccount = userAccounts.find((a) => a.id === currentDocument?.relatedEntityId) || userAccounts.find((a) => {
+      const nameMatch = a.name.toLowerCase().includes(accountName.split(" (")[0].toLowerCase());
+      const maskMatch = a.accountNumberMasked && accountName.includes(a.accountNumberMasked.replace(/[^0-9]/g, "").slice(-4));
+      return nameMatch || maskMatch;
+    });
+    if (!matchedAccount) {
+      return {
+        documentId,
+        documentType: docType,
+        accountsUpdated,
+        debtsUpdated,
+        moneyFlowsCreated,
+        leakagesDetected,
+        recommendationsGenerated,
+        summary: "Document processed, but transaction flow ingestion skipped because no matching account was resolved.",
+      };
+    }
+    const accountRef = matchedAccount.id;
+
     const months: Record<string, number> = {
       jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
       jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
     };
 
+    const cashWalletAccount = userAccounts.find((a) => a.type === "CASH_WALLET") || null;
+    const structuredTransactions = Array.isArray((parsedFields as any)?.transactions)
+      ? ((parsedFields as any).transactions as any[])
+      : [];
+
     let totalTelkomPaidInDoc = 0;
+    let usedStructuredTransactions = false;
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const dateMatch = line.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{2,4})\s+(.+)$/);
-      
-      if (dateMatch) {
-        const day = parseInt(dateMatch[1], 10);
-        const monthKey = dateMatch[2].toLowerCase();
-        let year = parseInt(dateMatch[3], 10);
-        if (year < 100) year += 2000;
+    if (structuredTransactions.length > 0) {
+      usedStructuredTransactions = true;
 
-        const month = months[monthKey];
-        if (month !== undefined) {
-          const txDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-          let desc1 = dateMatch[4].trim();
-          let desc2 = "";
-          let amount = 0;
+      const resolveTargetAccount = (description: string) => {
+        const lowerDesc = description.toLowerCase();
+        return userAccounts.find((a) => {
+          if (a.id === accountRef) return false;
+          const digits = (a.accountNumberMasked || "").replace(/[^0-9]/g, "");
+          const last4 = digits.slice(-4);
+          if (last4.length === 4 && lowerDesc.includes(last4)) return true;
 
-          for (let j = i + 1; j <= Math.min(lines.length - 1, i + 5); j++) {
-            const nextLine = lines[j];
-            if (nextLine.match(/^\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4}/)) break;
+          const tokens = a.name.toLowerCase().split(/\s+/).filter((t) => t.length >= 5);
+          return tokens.some((t) => lowerDesc.includes(t));
+        }) || null;
+      };
 
-            const amtMatch = nextLine.match(/^([+-]?\s*[\d,]+\.\d{2})\s+([+-]?\s*[\d,]+\.\d{2})/);
-            if (amtMatch) {
-              amount = parseZARAmount(amtMatch[1]) ?? 0;
-              i = j;
-              break;
-            } else if (!desc2 && nextLine.length > 2 && !nextLine.includes("Page ") && !nextLine.includes("Balance")) {
-              desc2 = nextLine;
-            }
+      for (const tx of structuredTransactions) {
+        const rawAmount = Number(tx?.amount);
+        if (!Number.isFinite(rawAmount) || rawAmount === 0) continue;
+
+        const absAmount = Math.abs(rawAmount);
+        if (absAmount >= 80000) continue;
+
+        const txDateRaw = tx?.date || tx?.transactionDate || tx?.postedAt || tx?.bookingDate;
+        const txDateParsed = txDateRaw ? new Date(txDateRaw) : null;
+        if (!txDateParsed || Number.isNaN(txDateParsed.getTime())) continue;
+
+        const txDate = new Date(Date.UTC(
+          txDateParsed.getUTCFullYear(),
+          txDateParsed.getUTCMonth(),
+          txDateParsed.getUTCDate(),
+          12,
+          0,
+          0,
+          0
+        ));
+
+        const description = String(tx?.description || tx?.merchant || "Statement Transaction").trim();
+        const merchant = String(tx?.merchant || "").trim();
+        const fullDesc = merchant && !description.toLowerCase().includes(merchant.toLowerCase())
+          ? `${description} ${merchant}`.trim()
+          : description;
+        const descLower = fullDesc.toLowerCase();
+
+        const isDebit = typeof tx?.isDebit === "boolean" ? tx.isDebit : rawAmount < 0;
+
+        let flowType: FlowType = FlowType.CASH_SPENDING;
+        let sourceType: "ACCOUNT" | "EXTERNAL" = "ACCOUNT";
+        let destinationType: "ACCOUNT" | "DEBT" | "CASH_WALLET" | "EXTERNAL" = "EXTERNAL";
+        let src = accountRef;
+        let dst = fullDesc;
+
+        const targetAccount = resolveTargetAccount(fullDesc);
+        const targetDebt = targetAccount
+          ? userDebts.find((d) => d.accountId === targetAccount.id) || null
+          : null;
+
+        if (!isDebit) {
+          flowType = FlowType.INCOME;
+          sourceType = "EXTERNAL";
+          destinationType = "ACCOUNT";
+          src = fullDesc;
+          dst = accountRef;
+        } else if (descLower.includes("cash withdrawal") || descLower.includes("instant money") || descLower.includes("autobank")) {
+          flowType = FlowType.CASH_WITHDRAWAL;
+          if (cashWalletAccount) {
+            destinationType = "CASH_WALLET";
+            dst = cashWalletAccount.id;
+          } else {
+            dst = "Physical Cash Wallet";
           }
+        } else if (descLower.includes("transfer") || descLower.includes("ib transfer") || descLower.includes("int acnt trf")) {
+          flowType = FlowType.TRANSFER;
+          if (targetAccount) {
+            destinationType = "ACCOUNT";
+            dst = targetAccount.id;
+          }
+        } else if (
+          descLower.includes("homel") ||
+          descLower.includes("wesbank") ||
+          descLower.includes("loan") ||
+          descLower.includes("rcp") ||
+          descLower.includes("debit order") ||
+          descLower.includes("telkom") ||
+          descLower.includes("school") ||
+          descLower.includes("university") ||
+          descLower.includes("nedbpl")
+        ) {
+          flowType = FlowType.DEBT_PAYMENT;
+          if (targetDebt) {
+            destinationType = "DEBT";
+            dst = targetDebt.id;
+          }
+        } else if (descLower.includes("fee") || descLower.includes("unpaid item") || descLower.includes("interest") || descLower.includes("management fee")) {
+          flowType = FlowType.FEE;
+        }
 
-          if (amount !== 0 && Math.abs(amount) < 80000) {
-            const fullDesc = `${desc1} ${desc2}`.trim();
-            const descLower = fullDesc.toLowerCase();
+        if (descLower.includes("telkom") && isDebit) {
+          totalTelkomPaidInDoc += absAmount;
+        }
 
-            // Track Telkom payments for automated debt reduction
-            if (descLower.includes("telkom") && amount < 0) {
-              totalTelkomPaidInDoc += Math.abs(amount);
-            }
+        const dayStart = new Date(Date.UTC(
+          txDate.getUTCFullYear(),
+          txDate.getUTCMonth(),
+          txDate.getUTCDate(),
+          0,
+          0,
+          0,
+          0
+        ));
+        const dayEnd = new Date(Date.UTC(
+          txDate.getUTCFullYear(),
+          txDate.getUTCMonth(),
+          txDate.getUTCDate(),
+          23,
+          59,
+          59,
+          999
+        ));
 
-            let flowType: FlowType = FlowType.CASH_SPENDING;
-            let src = accountName;
-            let dst = fullDesc;
+        const existingFlow = await prisma.moneyFlow.findFirst({
+          where: {
+            OR: [
+              { sourceRef: src, destinationRef: dst },
+              { sourceRef: accountName, destinationRef: dst },
+              { sourceRef: src, destinationRef: accountName },
+            ],
+            amount: absAmount,
+            createdAt: {
+              gte: dayStart,
+              lte: dayEnd,
+            },
+          },
+        });
 
-            if (amount > 0) {
-              flowType = FlowType.INCOME;
-              src = fullDesc;
-              dst = accountName;
-            } else if (descLower.includes("transfer") || descLower.includes("ib transfer") || descLower.includes("int acnt trf")) {
-              flowType = FlowType.TRANSFER;
-            } else if (
-              descLower.includes("homel") ||
-              descLower.includes("wesbank") ||
-              descLower.includes("loan") ||
-              descLower.includes("rcp") ||
-              descLower.includes("debit order") ||
-              descLower.includes("telkom") ||
-              descLower.includes("school") ||
-              descLower.includes("university") ||
-              descLower.includes("nedbpl")
-            ) {
-              flowType = FlowType.DEBT_PAYMENT;
-            } else if (descLower.includes("cash withdrawal") || descLower.includes("instant money") || descLower.includes("autobank")) {
-              flowType = FlowType.CASH_WITHDRAWAL;
-              dst = "Physical Cash Wallet";
-            } else if (descLower.includes("fee") || descLower.includes("unpaid item") || descLower.includes("interest") || descLower.includes("management fee")) {
-              flowType = FlowType.FEE;
-            }
+        if (!existingFlow) {
+          await prisma.moneyFlow.create({
+            data: {
+              sourceType,
+              sourceRef: src,
+              destinationType,
+              destinationRef: dst,
+              amount: absAmount,
+              currentAmount: absAmount,
+              flowType,
+              status: "ACTIVE",
+              confidence: "CONFIRMED",
+              createdAt: txDate,
+            },
+          });
+          moneyFlowsCreated++;
+        }
+      }
+    }
 
-            // Check if already in DB
-            const existingFlow = await prisma.moneyFlow.findFirst({
-              where: {
-                sourceRef: src,
-                destinationRef: dst,
-                amount: Math.abs(amount),
-                createdAt: {
-                  gte: new Date(Date.UTC(year, month, day, 0, 0, 0)),
-                  lte: new Date(Date.UTC(year, month, day, 23, 59, 59, 999))
-                }
+    if (!usedStructuredTransactions) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const dateMatch = line.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{2,4})\s+(.+)$/);
+
+        if (dateMatch) {
+          const day = parseInt(dateMatch[1], 10);
+          const monthKey = dateMatch[2].toLowerCase();
+          let year = parseInt(dateMatch[3], 10);
+          if (year < 100) year += 2000;
+
+          const month = months[monthKey];
+          if (month !== undefined) {
+            const txDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+            let desc1 = dateMatch[4].trim();
+            let desc2 = "";
+            let amount = 0;
+
+            for (let j = i + 1; j <= Math.min(lines.length - 1, i + 5); j++) {
+              const nextLine = lines[j];
+              if (nextLine.match(/^\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4}/)) break;
+
+              const amtMatch = nextLine.match(/^([+-]?\s*[\d,]+\.\d{2})\s+([+-]?\s*[\d,]+\.\d{2})/);
+              if (amtMatch) {
+                amount = parseZARAmount(amtMatch[1]) ?? 0;
+                i = j;
+                break;
+              } else if (!desc2 && nextLine.length > 2 && !nextLine.includes("Page ") && !nextLine.includes("Balance")) {
+                desc2 = nextLine;
               }
-            });
+            }
 
-            if (!existingFlow) {
-              await prisma.moneyFlow.create({
-                data: {
-                  sourceType: flowType === "INCOME" ? "EXTERNAL" : "ACCOUNT",
-                  sourceRef: src,
-                  destinationType: flowType === "INCOME" ? "ACCOUNT" : "EXTERNAL",
-                  destinationRef: dst,
+            if (amount !== 0 && Math.abs(amount) < 80000) {
+              const fullDesc = `${desc1} ${desc2}`.trim();
+              const descLower = fullDesc.toLowerCase();
+
+              // Track Telkom payments for automated debt reduction
+              if (descLower.includes("telkom") && amount < 0) {
+                totalTelkomPaidInDoc += Math.abs(amount);
+              }
+
+              let flowType: FlowType = FlowType.CASH_SPENDING;
+              let src = accountRef;  // Strict resolved account CUID
+              let dst = fullDesc;
+
+              if (amount > 0) {
+                flowType = FlowType.INCOME;
+                src = fullDesc;
+                dst = accountRef;
+              } else if (descLower.includes("transfer") || descLower.includes("ib transfer") || descLower.includes("int acnt trf")) {
+                flowType = FlowType.TRANSFER;
+              } else if (
+                descLower.includes("homel") ||
+                descLower.includes("wesbank") ||
+                descLower.includes("loan") ||
+                descLower.includes("rcp") ||
+                descLower.includes("debit order") ||
+                descLower.includes("telkom") ||
+                descLower.includes("school") ||
+                descLower.includes("university") ||
+                descLower.includes("nedbpl")
+              ) {
+                flowType = FlowType.DEBT_PAYMENT;
+              } else if (descLower.includes("cash withdrawal") || descLower.includes("instant money") || descLower.includes("autobank")) {
+                flowType = FlowType.CASH_WITHDRAWAL;
+                dst = "Physical Cash Wallet";
+              } else if (descLower.includes("fee") || descLower.includes("unpaid item") || descLower.includes("interest") || descLower.includes("management fee")) {
+                flowType = FlowType.FEE;
+              }
+
+              // Check if already in DB — search by both CUID ref and legacy name ref for idempotency
+              const existingFlow = await prisma.moneyFlow.findFirst({
+                where: {
+                  OR: [
+                    { sourceRef: src, destinationRef: dst },
+                    { sourceRef: accountName, destinationRef: dst },
+                    { sourceRef: src, destinationRef: accountName },
+                  ],
                   amount: Math.abs(amount),
-                  currentAmount: Math.abs(amount),
-                  flowType,
-                  status: "ACTIVE",
-                  confidence: "CONFIRMED",
-                  createdAt: txDate
+                  createdAt: {
+                    gte: new Date(Date.UTC(year, month, day, 0, 0, 0)),
+                    lte: new Date(Date.UTC(year, month, day, 23, 59, 59, 999))
+                  }
                 }
               });
-              moneyFlowsCreated++;
+
+              if (!existingFlow) {
+                await prisma.moneyFlow.create({
+                  data: {
+                    sourceType: flowType === "INCOME" ? "EXTERNAL" : "ACCOUNT",
+                    sourceRef: src,
+                    destinationType: flowType === "INCOME" ? "ACCOUNT" : "EXTERNAL",
+                    destinationRef: dst,
+                    amount: Math.abs(amount),
+                    currentAmount: Math.abs(amount),
+                    flowType,
+                    status: "ACTIVE",
+                    confidence: "CONFIRMED",
+                    createdAt: txDate
+                  }
+                });
+                moneyFlowsCreated++;
+              }
             }
           }
         }
@@ -532,7 +723,38 @@ export async function executeDocumentSyncPipeline(
     }
   }
 
-  const summary = `Sync Complete: ${accountsUpdated.length} account balance(s) verified, ${debtsUpdated.length} debt position(s) updated, ${moneyFlowsCreated} money flow(s) reconciled, and ${recommendationsGenerated} agent action proposal(s) prepared.`;
+  // ─── 4. BUDGET EXECUTION AUDIT ──────────────────────────────────────────────
+  let budgetExecutedCount = 0;
+  try {
+    const { getActiveCycleMonthKey } = await import("@/lib/budgetCycle");
+    const activeMonth = await getActiveCycleMonthKey(userId);
+
+    const userBudgetItems = await prisma.budgetLineItem.findMany({
+      where: { userId, month: activeMonth },
+    });
+    if (userBudgetItems.length > 0) {
+      const { reconcileBudgetItemsForMonth } = await import("@/lib/budgetReconciliation");
+      const budgetReconciliation = await reconcileBudgetItemsForMonth(userId, activeMonth, userBudgetItems);
+      budgetExecutedCount = budgetReconciliation.summary.executedCount;
+
+      await prisma.agentRecommendation.create({
+        data: {
+          agent: "DOCUMENT_AGENT",
+          title: `Statement Reconciled: ${budgetExecutedCount}/${budgetReconciliation.summary.totalItemsCount} Budget Items Tracked`,
+          description: `Statement #${documentId} reconciled against active budget cycle (${budgetReconciliation.summary.cycleRangeFormatted}). Total executed obligations: R ${budgetReconciliation.summary.totalExecuted.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} (${budgetReconciliation.summary.executionPercentage.toFixed(1)}% cleared).`,
+          rationale: "Automated statement clearance matching ensures zero leakage between planned budget and actual banking transactions.",
+          payload: { documentId, reconciliationSummary: budgetReconciliation.summary },
+          status: "APPROVED",
+          reviewedAt: new Date(),
+        },
+      });
+      recommendationsGenerated++;
+    }
+  } catch (err) {
+    console.error("Budget reconciliation sync error:", err);
+  }
+
+  const summary = `Sync Complete: ${accountsUpdated.length} account balance(s) verified, ${debtsUpdated.length} debt position(s) updated, ${moneyFlowsCreated} money flow(s) reconciled, ${budgetExecutedCount} budget line items tracked, and ${recommendationsGenerated} agent action proposal(s) prepared.`;
 
   return {
     documentId,

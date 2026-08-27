@@ -567,13 +567,13 @@ export function resolveSpendingLocations(
         matchedRule = {
           pattern: new RegExp(overrideKey, "i"),
           cleanMerchant: overrideVal.cleanMerchant || overrideKey,
-          locationName: overrideVal.locationName || overrideVal.address || "Custom Geocoded Location",
-          city: overrideVal.city || "Springs",
+          locationName: overrideVal.locationName || overrideVal.address || overrideKey,
+          city: overrideVal.city || "",
           suburb: overrideVal.suburb || "",
-          region: overrideVal.region || "Springs & Bakerton",
+          region: overrideVal.region || "",
           lat: Number(overrideVal.lat),
           lng: Number(overrideVal.lng),
-          category: overrideVal.category || "Groceries & Household",
+          category: overrideVal.category || "",
           locationType: "PHYSICAL_STORE",
         };
         break;
@@ -714,7 +714,7 @@ export function resolveSpendingLocations(
   for (const loc of physicalLocations) {
     regionTotals[loc.region] = (regionTotals[loc.region] || 0) + loc.totalAmount;
   }
-  const topHub = Object.entries(regionTotals).sort((a, b) => b[1] - a[1])[0]?.[0] || "Springs & Bakerton";
+  const topHub = Object.entries(regionTotals).sort((a, b) => b[1] - a[1])[0]?.[0] || "UNMAPPED_REGION";
 
   const availableRegions = ["ALL", ...Array.from(new Set(physicalLocations.map((l) => l.region)))];
   const availableCategories = ["ALL", ...Array.from(new Set(physicalLocations.map((l) => l.category)))];

@@ -22,6 +22,15 @@ import {
   PieChart,
   Lock,
   LogIn,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  ShieldCheck,
+  AlertTriangle,
+  FileText,
+  Filter,
+  Activity,
+  ArrowUpRight,
 } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -42,7 +51,7 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 const CATEGORY_ACCENTS: Record<string, string> = {
-  FIXED_HOUSEHOLD_OBLIGATIONS: "#3b82f6",
+  FIXED_HOUSEHOLD_OBLIGATIONS: "#38bdf8",
   DEBT_ACCELERATION_PLAN: "#f59e0b",
   GOAL_CONTRIBUTIONS: "#10b981",
   SAVINGS_GOALS: "#10b981",
@@ -58,26 +67,53 @@ const CATEGORIES = [
   "ONE_OFF_UNEXPECTED",
 ];
 
+interface BudgetItemExecution {
+  isExecuted: boolean;
+  executionStatus: "CLEARED" | "BOUNCED" | "PENDING" | "PARTIAL";
+  statusLabel: string;
+  executedAmount: number;
+  executedDate: string | null;
+  executionRef: string | null;
+  statementDocName: string | null;
+  variance: number;
+  rawMatchedDescription: string | null;
+}
+
+interface BudgetReconciliationSummary {
+  totalBudgeted: number;
+  totalExecuted: number;
+  totalPending: number;
+  totalBounced: number;
+  executedCount: number;
+  pendingCount: number;
+  bouncedCount: number;
+  totalItemsCount: number;
+  executionPercentage: number;
+  cycleRangeFormatted: string;
+}
+
 interface LineItem {
   id: string;
   category: string;
   label: string;
-  amount: string;
+  amount: string | number;
   confidence: string;
   note: string | null;
   sourceRef: string | null;
   isComputed: boolean;
+  execution?: BudgetItemExecution;
 }
 
 interface BudgetData {
   month: string;
   items: LineItem[];
+  summary?: BudgetReconciliationSummary;
 }
 
 interface Income {
   id: string;
   sourceName: string;
-  recurringAmount: string;
+  recurringAmount: string | number;
   recurringAmountConfidence: string;
 }
 
@@ -98,6 +134,7 @@ export default function BudgetPage() {
   const [cycle, setCycle] = useState<PayCycleInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(currentMonthKey());
+  const [executionFilter, setExecutionFilter] = useState<"ALL" | "CLEARED" | "PENDING" | "BOUNCED">("ALL");
   const [monthResolved, setMonthResolved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -111,26 +148,21 @@ export default function BudgetPage() {
   });
 
   const loadData = async (overrideMonth?: string) => {
-    const selectedMonth = overrideMonth ?? month;
-    let activeMonth = selectedMonth;
+    const activeMonth = overrideMonth ?? month;
 
-    const cyc = await fetch("/api/budget/cycle").then((r) => r.json()).catch(() => null);
-    if (cyc?.success && cyc.cycle) {
-      setCycle(cyc.cycle);
-      if (!monthResolved && cyc.cycle.cycleMonthKey) {
-        activeMonth = cyc.cycle.cycleMonthKey;
-        setMonth(activeMonth);
-        setMonthResolved(true);
-      }
-    }
-
-    const [b, inc] = await Promise.all([
+    const [cyc, b, inc] = await Promise.all([
+      fetch(`/api/budget/cycle?month=${activeMonth}`).then((r) => r.json()).catch(() => null),
       fetch(`/api/budget?month=${activeMonth}`).then((r) => {
         if (r.status === 401) return { error: "Unauthorized" };
         return r.json();
       }),
-      fetch("/api/income").then((r) => r.json()),
+      fetch(`/api/income?month=${activeMonth}`).then((r) => r.json()),
     ]);
+
+    if (cyc?.success && cyc.cycle) {
+      setCycle(cyc.cycle);
+    }
+
     setData(b);
     setIncome(Array.isArray(inc) ? inc : []);
     setLoading(false);
@@ -144,7 +176,7 @@ export default function BudgetPage() {
     const res = await fetch("/api/budget/cycle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: newMode }),
+      body: JSON.stringify({ mode: newMode, month }),
     });
     const result = await res.json();
     if (result.success) {
@@ -311,15 +343,89 @@ export default function BudgetPage() {
           <p className="page-subtitle">Arbitrate recurring obligations, discretionary spend, and surplus allocation</p>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            background: "rgba(15, 23, 42, 0.8)",
+            padding: "4px 8px",
+            borderRadius: "14px",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            boxShadow: "0 4px 14px rgba(0, 0, 0, 0.3)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              const [yStr, mStr] = month.split("-");
+              const y = parseInt(yStr, 10);
+              const m = parseInt(mStr, 10) - 1;
+              const d = new Date(Date.UTC(y, m - 1, 1));
+              const prev = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+              setMonth(prev);
+            }}
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              color: "#94a3b8",
+              cursor: "pointer",
+              padding: "6px 8px",
+              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.15s ease",
+            }}
+            title="Previous Month"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="form-input"
-            style={{ width: "auto", fontSize: "13px", fontWeight: 700, padding: "8px 14px" }}
+            style={{
+              width: "auto",
+              fontSize: "13px",
+              fontWeight: 800,
+              padding: "6px 12px",
+              background: "transparent",
+              border: "none",
+              color: "#f8fafc",
+              cursor: "pointer",
+            }}
             id="budget-month-picker"
           />
+
+          <button
+            type="button"
+            onClick={() => {
+              const [yStr, mStr] = month.split("-");
+              const y = parseInt(yStr, 10);
+              const m = parseInt(mStr, 10) - 1;
+              const d = new Date(Date.UTC(y, m + 1, 1));
+              const next = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+              setMonth(next);
+            }}
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              color: "#94a3b8",
+              cursor: "pointer",
+              padding: "6px 8px",
+              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.15s ease",
+            }}
+            title="Next Month"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
@@ -480,7 +586,141 @@ export default function BudgetPage() {
               {hasOneOff ? `After ${formatZAR(totalOneOff)} one-off items` : "No one-off items recorded"}
             </div>
           </div>
-        </div>
+        </div>        {/* 🌟 VECTOR: BANK STATEMENT EXECUTION & AUDIT RADAR */}
+        {data?.summary && (
+          <div
+            className="card mb-6"
+            style={{
+              padding: "20px 24px",
+              background: "linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(13, 20, 36, 0.95) 100%)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "12px",
+                    background: "rgba(16, 185, 129, 0.15)",
+                    border: "1px solid rgba(16, 185, 129, 0.35)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#10b981",
+                  }}
+                >
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 800, color: "#f8fafc" }}>
+                      Bank Statement Execution Tracker
+                    </span>
+                    <span className="badge confirmed" style={{ fontSize: "11px", fontWeight: 800 }}>
+                      <Check size={11} /> {data.summary.executedCount}/{data.summary.totalItemsCount} Reconciled ({data.summary.executionPercentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
+                    Reconciled against verified bank statements ({data.summary.cycleRangeFormatted}) · Cleared: {formatZAR(data.summary.totalExecuted)} of {formatZAR(data.summary.totalBudgeted)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Execution Filter Pills */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  background: "rgba(7, 11, 20, 0.9)",
+                  padding: "4px",
+                  borderRadius: "99px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  gap: "4px",
+                }}
+              >
+                <button
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "99px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "none",
+                    background: executionFilter === "ALL" ? "rgba(255, 255, 255, 0.15)" : "transparent",
+                    color: executionFilter === "ALL" ? "#ffffff" : "#94a3b8",
+                  }}
+                  onClick={() => setExecutionFilter("ALL")}
+                >
+                  All Items ({items.length})
+                </button>
+                <button
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "99px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "none",
+                    background: executionFilter === "CLEARED" ? "rgba(16, 185, 129, 0.25)" : "transparent",
+                    color: executionFilter === "CLEARED" ? "#34d399" : "#94a3b8",
+                  }}
+                  onClick={() => setExecutionFilter("CLEARED")}
+                >
+                  ✓ Cleared ({data.summary.executedCount})
+                </button>
+                <button
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "99px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "none",
+                    background: executionFilter === "PENDING" ? "rgba(148, 163, 184, 0.2)" : "transparent",
+                    color: executionFilter === "PENDING" ? "#f8fafc" : "#94a3b8",
+                  }}
+                  onClick={() => setExecutionFilter("PENDING")}
+                >
+                  ⏳ Pending ({data.summary.pendingCount})
+                </button>
+                {data.summary.bouncedCount > 0 && (
+                  <button
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "99px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: "none",
+                      background: executionFilter === "BOUNCED" ? "rgba(244, 63, 94, 0.25)" : "transparent",
+                      color: executionFilter === "BOUNCED" ? "#f87171" : "#94a3b8",
+                    }}
+                    onClick={() => setExecutionFilter("BOUNCED")}
+                  >
+                    ⚠️ Bounced ({data.summary.bouncedCount})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Reconciliation Progress Meter */}
+            <div style={{ height: "6px", borderRadius: "99px", background: "rgba(255, 255, 255, 0.08)", overflow: "hidden", position: "relative" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.min(data.summary.executionPercentage, 100)}%`,
+                  background: "linear-gradient(90deg, #10b981 0%, #34d399 100%)",
+                  borderRadius: "99px",
+                  transition: "width 0.4s ease",
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Category Budget Breakdown Cards */}
         {loading ? (
@@ -491,8 +731,18 @@ export default function BudgetPage() {
           </div>
         ) : (
           CATEGORIES.map((cat) => {
-            const catItems = items.filter((i) => i.category === cat || (cat === "GOAL_CONTRIBUTIONS" && i.category === "SAVINGS_GOALS"));
-            const catTotal = catItems.reduce((s, i) => s + Number(i.amount), 0);
+            const rawCatItems = items.filter((i) => i.category === cat || (cat === "GOAL_CONTRIBUTIONS" && i.category === "SAVINGS_GOALS"));
+            
+            // Apply statement execution filter
+            const catItems = rawCatItems.filter((i) => {
+              if (executionFilter === "ALL") return true;
+              if (executionFilter === "CLEARED") return i.execution?.executionStatus === "CLEARED" || i.execution?.executionStatus === "PARTIAL";
+              if (executionFilter === "PENDING") return !i.execution || i.execution?.executionStatus === "PENDING";
+              if (executionFilter === "BOUNCED") return i.execution?.executionStatus === "BOUNCED";
+              return true;
+            });
+
+            const catTotal = rawCatItems.reduce((s, i) => s + Number(i.amount), 0);
             const percentOfIncome = totalIncome > 0 ? ((catTotal / totalIncome) * 100).toFixed(1) : "0.0";
             const accentColor = CATEGORY_ACCENTS[cat] ?? "#f59e0b";
             const IconComp = CATEGORY_ICONS[cat] ?? Home;
@@ -522,7 +772,7 @@ export default function BudgetPage() {
                         {CATEGORY_LABELS[cat] ?? cat}
                       </div>
                       <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
-                        {percentOfIncome}% of total monthly take-home income ({catItems.length} items)
+                        {percentOfIncome}% of total monthly take-home income ({rawCatItems.length} items)
                       </div>
                     </div>
                   </div>
@@ -562,108 +812,162 @@ export default function BudgetPage() {
                 {/* Line Items List */}
                 {catItems.length === 0 ? (
                   <div style={{ fontSize: "12px", color: "#64748b", padding: "8px 0" }}>
-                    No items recorded for this category yet. Click + Add Item to record line items.
+                    {executionFilter === "ALL" ? "No items recorded for this category yet. Click + Add Item to record line items." : `No items matching '${executionFilter}' status in this category.`}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {catItems.map((item) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "14px 18px",
-                          borderRadius: "14px",
-                          background: "rgba(10, 16, 30, 0.6)",
-                          border: "1px solid rgba(255, 255, 255, 0.08)",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        <div style={{ flex: 1, marginRight: "16px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                            <span style={{ fontWeight: 700, color: "#f8fafc", fontSize: "14px" }}>{item.label}</span>
-                            {item.isComputed && (
-                              <span className="badge blue" style={{ fontSize: "10px" }}>
-                                computed
-                              </span>
+                    {catItems.map((item) => {
+                      const isCleared = item.execution?.executionStatus === "CLEARED";
+                      const isPartial = item.execution?.executionStatus === "PARTIAL";
+                      const isBounced = item.execution?.executionStatus === "BOUNCED";
+
+                      let rowBorder = "1px solid rgba(255, 255, 255, 0.08)";
+                      let rowBg = "rgba(10, 16, 30, 0.6)";
+
+                      if (isCleared) {
+                        rowBorder = "1px solid rgba(16, 185, 129, 0.35)";
+                        rowBg = "linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(10, 16, 30, 0.75) 100%)";
+                      } else if (isPartial) {
+                        rowBorder = "1px solid rgba(251, 191, 36, 0.35)";
+                        rowBg = "linear-gradient(135deg, rgba(251, 191, 36, 0.06) 0%, rgba(10, 16, 30, 0.75) 100%)";
+                      } else if (isBounced) {
+                        rowBorder = "1px solid rgba(244, 63, 94, 0.4)";
+                        rowBg = "linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, rgba(10, 16, 30, 0.75) 100%)";
+                      }
+
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "14px 18px",
+                            borderRadius: "14px",
+                            background: rowBg,
+                            border: rowBorder,
+                            transition: "all 0.2s ease",
+                          }}
+                        >
+                          <div style={{ flex: 1, marginRight: "16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 700, color: "#f8fafc", fontSize: "14px" }}>{item.label}</span>
+
+                              {/* Bank Statement Execution Highlighting Badge */}
+                              {isCleared && (
+                                <span className="badge confirmed" style={{ fontSize: "11px", fontWeight: 800, background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.4)", color: "#34d399", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                  <CheckCircle2 size={12} /> {item.execution?.statusLabel}
+                                </span>
+                              )}
+                              {isPartial && (
+                                <span className="badge gold" style={{ fontSize: "11px", fontWeight: 800, background: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.4)", color: "#fbbf24", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                  <AlertCircle size={12} /> {item.execution?.statusLabel}
+                                </span>
+                              )}
+                              {isBounced && (
+                                <span className="badge danger" style={{ fontSize: "11px", fontWeight: 800, background: "rgba(244, 63, 94, 0.15)", border: "1px solid rgba(244, 63, 94, 0.4)", color: "#f87171", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                  <AlertTriangle size={12} /> {item.execution?.statusLabel}
+                                </span>
+                              )}
+                              {!isCleared && !isPartial && !isBounced && (
+                                <span style={{ fontSize: "10px", background: "rgba(148, 163, 184, 0.1)", border: "1px solid rgba(148, 163, 184, 0.2)", color: "#94a3b8", padding: "2px 7px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                  <Clock size={11} /> Pending Statement Clearance
+                                </span>
+                              )}
+
+                              {item.isComputed && (
+                                <span className="badge blue" style={{ fontSize: "10px" }}>
+                                  computed
+                                </span>
+                              )}
+                              {item.confidence === "ESTIMATED" && !isCleared && (
+                                <span className="badge gold" style={{ fontSize: "10px" }}>
+                                  estimate
+                                </span>
+                              )}
+                              {item.sourceRef && (
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    fontFamily: "var(--font-mono, monospace)",
+                                    color: "#64748b",
+                                    background: "rgba(255, 255, 255, 0.03)",
+                                    border: "1px solid rgba(255, 255, 255, 0.06)",
+                                    padding: "1px 6px",
+                                    borderRadius: "4px",
+                                  }}
+                                >
+                                  {item.sourceRef}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Statement Audit Citation Trace */}
+                            {item.execution?.statementDocName && (
+                              <div style={{ fontSize: "11px", color: isBounced ? "#f87171" : "#10b981", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px", fontFamily: "var(--font-mono)" }}>
+                                <FileText size={12} /> {item.execution.statementDocName} · {item.execution.executionRef}
+                              </div>
                             )}
-                            {item.confidence === "ESTIMATED" && (
-                              <span className="badge gold" style={{ fontSize: "10px" }}>
-                                estimate
-                              </span>
-                            )}
-                            {item.confidence === "CONFIRMED" && (
-                              <span className="badge confirmed" style={{ fontSize: "10px" }}>
-                                confirmed
-                              </span>
-                            )}
-                            {item.sourceRef && (
-                              <span
-                                style={{
-                                  fontSize: "10px",
-                                  fontFamily: "var(--font-mono, monospace)",
-                                  color: "#64748b",
-                                  background: "rgba(255, 255, 255, 0.03)",
-                                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                                  padding: "1px 6px",
-                                  borderRadius: "4px",
-                                }}
-                              >
-                                {item.sourceRef}
-                              </span>
+
+                            {item.note && (
+                              <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px", lineHeight: "1.4" }}>
+                                {item.note}
+                              </div>
                             )}
                           </div>
-                          {item.note && (
-                            <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px", lineHeight: "1.4" }}>
-                              {item.note}
-                            </div>
-                          )}
-                        </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexShrink: 0 }}>
-                          <span style={{ fontSize: "16px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "#f8fafc" }}>
-                            {formatZAR(Number(item.amount))}
-                          </span>
-                          {!item.isComputed && (
-                            <div style={{ display: "flex", gap: "6px" }}>
-                              <button
-                                style={{
-                                  padding: "4px 10px",
-                                  borderRadius: "8px",
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                                  background: "rgba(255, 255, 255, 0.05)",
-                                  color: "#f8fafc",
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => openEdit(item)}
-                                id={`edit-budget-${item.id}`}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                style={{
-                                  padding: "4px 10px",
-                                  borderRadius: "8px",
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  border: "1px solid rgba(244, 63, 94, 0.3)",
-                                  background: "rgba(244, 63, 94, 0.1)",
-                                  color: "#f43f5e",
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => handleDelete(item.id)}
-                                id={`delete-budget-${item.id}`}
-                              >
-                                Delete
-                              </button>
+                          <div style={{ display: "flex", alignItems: "center", gap: "16px", flexShrink: 0 }}>
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: "16px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: isCleared ? "#34d399" : "#f8fafc" }}>
+                                {formatZAR(Number(item.amount))}
+                              </div>
+                              {isCleared && (
+                                <div style={{ fontSize: "10px", color: "#10b981", fontWeight: 700 }}>
+                                  100% Cleared
+                                </div>
+                              )}
                             </div>
-                          )}
+
+                            {!item.isComputed && (
+                              <div style={{ display: "flex", gap: "6px" }}>
+                                <button
+                                  style={{
+                                    padding: "4px 10px",
+                                    borderRadius: "8px",
+                                    fontSize: "11px",
+                                    fontWeight: 600,
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    background: "rgba(255, 255, 255, 0.05)",
+                                    color: "#f8fafc",
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={() => openEdit(item)}
+                                  id={`edit-budget-${item.id}`}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  style={{
+                                    padding: "4px 10px",
+                                    borderRadius: "8px",
+                                    fontSize: "11px",
+                                    fontWeight: 600,
+                                    border: "1px solid rgba(244, 63, 94, 0.3)",
+                                    background: "rgba(244, 63, 94, 0.1)",
+                                    color: "#f43f5e",
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={() => handleDelete(item.id)}
+                                  id={`delete-budget-${item.id}`}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

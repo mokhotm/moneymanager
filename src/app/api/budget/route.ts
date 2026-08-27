@@ -3,13 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { currentMonthKey } from "@/lib/formatters";
 import { getEffectiveUserId } from "@/lib/session";
 import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
-
+import { reconcileBudgetItemsForMonth } from "@/lib/budgetReconciliation";
 
 export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
-      return NextResponse.json({ month: currentMonthKey(), items: [] });
+      return NextResponse.json({ month: currentMonthKey(), items: [], summary: null });
     }
 
     const { searchParams } = new URL(req.url);
@@ -60,8 +60,16 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ month, items });
-  } catch {
+    // Reconcile budget line items against cleared statement transactions
+    const reconciliation = await reconcileBudgetItemsForMonth(userId, month, items);
+
+    return NextResponse.json({
+      month,
+      items: reconciliation.items,
+      summary: reconciliation.summary,
+    });
+  } catch (error) {
+    console.error("Failed to fetch budget:", error);
     return NextResponse.json({ error: "Failed to fetch budget" }, { status: 500 });
   }
 }

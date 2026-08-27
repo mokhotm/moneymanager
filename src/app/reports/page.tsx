@@ -147,7 +147,7 @@ import { ForensicAuditReport } from "@/components/ForensicAuditReport";
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<"FORENSIC_AUDIT" | "AUDIT_REPORT" | "OVERVIEW" | "VARIANCE" | "LEAKAGE" | "HABITS">("FORENSIC_AUDIT");
   const [timeframe, setTimeframe] = useState<string>("MONTHLY_CYCLE");
-  const [selectedMonth, setSelectedMonth] = useState<string>("2026-08");
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -196,21 +196,7 @@ export default function ReportsPage() {
     }));
   };
 
-  const summary = data?.summary || {
-    totalIncome: 0,
-    salarySourceLabel: "No confirmed income",
-    totalPlannedOutflows: 0,
-    totalActualOutflows: 0,
-    debtsOutflow: 0,
-    livingOutflow: 0,
-    netSurplus: 0,
-    savingsRatePercentage: 0,
-    totalLeakageMonthly: 0,
-    annualizedLeakage: 0,
-    phantomCashMonthly: 0,
-    totalVerifiedAccounts: 0,
-    reconciliationScore: 100,
-  };
+  const summary = data?.summary;
 
   const leakageItems: LeakageItem[] = data?.leakageItems || [];
   const categoryVariance: CategoryVariance[] = data?.categoryVariance || [];
@@ -221,70 +207,30 @@ export default function ReportsPage() {
   const homeLoanCrossAccountEvents: CrossAccountEvent[] = data?.auditData?.homeLoanCrossAccountEvents || [];
   const ingestedDocs: IngestedDoc[] = data?.auditData?.documents || [];
 
+  if (!loading && !summary) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+        No report data available for the selected period.
+      </div>
+    );
+  }
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-base, #070b14)", color: "#f8fafc", padding: "32px 40px", boxSizing: "border-box", width: "100%", overflowX: "hidden" }}>
+    <>
       {/* ─── Page Header ─── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "20px",
-          marginBottom: "28px",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          paddingBottom: "24px",
-        }}
-      >
-        <div style={{ minWidth: "280px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "14px",
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%)",
-                border: "1px solid rgba(245, 158, 11, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#f59e0b",
-                flexShrink: 0,
-              }}
-            >
-              <BarChart3 size={24} />
-            </div>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em", margin: 0 }}>
-                  Financial Intelligence & Monthly Audit Hub
-                </h1>
-                <span
-                  style={{
-                    background: "rgba(16, 185, 129, 0.15)",
-                    color: "#10b981",
-                    border: "1px solid rgba(16, 185, 129, 0.3)",
-                    padding: "3px 10px",
-                    borderRadius: "99px",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  <ShieldCheck size={12} /> 100% Statement Certified
-                </span>
-              </div>
-              <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px", margin: 0 }}>
-                Forensic cross-account audit, bank ground truth reconciliation, leakage detection & automated verification
-              </p>
-            </div>
-          </div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            Financial Intelligence &amp; Monthly Audit Hub
+            <span className="badge badge-gold text-xs font-mono">100% Statement Certified</span>
+          </h1>
+          <p className="page-subtitle">
+            Forensic cross-account audit, bank ground truth reconciliation, leakage detection &amp; automated verification
+          </p>
         </div>
 
         {/* Right Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <div className="flex items-center gap-3 flex-wrap">
           <div
             style={{
               display: "flex",
@@ -343,45 +289,22 @@ export default function ReportsPage() {
           <button
             onClick={handleTriggerReSync}
             disabled={syncing}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "9px 16px",
-              background: "linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%)",
-              border: "1px solid rgba(245, 158, 11, 0.35)",
-              borderRadius: "12px",
-              color: "#fbbf24",
-              fontSize: "13px",
-              fontWeight: 700,
-              cursor: syncing ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-            }}
+            className="btn btn-secondary"
           >
             <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
-            {syncing ? "Auditing Statements..." : "Run Live Audit Sync"}
+            <span>{syncing ? "Auditing Statements..." : "Run Live Audit Sync"}</span>
           </button>
 
           <button
             onClick={() => window.print()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "9px 16px",
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              borderRadius: "12px",
-              color: "#f8fafc",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="btn btn-secondary"
           >
-            <Printer size={15} /> Export Audit Report
+            <Printer size={15} /> <span>Export Audit Report</span>
           </button>
         </div>
       </div>
+
+      <div className="page-body">
 
       {/* Sync Toast Feedback */}
       {syncMessage && (
@@ -1293,6 +1216,7 @@ export default function ReportsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

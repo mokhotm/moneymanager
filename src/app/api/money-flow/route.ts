@@ -6,6 +6,7 @@ import {
   buildMoneyLineage,
   MoneyFlowItem,
 } from "@/services/moneyFlowService";
+import { buildUserFlowWhere } from "@/lib/moneyFlowRefs";
 import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 
 export async function GET(request: NextRequest) {
@@ -19,7 +20,8 @@ export async function GET(request: NextRequest) {
     const flowId = searchParams.get("flowId");
     const accountRef = searchParams.get("accountRef");
     const payPeriod = searchParams.get("payPeriod");
-    const periodType = searchParams.get("periodType") || "SALARY";
+    const periodTypeParam = searchParams.get("periodType");
+    const periodType = periodTypeParam === "CALENDAR" ? "CALENDAR" : "SALARY";
 
     // Fetch reference entities (accounts & debts)
     const [accounts, debts] = await Promise.all([
@@ -30,19 +32,15 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
+    const userFlowWhere = buildUserFlowWhere(accounts, debts);
 
-    const dbFlows = userEntityIds.length === 0
+    const dbFlows = userFlowWhere.OR.length === 0
       ? []
       : await prisma.moneyFlow.findMany({
           where: {
-            OR: [
-              { sourceRef: { in: userEntityIds } },
-              { destinationRef: { in: userEntityIds } },
-            ],
+            ...userFlowWhere,
           },
           orderBy: { createdAt: "desc" },
-          take: 350,
         });
 
     const accountMap = new Map(accounts.map((a) => [a.id, a.name]));

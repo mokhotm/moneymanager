@@ -29,6 +29,8 @@ import {
   ChevronDown,
   Globe,
   Flame,
+  Edit2,
+  X,
 } from "lucide-react";
 
 interface ProviderConfig {
@@ -469,6 +471,91 @@ export default function SettingsPage() {
     modelName: "gemini-3.7-flash",
   });
 
+  // Edit LLM Modal State
+  const [editingConfig, setEditingConfig] = useState<ProviderConfig | null>(null);
+  const [editForm, setEditForm] = useState({
+    id: "",
+    provider: "GOOGLE",
+    displayName: "",
+    apiKey: "",
+    baseUrl: "",
+    modelName: "",
+    status: "ACTIVE",
+  });
+  const [isEditCustomModelInput, setIsEditCustomModelInput] = useState(false);
+  const [isUpdatingKey, setIsUpdatingKey] = useState(false);
+  const [editModalError, setEditModalError] = useState<string | null>(null);
+  const [editSelectedPresetId, setEditSelectedPresetId] = useState<string>("GOOGLE");
+
+  const handleOpenEditModal = (config: ProviderConfig) => {
+    setEditingConfig(config);
+    const matchedPreset =
+      LLM_PRESETS.find((p) => p.models.some((m) => m.id === config.modelName)) ||
+      LLM_PRESETS.find((p) => p.dbProvider === config.provider) ||
+      LLM_PRESETS[0];
+
+    setEditSelectedPresetId(matchedPreset.id);
+    const hasPresetModel = matchedPreset.models.some((m) => m.id === config.modelName);
+    setIsEditCustomModelInput(!hasPresetModel);
+    setEditModalError(null);
+
+    setEditForm({
+      id: config.id,
+      provider: config.provider,
+      displayName: config.displayName,
+      apiKey: "", // Leave blank to keep existing encrypted key
+      baseUrl: config.baseUrl || "",
+      modelName: config.modelName,
+      status: config.status,
+    });
+  };
+
+  const handleUpdateConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingKey(true);
+    setEditModalError(null);
+
+    try {
+      const payload: any = {
+        id: editForm.id,
+        provider: editForm.provider,
+        displayName: editForm.displayName,
+        modelName: editForm.modelName,
+        baseUrl: editForm.baseUrl ? editForm.baseUrl.trim() : null,
+        status: editForm.status,
+      };
+
+      if (editForm.apiKey && editForm.apiKey.trim().length > 0) {
+        payload.apiKey = editForm.apiKey.trim();
+      }
+
+      const res = await fetch("/api/settings/llm-providers", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEditModalError(data.message || data.error || `Failed to update key (HTTP ${res.status})`);
+        return;
+      }
+
+      setEditingConfig(null);
+      setTestFeedback({
+        id: data.id || "updated-key",
+        ok: data.status === "ACTIVE" || data?.validation?.valid === true,
+        message: `LLM Provider Key "${data.displayName || editForm.displayName}" updated successfully!`,
+      });
+      await loadSettings();
+    } catch (err: any) {
+      setEditModalError(err.message || "Network error while updating key.");
+    } finally {
+      setIsUpdatingKey(false);
+    }
+  };
+
   const loadSettings = async () => {
     try {
       // 1. Check Auth Status
@@ -585,6 +672,28 @@ export default function SettingsPage() {
     }
   };
 
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleSyncEnvKeys = async () => {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/settings/llm-providers/sync", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMsg({ ok: true, text: data.message || "Environment LLM keys synced to vault!" });
+        loadSettings();
+      } else {
+        setSyncMsg({ ok: false, text: data.error || "Failed to sync environment keys." });
+      }
+    } catch (e: any) {
+      setSyncMsg({ ok: false, text: e.message || "Sync failed" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleAssignModel = async (agent: string, llmProviderConfigId: string) => {
     await fetch("/api/settings/agent-models", {
       method: "POST",
@@ -631,63 +740,67 @@ export default function SettingsPage() {
   const currentPreset = LLM_PRESETS.find((p) => p.id === selectedPresetId) || LLM_PRESETS[0];
 
   return (
-    <div className="page-container" style={{ padding: "32px 40px", maxWidth: "1320px", margin: "0 auto" }}>
+    <>
       {/* Page Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
+      <div className="page-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-            <div
-              style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "12px",
-                background: "rgba(245, 158, 11, 0.15)",
-                border: "1px solid rgba(245, 158, 11, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fbbf24",
-              }}
-            >
-              <Key size={22} />
-            </div>
-            <div>
-              <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#f8fafc", margin: 0, letterSpacing: "-0.5px" }}>
-                Settings &amp; Multi-LLM Vault
-              </h1>
-              <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0, marginTop: "2px" }}>
-                Configure Gemini 3.7, Claude Opus 4.8/4.6, GPT-5.6, Qwen 3, GLM-4, Kimi-K3, DeepSeek V4, and Grok-3 via clean dropdown selectors.
-              </p>
-            </div>
-          </div>
+          <h1 className="page-title flex items-center gap-2">
+            Settings &amp; Multi-LLM Vault
+            <span className="badge badge-gold text-xs font-mono">v4.0 Obsidian</span>
+          </h1>
+          <p className="page-subtitle">
+            Configure Gemini 3.7, Claude Opus 4.8/4.6, GPT-5.6, Qwen 3, GLM-4, Kimi-K3, DeepSeek V4, and Grok-3 via clean dropdown selectors.
+          </p>
         </div>
 
         {isAuthenticated && (
-          <button
-            onClick={() => {
-              handleSelectPreset("GOOGLE");
-              setModalError(null);
-              setShowAddModal(true);
-            }}
-            style={{
-              background: "linear-gradient(135deg, #f59e0b, #d97706)",
-              color: "#0f172a",
-              border: "none",
-              padding: "10px 18px",
-              borderRadius: "12px",
-              fontWeight: "800",
-              fontSize: "13px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              boxShadow: "0 4px 14px rgba(245, 158, 11, 0.25)",
-            }}
-          >
-            <Plus size={16} /> + Add LLM Provider Key
-          </button>
+          <div className="flex gap-3 items-center flex-wrap">
+            <button
+              onClick={handleSyncEnvKeys}
+              disabled={syncing}
+              className="btn btn-secondary"
+            >
+              <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+              <span>{syncing ? "Syncing .env..." : "Sync .env Keys"}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                handleSelectPreset("GOOGLE");
+                setModalError(null);
+                setShowAddModal(true);
+              }}
+              className="btn btn-primary"
+            >
+              <Plus size={16} />
+              <span>+ Add LLM Provider Key</span>
+            </button>
+          </div>
         )}
       </div>
+
+      <div className="page-body">
+
+      {syncMsg && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: "12px",
+            marginBottom: "20px",
+            fontSize: "13px",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            background: syncMsg.ok ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+            border: `1px solid ${syncMsg.ok ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)"}`,
+            color: syncMsg.ok ? "#34d399" : "#f87171",
+          }}
+        >
+          {syncMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {syncMsg.text}
+        </div>
+      )}
 
       {!isAuthenticated ? (
         <div
@@ -884,6 +997,26 @@ export default function SettingsPage() {
                           </td>
                           <td style={{ padding: "14px", textAlign: "right" }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                              <button
+                                onClick={() => handleOpenEditModal(c)}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: "8px",
+                                  border: "1px solid rgba(59, 130, 246, 0.35)",
+                                  background: "rgba(59, 130, 246, 0.12)",
+                                  color: "#60a5fa",
+                                  fontSize: "12px",
+                                  fontWeight: "700",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                  transition: "all 0.15s",
+                                }}
+                                title="Edit API Key, Model & Settings"
+                              >
+                                <Edit2 size={12} /> Edit
+                              </button>
                               <button
                                 onClick={() => handleTestKey(c.id, c.displayName)}
                                 disabled={isTesting}
@@ -1416,6 +1549,343 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Edit Provider Modal */}
+      {editingConfig && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              background: "linear-gradient(135deg, #0d1527 0%, #070b14 100%)",
+              border: "1px solid rgba(59, 130, 246, 0.4)",
+              borderRadius: "24px",
+              padding: "32px",
+              width: "100%",
+              maxWidth: "680px",
+              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(59, 130, 246, 0.15)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "10px",
+                    background: "rgba(59, 130, 246, 0.15)",
+                    border: "1px solid rgba(59, 130, 246, 0.35)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#60a5fa",
+                  }}
+                >
+                  <Edit2 size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
+                    Edit LLM Provider Key &amp; Settings
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0, marginTop: "2px" }}>
+                    Update API keys, model versions, base URLs, or activation status.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingConfig(null)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "6px",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {editModalError && (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                  background: "rgba(239, 68, 68, 0.15)",
+                  border: "1px solid rgba(239, 68, 68, 0.4)",
+                  color: "#f87171",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <AlertCircle size={16} />
+                {editModalError}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateConfig} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Provider Info Banner */}
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  background: "rgba(59, 130, 246, 0.08)",
+                  border: "1px solid rgba(59, 130, 246, 0.25)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: "700", color: "#60a5fa", textTransform: "uppercase" }}>
+                    Provider Engine
+                  </div>
+                  <div style={{ fontSize: "14px", fontWeight: "800", color: "#f8fafc" }}>
+                    {editingConfig.provider}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                    Status
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "8px",
+                      background: editForm.status === "ACTIVE" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                      color: editForm.status === "ACTIVE" ? "#34d399" : "#f87171",
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      fontSize: "12px",
+                      fontWeight: "800",
+                      outline: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="ACTIVE" style={{ background: "#0f172a", color: "#34d399" }}>ACTIVE</option>
+                    <option value="DISABLED" style={{ background: "#0f172a", color: "#f87171" }}>DISABLED</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Key Label / Description */}
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
+                  Key Label / Description
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Google Gemini 3.7 Flash or Claude 3.7 Sonnet"
+                  value={editForm.displayName}
+                  onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    background: "rgba(7, 11, 20, 0.8)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "10px",
+                    color: "#f8fafc",
+                    fontSize: "14px",
+                    outline: "none",
+                  }}
+                  required
+                />
+              </div>
+
+              {/* Model Selection Dropdown */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1" }}>
+                    Model ID / Version
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditCustomModelInput(!isEditCustomModelInput)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#60a5fa",
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    {isEditCustomModelInput ? "Choose from presets list" : "Type custom model ID"}
+                  </button>
+                </div>
+
+                {!isEditCustomModelInput ? (
+                  <select
+                    value={editForm.modelName}
+                    onChange={(e) => {
+                      if (e.target.value === "__CUSTOM__") {
+                        setIsEditCustomModelInput(true);
+                      } else {
+                        setEditForm({ ...editForm, modelName: e.target.value });
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      background: "rgba(7, 11, 20, 0.8)",
+                      border: "1px solid rgba(59, 130, 246, 0.4)",
+                      borderRadius: "10px",
+                      color: "#f8fafc",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      outline: "none",
+                      marginBottom: "10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {(LLM_PRESETS.find((p) => p.id === editSelectedPresetId)?.models || []).map((m) => (
+                      <option key={m.id} value={m.id} style={{ background: "#0f172a", color: "#f8fafc" }}>
+                        {m.label} {m.badge ? `[${m.badge}]` : ""}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM__" style={{ background: "#0f172a", color: "#94a3b8" }}>
+                      ✍️ Type custom / unlisted model name…
+                    </option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="e.g. gemini-3.7-flash, claude-3-7-sonnet-20250219, gpt-4o, deepseek-chat"
+                    value={editForm.modelName}
+                    onChange={(e) => setEditForm({ ...editForm, modelName: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      background: "rgba(7, 11, 20, 0.8)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "10px",
+                      color: "#f8fafc",
+                      fontSize: "14px",
+                      fontFamily: "var(--font-mono)",
+                      outline: "none",
+                      marginBottom: "10px",
+                    }}
+                    required
+                  />
+                )}
+              </div>
+
+              {/* API Key */}
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
+                  API Key (Encrypted Vault)
+                </label>
+                <input
+                  type="password"
+                  placeholder="•••••••••••••••• (Leave blank to keep existing key)"
+                  value={editForm.apiKey}
+                  onChange={(e) => setEditForm({ ...editForm, apiKey: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    background: "rgba(7, 11, 20, 0.8)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "10px",
+                    color: "#fbbf24",
+                    fontSize: "14px",
+                    fontFamily: "var(--font-mono)",
+                    outline: "none",
+                  }}
+                />
+                <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px", display: "flex", justifyContent: "space-between" }}>
+                  <span>Current masked key: <strong style={{ color: "#e2e8f0" }}>{editingConfig.apiKeyMasked}</strong></span>
+                  <span style={{ color: "#64748b" }}>Leave blank to retain current key</span>
+                </div>
+              </div>
+
+              {/* Base URL (for custom/proxies/azure/ollama) */}
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
+                  Base URL / API Endpoint (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. https://api.deepseek.com/v1 or http://localhost:11434/v1"
+                  value={editForm.baseUrl}
+                  onChange={(e) => setEditForm({ ...editForm, baseUrl: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    background: "rgba(7, 11, 20, 0.8)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "10px",
+                    color: "#94a3b8",
+                    fontSize: "13px",
+                    fontFamily: "var(--font-mono)",
+                    outline: "none",
+                  }}
+                />
+              </div>
+
+              {/* Modal Buttons */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px", borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "16px" }}>
+                <button
+                  type="button"
+                  disabled={isUpdatingKey}
+                  onClick={() => setEditingConfig(null)}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: "10px",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    color: "#cbd5e1",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: isUpdatingKey ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingKey}
+                  style={{
+                    padding: "10px 22px",
+                    borderRadius: "10px",
+                    background: isUpdatingKey ? "#94a3b8" : "linear-gradient(135deg, #3b82f6, #2563eb)",
+                    border: "none",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: "800",
+                    cursor: isUpdatingKey ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  {isUpdatingKey && <Loader2 size={15} className="animate-spin" />}
+                  {isUpdatingKey ? "Saving & Validating…" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   );
 }

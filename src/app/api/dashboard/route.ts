@@ -5,6 +5,7 @@ import { getEffectiveUserId } from "@/lib/session";
 import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
 import { resolveSpendingLocations } from "@/lib/geoResolver";
 import { getUserEntityScope, isRecommendationOwnedByUser } from "@/lib/userEntityScope";
+import { buildUserFlowWhere } from "@/lib/moneyFlowRefs";
 
 /**
  * GET /api/dashboard
@@ -95,32 +96,41 @@ export async function GET(req: NextRequest) {
       ? Math.min(100, Math.round((Number(topGoal.currentAmount) / Number(topGoal.targetAmount)) * 100))
       : 0;
 
-    const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
+    const userFlowWhere = buildUserFlowWhere(accounts, debts);
 
-    const flows = userEntityIds.length === 0
+    const flows = userFlowWhere.OR.length === 0
       ? []
       : await prisma.moneyFlow.findMany({
           where: {
-            OR: [
-              { sourceRef: { in: userEntityIds } },
-              { destinationRef: { in: userEntityIds } },
-            ],
+            ...userFlowWhere,
           },
           orderBy: { createdAt: "desc" },
-          take: 250,
         }).catch((err) => {
           console.warn("prisma.moneyFlow.findMany connection warning:", err?.message || err);
           return [];
         });
 
-    // Budget items query uses resolved cycle month
-    const budgetItems = await prisma.budgetLineItem.findMany({
+    // Budget items query uses resolved cycle month with latest-month fallback
+    let budgetItems = await prisma.budgetLineItem.findMany({
       where: { userId, month: cycleMonth },
-      select: { category: true, amount: true },
+      select: { category: true, amount: true, month: true },
     }).catch((err) => {
       console.warn("prisma.budgetLineItem.findMany connection warning:", err?.message || err);
       return [];
     });
+
+    if (budgetItems.length === 0) {
+      const allUserItems = await prisma.budgetLineItem.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        select: { category: true, amount: true, month: true },
+      }).catch(() => []);
+
+      if (allUserItems.length > 0) {
+        const latestMonth = allUserItems[0].month;
+        budgetItems = allUserItems.filter((i) => i.month === latestMonth);
+      }
+    }
 
     const totalDebt = debts.reduce((sum, d) => sum + Number(d.currentBalance), 0);
 
@@ -188,48 +198,54 @@ export async function GET(req: NextRequest) {
       color: CATEGORY_COLORS[catKey] || "#64748b",
     }));
 
-    // Net Worth Trend History (6 Months)
-    const monthNames = ["Mar 2026", "Apr 2026", "May 2026", "Jun 2026", "Jul 2026", "Aug 2026"];
-    const netWorthHistory = monthNames.map((m, idx) => {
-      if (!hasUserData) {
+    // Net worth history from persisted snapshots only (no synthetic interpolation)
+    const netWorthHistory = snapshots
+      .slice(-6)
+      .map((snap) => {
+        const snapDate = new Date(snap.snapshotDate);
         return {
-          month: m,
-          netWorth: 0,
-          totalAssets: 0,
-          totalDebts: 0,
+          month: snapDate.toLocaleDateString("en-ZA", { month: "short", year: "numeric" }),
+          netWorth: Number(snap.netWorth),
+          totalAssets: Number(snap.totalAssets),
+          totalDebts: Number(snap.totalDebts),
         };
-      }
-      const snap = snapshots[idx];
-      const monthsFromCurrent = 5 - idx;
-      const estimatedAssets = Math.max(0, totalAssets - (monthsFromCurrent * 5000));
-      const estimatedDebts = Math.max(0, effectiveTotalDebt + (monthsFromCurrent * 8000));
-      
-      const assetsVal = snap ? Number(snap.totalAssets) : estimatedAssets;
-      const debtsVal = snap ? Number(snap.totalDebts) : estimatedDebts;
-      const nwVal = snap ? Number(snap.netWorth) : assetsVal - debtsVal;
+      });
 
-      return {
-        month: m,
-        netWorth: nwVal,
-        totalAssets: assetsVal,
-        totalDebts: debtsVal,
-      };
-    });
+    // Cash flow history from recorded money flows only (no modeled values)
+    const monthlyFlowMap = new Map<string, { income: number; expenses: number; debtService: number }>();
+    for (const flow of flows) {
+      const amount = Number(flow.amount || 0);
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+      const date = flow.createdAt instanceof Date ? flow.createdAt : new Date(flow.createdAt);
+      const key = date.toISOString().slice(0, 7);
+      const bucket = monthlyFlowMap.get(key) || { income: 0, expenses: 0, debtService: 0 };
 
-    // Cash Flow History (6 Months Inflow vs Outflow)
-    const debtServiceTotal = debts.reduce((s, d) => s + Number(d.minimumPayment || 0), 0);
-    const cashFlowHistory = monthNames.map((m) => {
-      if (!hasUserData) {
-        return { month: m.split(" ")[0], income: 0, expenses: 0, debtService: 0, netSurplus: 0 };
+      if (flow.flowType === "INCOME") {
+        bucket.income += amount;
+      } else {
+        bucket.expenses += amount;
+        if (flow.flowType === "DEBT_PAYMENT") {
+          bucket.debtService += amount;
+        }
       }
-      return {
-        month: m.split(" ")[0],
-        income: totalRecurringIncome,
-        expenses: totalRecurringExpenses,
-        debtService: debtServiceTotal,
-        netSurplus: Math.max(0, netMarginRecurring),
-      };
-    });
+
+      monthlyFlowMap.set(key, bucket);
+    }
+
+    const cashFlowHistory = [...monthlyFlowMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([monthKey, bucket]) => {
+        const [yy, mm] = monthKey.split("-");
+        const monthDate = new Date(Date.UTC(Number(yy), Number(mm) - 1, 1));
+        return {
+          month: monthDate.toLocaleDateString("en-ZA", { month: "short" }),
+          income: bucket.income,
+          expenses: bucket.expenses,
+          debtService: bucket.debtService,
+          netSurplus: bucket.income - bucket.expenses,
+        };
+      });
 
     // 30-Day Daily Spending Intensity Heatmap
     const spendingHeatmap = [];
@@ -262,8 +278,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Geotagged spending locations & radar
-    const geoIntelligence = resolveSpendingLocations(flows, debts);
-    const spendingLocations = geoIntelligence.locations;
+    const geoIntelligence = resolveSpendingLocations(flows);
+    const spendingLocations = geoIntelligence.physicalLocations;
 
     // Debt Breakdown Progress
     const debtDistribution = debts.map((d) => {

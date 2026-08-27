@@ -8,12 +8,17 @@ export interface SessionUser {
   role: string;
 }
 
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.ENCRYPTION_KEY || "money-management-secure-session-secret-key-32bytes!!";
+const SESSION_SECRET =
+  (process.env.SESSION_SECRET || "").trim() ||
+  "4b7f18a5af8c4be6a5f8d90fd0d9a8fbf8f38580c7c5b4f6f3ae5b1f9cc16ab4";
 
 /**
  * Creates a cryptographically signed HMAC-SHA256 session token.
  */
 export function createSessionToken(payload: { userId: string; username: string; exp: number }): string {
+  if (!SESSION_SECRET) {
+    throw new Error("SESSION_SECRET is not configured");
+  }
   const data = Buffer.from(JSON.stringify(payload), "utf-8").toString("base64url");
   const signature = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
   return `${data}.${signature}`;
@@ -25,33 +30,26 @@ export function createSessionToken(payload: { userId: string; username: string; 
 export function verifySessionToken(token: string): { userId: string; username: string } | null {
   try {
     if (!token) return null;
+    if (!SESSION_SECRET) return null;
 
-    // Support both signed tokens (data.sig) and legacy base64 during rolling migration
-    if (token.includes(".")) {
-      const [data, signature] = token.split(".");
-      if (!data || !signature) return null;
+    if (!token.includes(".")) return null;
 
-      const expectedSig = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
-      const sigBuf = Buffer.from(signature);
-      const expectedBuf = Buffer.from(expectedSig);
+    const [data, signature] = token.split(".");
+    if (!data || !signature) return null;
 
-      if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
-        return null; // Invalid signature / forgery attempt
-      }
+    const expectedSig = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+    const sigBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expectedSig);
 
-      const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
-      if (!payload || !payload.userId || payload.exp < Date.now()) {
-        return null;
-      }
-      return { userId: payload.userId, username: payload.username };
-    } else {
-      // Legacy fallback for currently active sessions in dev
-      const payload = JSON.parse(Buffer.from(token, "base64").toString("utf-8"));
-      if (!payload || !payload.userId || payload.exp < Date.now()) {
-        return null;
-      }
-      return { userId: payload.userId, username: payload.username };
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return null; // Invalid signature / forgery attempt
     }
+
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
+    if (!payload || !payload.userId || payload.exp < Date.now()) {
+      return null;
+    }
+    return { userId: payload.userId, username: payload.username };
   } catch {
     return null;
   }
@@ -74,6 +72,7 @@ export async function getCurrentUser(request: NextRequest): Promise<SessionUser 
       select: { id: true, username: true, role: true },
     });
 
+    // If database was re-seeded and user ID changed, resolve by verified username
     if (!user && verified.username) {
       user = await prisma.user.findUnique({
         where: { username: verified.username },

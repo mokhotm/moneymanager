@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { simulateTimeline, type DebtInput } from "@/engine/snowball";
 import { getEffectiveUserId } from "@/lib/session";
+import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
 
 /**
  * GET /api/timeline
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
     const extraPoolParam = searchParams.get("extraPool");
 
     // Load user debts and income
-    const [debts, incomes, settings] = await Promise.all([
+    const [debts, incomes, settings, cycleMonth] = await Promise.all([
       prisma.debt.findMany({
         where: {
           status: "ACTIVE",
@@ -35,6 +36,10 @@ export async function GET(req: NextRequest) {
         where: { userId },
       }),
       prisma.appSettings.findUnique({ where: { id: "singleton" } }),
+      getActiveCycleMonthKey(userId).catch(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      }),
     ]);
 
     const strategy = strategyParam ?? settings?.snowballStrategy ?? "SNOWBALL";
@@ -65,8 +70,14 @@ export async function GET(req: NextRequest) {
     // Total minimum payments for all active debts
     const totalMinPayments = debts.reduce((sum, d) => sum + Number(d.minimumPayment), 0);
 
-    // Living expenses estimate
-    const livingExpenses = totalIncome > 30000 ? 21548.81 : Math.max(0, totalIncome * 0.4);
+    // Living expenses from active budget (non-debt, non-goal categories); fall back to estimate if no budget
+    const budgetItems = await prisma.budgetLineItem.findMany({
+      where: { userId, month: cycleMonth },
+      select: { category: true, amount: true },
+    });
+    const livingExpenses = budgetItems
+      .filter((b) => b.category !== "DEBT_ACCELERATION_PLAN" && b.category !== "GOAL_CONTRIBUTIONS")
+      .reduce((sum, b) => sum + Number(b.amount), 0);
 
     // Extra pool = income - living expenses - all debt minimums (monthly disposable acceleration buffer)
     const monthlySurplus = Math.max(totalIncome - livingExpenses - totalMinPayments, 0);

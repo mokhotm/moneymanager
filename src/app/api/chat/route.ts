@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { decryptApiKey, resolveGoogleModel } from "@/agents/llmProvider";
+import { decryptApiKey, resolveGoogleModel, resolveAgentLLMConfig } from "@/agents/llmProvider";
 import { searchDocumentEmbeddings } from "@/lib/embeddings";
 
 export interface ChatMessage {
@@ -150,7 +150,7 @@ async function callLLM(
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
-    let res = await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -159,20 +159,6 @@ async function callLLM(
         generationConfig: { maxOutputTokens: 2048 },
       }),
     });
-
-    // If 404 or unsupported model, fall back gracefully to gemini-3.7-flash or gemini-2.5-flash
-    if (!res.ok && res.status === 404 && model !== "gemini-3.7-flash") {
-      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
-      res = await fetch(fallbackUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          systemInstruction: system ? { parts: [{ text: system }] } : undefined,
-          contents,
-          generationConfig: { maxOutputTokens: 2048 },
-        }),
-      });
-    }
 
     if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
     const data = await res.json();
@@ -217,32 +203,17 @@ export async function POST(req: NextRequest) {
 
     if (!userMessage) return NextResponse.json({ error: "message is required" }, { status: 400 });
 
-    // Find active LLM config (prefer BUDGET_AGENT assignment, fall back to any ACTIVE config)
-    const assignment = await prisma.agentModelAssignment.findFirst({
-      where: { agent: "BUDGET_AGENT" },
-      include: { llmProviderConfig: true },
-    });
-    const assignedConfig = assignment?.llmProviderConfig?.status === "ACTIVE"
-      ? assignment.llmProviderConfig
-      : null;
-    const config =
-      assignedConfig ??
-      (await prisma.lLMProviderConfig.findFirst({ where: { status: "ACTIVE" } }));
+    // Find active LLM config (checks DB assignments -> active DB configs -> environment variables)
+    const config = await resolveAgentLLMConfig("BUDGET_AGENT");
 
-    if (!config) {
+    if (!config || !config.apiKey) {
       return NextResponse.json(
-        { reply: "No LLM provider is configured yet. Go to Settings → AI Providers to add your API key, then I can answer your financial questions." },
+        { reply: "No LLM provider is configured yet. Go to Settings → Multi-LLM Vault or set GEMINI_API_KEY in .env.local to enable AI financial assistance." },
         { status: 200 }
       );
     }
 
-    const apiKey = decryptApiKey(config.apiKeyEncrypted);
-    if (apiKey === "__DECRYPT_FAILED__") {
-      return NextResponse.json(
-        { reply: `Your ${config.provider} API key could not be decrypted — it may have been saved with a different server key. Please go to Settings → AI Providers, remove the key and re-enter it.` },
-        { status: 200 }
-      );
-    }
+    const apiKey = config.apiKey;
 
     const context = await buildFinancialContext(user.id, userMessage);
 

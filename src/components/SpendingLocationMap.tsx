@@ -289,7 +289,7 @@ export function SpendingLocationMap({
       }
     }
     const top = Object.entries(regionTotals).sort((a, b) => b[1] - a[1])[0];
-    return top ? top[0] : (intelligence?.topHub || "Springs & Bakerton");
+    return top ? top[0] : (intelligence?.topHub || "UNMAPPED_REGION");
   }, [filteredPhysical, intelligence]);
 
   // Active cycle descriptor badge

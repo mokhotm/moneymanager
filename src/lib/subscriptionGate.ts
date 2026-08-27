@@ -129,8 +129,8 @@ export async function getUserSubscriptionDetails(userId: string) {
     if (tierRecord?.name) {
       resolvedTier = normalizeTierName(tierRecord.name);
     }
-  } else if (user.role === "admin") {
-    // Retain Executive privileges for system admin account
+  } else if (user.role === "admin" || user.username === "mokhotm") {
+    // Retain Executive privileges for system admin and workspace primary user
     resolvedTier = "EXECUTIVE_ENTERPRISE";
   }
 
@@ -198,5 +198,7 @@ export async function checkFeatureAccess(userId: string, feature: keyof TierLimi
   };
 }
 
-export const getUserSubscription = getUserSubscriptionDetails;
+export async function getUserSubscription(userId: string) {
+  return getUserSubscriptionDetails(userId);
+}
 

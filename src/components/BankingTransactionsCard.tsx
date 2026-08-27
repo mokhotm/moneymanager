@@ -2,10 +2,13 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { formatZAR } from "@/lib/formatters";
+import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 import {
   CreditCard,
   ArrowUpRight,
   ArrowDownLeft,
+  ArrowUp,
+  ArrowDown,
   Search,
   Filter,
   RefreshCw,
@@ -42,6 +45,7 @@ import {
 export interface BankingTransaction {
   id: string;
   date: string;
+  dateTime: string;
   merchantName: string;
   merchantAddress?: string;
   accountName: string;
@@ -153,6 +157,9 @@ export function BankingTransactionsCard({
   showFilters = true,
   onSummaryChange,
 }: BankingTransactionsCardProps) {
+  const now = new Date();
+  const defaultPayPeriod = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+
   const [transactions, setTransactions] = useState<BankingTransaction[]>([]);
   const [budgetItemsList, setBudgetItemsList] = useState<BudgetItemRef[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -160,9 +167,11 @@ export function BankingTransactionsCard({
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [activeBudgetFilter, setActiveBudgetFilter] = useState("ALL");
   const [activeInstitution, setActiveInstitution] = useState("ALL");
-  const [activePayPeriod, setActivePayPeriod] = useState("2026-07");
+  const [activePayPeriod, setActivePayPeriod] = useState(defaultPayPeriod);
+  const [autoAlignedInitialPayPeriod, setAutoAlignedInitialPayPeriod] = useState(false);
   const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortDateOrder, setSortDateOrder] = useState<"desc" | "asc">("desc");
 
   // Edit & Budget Mapping Modal State
   const [selectedTx, setSelectedTx] = useState<BankingTransaction | null>(null);
@@ -174,9 +183,50 @@ export function BankingTransactionsCard({
     flowType: "CASH_SPENDING",
     confidence: "CONFIRMED",
     amount: "",
-    city: "Johannesburg",
+    city: "",
     budgetItemId: "",
   });
+
+  // Add-to-budget inline state
+  const [addToBudgetMode, setAddToBudgetMode] = useState(false);
+  const [addingToBudget, setAddingToBudget] = useState(false);
+  const [addBudgetForm, setAddBudgetForm] = useState({
+    category: "FAMILY_AND_DISCRETIONARY",
+    label: "",
+    amount: "",
+  });
+  const [addBudgetSuccess, setAddBudgetSuccess] = useState(false);
+
+  const handleAddToBudget = async () => {
+    if (!selectedTx || !addBudgetForm.label || !addBudgetForm.amount) return;
+    setAddingToBudget(true);
+    try {
+      const res = await fetch("/api/budget", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: addBudgetForm.category,
+          label: addBudgetForm.label,
+          amount: parseFloat(addBudgetForm.amount),
+          confidence: "CONFIRMED",
+          note: `Created from transaction ${selectedTx.referenceNumber} on ${selectedTx.date}`,
+        }),
+      });
+      if (res.ok) {
+        setAddBudgetSuccess(true);
+        setAddToBudgetMode(false);
+        setTimeout(() => {
+          setIsEditingModalOpen(false);
+          setAddBudgetSuccess(false);
+          fetchTransactions();
+        }, 1600);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAddingToBudget(false);
+    }
+  };
 
   const fetchTransactions = () => {
     setLoading(true);
@@ -189,6 +239,22 @@ export function BankingTransactionsCard({
     fetch(`/api/transactions?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
+        const suggestedPayPeriod =
+          typeof data?.meta?.suggestedPayPeriod === "string" ? data.meta.suggestedPayPeriod : null;
+
+        if (
+          !autoAlignedInitialPayPeriod &&
+          periodType === "SALARY" &&
+          activePayPeriod === defaultPayPeriod &&
+          suggestedPayPeriod &&
+          suggestedPayPeriod !== activePayPeriod
+        ) {
+          setAutoAlignedInitialPayPeriod(true);
+          setActivePayPeriod(suggestedPayPeriod);
+          setLoading(false);
+          return;
+        }
+
         setTransactions(data.transactions || []);
         setBudgetItemsList(data.budgetItems || []);
         setSummary(data.summary || null);
@@ -246,27 +312,56 @@ export function BankingTransactionsCard({
   }, [transactions, activeInstitution, searchQuery]);
 
   const displayedTransactions = useMemo(() => {
+    const sorted = [...filteredTransactions].sort((a, b) => {
+      const diff = new Date(a.dateTime ?? a.date).getTime() - new Date(b.dateTime ?? b.date).getTime();
+      return sortDateOrder === "asc" ? diff : -diff;
+    });
     if (limit && limit > 0) {
-      return filteredTransactions.slice(0, limit);
+      return sorted.slice(0, limit);
     }
-    return filteredTransactions;
-  }, [filteredTransactions, limit]);
+    return sorted;
+  }, [filteredTransactions, limit, sortDateOrder]);
 
   const [extracting, setExtracting] = useState(false);
   const [extractedNotice, setExtractedNotice] = useState<string | null>(null);
 
+  const periodOptions = useMemo(() => {
+    const opts: Array<{ value: string; label: string }> = [];
+    const today = new Date();
+
+    for (let i = 0; i < 8; i++) {
+      const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - i, 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      const monthLabel = d.toLocaleString("en-ZA", { month: "long", year: "numeric", timeZone: "UTC" });
+
+      const label =
+        periodType === "SALARY"
+          ? `${monthLabel} (${resolveSalaryCycleRange(key).formattedRange})`
+          : `${monthLabel} (1 ${d.toLocaleString("en-ZA", { month: "short", timeZone: "UTC" })} - ${new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()} ${d.toLocaleString("en-ZA", { month: "short", timeZone: "UTC" })})`;
+
+      opts.push({ value: key, label });
+    }
+
+    return opts;
+  }, [periodType]);
+
   const openTxDetailModal = (tx: BankingTransaction) => {
     setSelectedTx(tx);
     setExtractedNotice(null);
+    setAddToBudgetMode(false);
+    setAddBudgetSuccess(false);
+    setAddBudgetForm({
+      category: "FAMILY_AND_DISCRETIONARY",
+      label: tx.merchantName,
+      amount: String(Math.abs(tx.amount)),
+    });
     setEditForm({
       merchantName: tx.merchantName,
-      merchantAddress:
-        tx.merchantAddress ||
-        `${tx.merchantName}, Sandton Central, Johannesburg, South Africa`,
+      merchantAddress: tx.merchantAddress || "",
       flowType: tx.flowType,
       confidence: tx.confidence,
       amount: String(Math.abs(tx.amount)),
-      city: "Johannesburg",
+      city: "",
       budgetItemId: tx.budgetItemId || "",
     });
     setIsEditingModalOpen(true);
@@ -291,7 +386,7 @@ export function BankingTransactionsCard({
           ...prev,
           merchantName: meta.merchantName,
           merchantAddress: meta.merchantAddress,
-          city: meta.city || "Johannesburg",
+          city: meta.city || prev.city,
           flowType: meta.flowType || prev.flowType,
           confidence: "CONFIRMED",
         }));
@@ -949,56 +1044,38 @@ export function BankingTransactionsCard({
                   }}
                 >
                   <option value="ALL">All Time</option>
-                  <option value="2026-08">
-                    August 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(14 Aug - 14 Sep)"
-                      : "(1 Aug - 31 Aug)"}
-                  </option>
-                  <option value="2026-07">
-                    July 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(15 Jul - 13 Aug)"
-                      : "(1 Jul - 31 Jul)"}
-                  </option>
-                  <option value="2026-06">
-                    June 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(15 Jun - 14 Jul)"
-                      : "(1 Jun - 30 Jun)"}
-                  </option>
-                  <option value="2026-05">
-                    May 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(15 May - 14 Jun)"
-                      : "(1 May - 31 May)"}
-                  </option>
-                  <option value="2026-04">
-                    April 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(15 Apr - 14 May)"
-                      : "(1 Apr - 30 Apr)"}
-                  </option>
-                  <option value="2026-03">
-                    March 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(16 Mar - 14 Apr)"
-                      : "(1 Mar - 31 Mar)"}
-                  </option>
-                  <option value="2026-02">
-                    February 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(16 Feb - 15 Mar)"
-                      : "(1 Feb - 28 Feb)"}
-                  </option>
-                  <option value="2026-01">
-                    January 2026{" "}
-                    {periodType === "SALARY"
-                      ? "(15 Jan - 15 Feb)"
-                      : "(1 Jan - 31 Jan)"}
-                  </option>
+                  {periodOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
+
+              {/* Date sort toggle */}
+              <button
+                onClick={() => setSortDateOrder((o) => (o === "desc" ? "asc" : "desc"))}
+                title={sortDateOrder === "desc" ? "Newest first — click for oldest first" : "Oldest first — click for newest first"}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: "6px 12px",
+                  borderRadius: "99px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#94a3b8",
+                  transition: "all 0.18s ease",
+                  outline: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {sortDateOrder === "desc" ? <ArrowDown size={12} /> : <ArrowUp size={12} />}
+                Date
+              </button>
 
               <div style={{ position: "relative", width: "220px" }}>
                 <Search
@@ -1309,6 +1386,18 @@ export function BankingTransactionsCard({
                           <span>•</span>
                           <span style={{ fontFamily: "var(--font-mono, monospace)" }}>
                             {tx.date}
+                            {(() => {
+                              if (!tx.dateTime) return null;
+                              const t = new Date(tx.dateTime);
+                              const h = t.getUTCHours(), m = t.getUTCMinutes(), s = t.getUTCSeconds();
+                              // Skip the noon seeded placeholder (12:00:00 UTC)
+                              if (h === 12 && m === 0 && s === 0) return null;
+                              return (
+                                <span style={{ color: "#64748b", marginLeft: "4px", fontSize: "10.5px" }}>
+                                  {String(h).padStart(2,"0")}:{String(m).padStart(2,"0")}
+                                </span>
+                              );
+                            })()}
                           </span>
                           <span>•</span>
                           <span
@@ -1491,453 +1580,388 @@ export function BankingTransactionsCard({
       {/* Transaction Detail & Budget Metadata Edit Modal */}
       {isEditingModalOpen && selectedTx && (
         <div
-          className="modal-overlay"
           onClick={() => setIsEditingModalOpen(false)}
           style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(7, 11, 20, 0.65)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            zIndex: 1000,
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(5, 8, 16, 0.75)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "20px",
           }}
         >
           <div
-            className="modal"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: "600px",
-              background:
-                "linear-gradient(135deg, rgba(13, 20, 36, 0.98) 0%, rgba(10, 16, 30, 0.99) 100%)",
-              border: "1px solid rgba(245, 158, 11, 0.35)",
-              borderRadius: "24px",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+              width: "100%", maxWidth: "540px",
+              background: "linear-gradient(160deg, rgba(13,20,36,0.99) 0%, rgba(9,14,28,1) 100%)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "28px",
+              boxShadow: "0 40px 80px -20px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04) inset",
+              overflow: "hidden",
+              maxHeight: "90vh",
+              overflowY: "auto",
             }}
           >
-            <div className="modal-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <Edit3 size={20} style={{ color: "#f59e0b" }} />
-                <div>
-                  <h2 className="modal-title">Transaction Details &amp; Budget Mapping</h2>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#94a3b8",
-                      fontFamily: "var(--font-mono, monospace)",
-                    }}
-                  >
-                    Ref: {selectedTx.referenceNumber} • Settled {selectedTx.date}
+            {/* ── Hero: transaction summary ── */}
+            <div style={{
+              padding: "16px 20px 20px",
+              background: selectedTx.direction === "INFLOW"
+                ? "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, transparent 60%)"
+                : selectedTx.isBudgeted
+                  ? `linear-gradient(135deg, ${(BUDGET_CATEGORY_CONFIG[selectedTx.budgetCategory || ""] || BUDGET_CATEGORY_CONFIG.UNBUDGETED).bg} 0%, transparent 60%)`
+                  : "linear-gradient(135deg, rgba(244,63,94,0.1) 0%, transparent 60%)",
+              borderBottom: "1px solid rgba(255,255,255,0.07)",
+            }}>
+              {/* Close row */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+                <button
+                  onClick={() => setIsEditingModalOpen(false)}
+                  style={{
+                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "50%", width: "30px", height: "30px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#94a3b8", cursor: "pointer", fontSize: "16px", lineHeight: 1,
+                  }}
+                >✕</button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                {/* Icon */}
+                <div style={{
+                  width: "54px", height: "54px", borderRadius: "18px", flexShrink: 0,
+                  background: getTxAvatarBg(selectedTx),
+                  border: `1px solid ${getTxAvatarBorder(selectedTx)}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: `0 8px 24px ${getTxAvatarBg(selectedTx)}`,
+                }}>
+                  {getTxIcon(selectedTx)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", marginBottom: "3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {selectedTx.merchantName}
+                  </div>
+                  <div style={{ fontSize: "11.5px", color: "#64748b", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                    <span>{selectedTx.institution}</span>
+                    <span style={{ color: "#334155" }}>•</span>
+                    <span>{selectedTx.accountName}</span>
+                    <span style={{ color: "#334155" }}>•</span>
+                    <span style={{ fontFamily: "var(--font-mono,monospace)" }}>{selectedTx.date}</span>
+                  </div>
+                </div>
+                {/* Amount */}
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{
+                    fontSize: "22px", fontWeight: 900,
+                    fontFamily: "var(--font-mono,monospace)",
+                    color: selectedTx.direction === "INFLOW" ? "#10b981" : "#f8fafc",
+                    textShadow: selectedTx.direction === "INFLOW" ? "0 0 20px rgba(16,185,129,0.5)" : "none",
+                  }}>
+                    {selectedTx.direction === "INFLOW" ? "+" : "-"}{formatZAR(Math.abs(selectedTx.amount))}
+                  </div>
+                  <div style={{
+                    marginTop: "4px", fontSize: "10px", fontWeight: 700, padding: "2px 8px",
+                    borderRadius: "99px", display: "inline-block",
+                    background: selectedTx.isBudgeted ? "rgba(16,185,129,0.15)" : "rgba(244,63,94,0.15)",
+                    color: selectedTx.isBudgeted ? "#10b981" : "#f43f5e",
+                    border: selectedTx.isBudgeted ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(244,63,94,0.35)",
+                  }}>
+                    {selectedTx.isBudgeted ? "✓ Budgeted" : "⚡ Unbudgeted"}
                   </div>
                 </div>
               </div>
-              <button
-                className="modal-close"
-                onClick={() => setIsEditingModalOpen(false)}
-              >
-                ✕
-              </button>
+
+              {/* Success banner */}
+              {addBudgetSuccess && (
+                <div style={{
+                  marginTop: "16px", padding: "10px 16px", borderRadius: "12px",
+                  background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.4)",
+                  color: "#10b981", fontSize: "13px", fontWeight: 700,
+                  display: "flex", alignItems: "center", gap: "8px",
+                }}>
+                  <CheckCircle2 size={16}/> Added to your budget plan — refreshing…
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleSaveTransaction}>
-              <div className="modal-body">
-                {/* Linked Budget Line Item Mapping Section */}
-                <div
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(13, 20, 36, 0.9) 100%)",
-                    border: "1px solid rgba(16, 185, 129, 0.3)",
-                    borderRadius: "14px",
-                    padding: "14px 16px",
-                    marginBottom: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Target size={16} style={{ color: "#10b981" }} />
-                      <span
-                        style={{
-                          fontSize: "12.5px",
-                          fontWeight: 700,
-                          color: "#f8fafc",
-                        }}
-                      >
-                        Reconciled Budget Line Item
-                      </span>
+            <div style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              {/* ── Add to Budget CTA (unbudgeted only) ── */}
+              {!selectedTx.isBudgeted && selectedTx.direction === "OUTFLOW" && !addBudgetSuccess && (
+                <div style={{
+                  borderRadius: "16px",
+                  background: addToBudgetMode
+                    ? "rgba(245,158,11,0.08)"
+                    : "linear-gradient(135deg, rgba(245,158,11,0.14) 0%, rgba(13,20,36,0.9) 100%)",
+                  border: "1px solid rgba(245,158,11,0.35)",
+                  overflow: "hidden",
+                }}>
+                  {/* Header row */}
+                  <div style={{
+                    padding: "14px 18px",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    cursor: "pointer",
+                  }} onClick={() => setAddToBudgetMode((m) => !m)}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div style={{
+                        width: "32px", height: "32px", borderRadius: "10px",
+                        background: "linear-gradient(135deg,#f59e0b,#d97706)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        boxShadow: "0 4px 12px rgba(245,158,11,0.4)",
+                      }}>
+                        <PiggyBank size={16} style={{ color: "#000" }}/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "13px", fontWeight: 800, color: "#fbbf24" }}>
+                          Add to Budget Plan
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "1px" }}>
+                          Turn this recurring expense into a tracked budget line
+                        </div>
+                      </div>
                     </div>
-                    <span
+                    <ChevronRight
+                      size={16}
                       style={{
-                        fontSize: "10.5px",
-                        fontFamily: "var(--font-mono, monospace)",
-                        padding: "2px 8px",
-                        borderRadius: "99px",
-                        background: selectedTx.isBudgeted
-                          ? "rgba(16, 185, 129, 0.2)"
-                          : "rgba(244, 63, 94, 0.2)",
-                        color: selectedTx.isBudgeted ? "#10b981" : "#f43f5e",
-                        border: selectedTx.isBudgeted
-                          ? "1px solid rgba(16, 185, 129, 0.4)"
-                          : "1px solid rgba(244, 63, 94, 0.4)",
+                        color: "#f59e0b",
+                        transform: addToBudgetMode ? "rotate(90deg)" : "none",
+                        transition: "transform 0.2s ease",
                       }}
-                    >
-                      {selectedTx.isBudgeted ? "✓ Matched in Budget" : "⚡ Unbudgeted Outflow"}
-                    </span>
+                    />
                   </div>
 
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label
-                      className="form-label"
-                      style={{ fontSize: "11px", color: "#94a3b8" }}
-                    >
-                      Map / Reassign this transaction to an active Budget Line Item:
-                    </label>
-                    <select
-                      className="form-select"
-                      value={editForm.budgetItemId}
-                      onChange={(e) => {
-                        const newId = e.target.value;
-                        const matched = budgetItemsList.find((b) => b.id === newId);
-                        setEditForm({
-                          ...editForm,
-                          budgetItemId: newId,
-                          merchantName: matched ? matched.label : editForm.merchantName,
-                        });
-                      }}
-                      id="edit-tx-budget-item-select"
-                      style={{
-                        fontSize: "12px",
-                        background: "rgba(7, 11, 20, 0.8)",
-                        borderColor: "rgba(16, 185, 129, 0.35)",
-                      }}
-                    >
-                      <option value="">-- Unassigned / General Spend --</option>
-                      {budgetItemsList.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          [{BUDGET_CATEGORY_CONFIG[b.category]?.shortLabel || b.category}] {b.label} — {formatZAR(b.amount)}
-                        </option>
-                      ))}
-                    </select>
+                  {/* Inline form */}
+                  {addToBudgetMode && (
+                    <div style={{
+                      padding: "0 18px 18px",
+                      borderTop: "1px solid rgba(245,158,11,0.2)",
+                      paddingTop: "16px",
+                      display: "flex", flexDirection: "column", gap: "12px",
+                    }}>
+                      {/* Category */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        {([
+                          { key: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Fixed", icon: Home, color: "#38bdf8" },
+                          { key: "DEBT_ACCELERATION_PLAN", label: "Debt", icon: CreditCard, color: "#fbbf24" },
+                          { key: "GOAL_CONTRIBUTIONS", label: "Goals", icon: Target, color: "#34d399" },
+                          { key: "FAMILY_AND_DISCRETIONARY", label: "Discretionary", icon: ShoppingCart, color: "#c084fc" },
+                          { key: "ONE_OFF_UNEXPECTED", label: "One-Off", icon: Zap, color: "#f43f5e" },
+                        ] as { key: string; label: string; icon: any; color: string }[]).map(({ key, label, icon: Icon, color }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setAddBudgetForm((f) => ({ ...f, category: key }))}
+                            style={{
+                              padding: "8px 12px", borderRadius: "10px", cursor: "pointer",
+                              background: addBudgetForm.category === key ? `rgba(${color === "#38bdf8" ? "56,189,248" : color === "#fbbf24" ? "251,191,36" : color === "#34d399" ? "52,211,153" : color === "#c084fc" ? "192,132,252" : "244,63,94"},0.18)` : "rgba(255,255,255,0.03)",
+                              border: addBudgetForm.category === key ? `1.5px solid ${color}` : "1px solid rgba(255,255,255,0.08)",
+                              color: addBudgetForm.category === key ? color : "#64748b",
+                              fontSize: "11px", fontWeight: 700,
+                              display: "flex", alignItems: "center", gap: "6px",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            <Icon size={13}/>{label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Label */}
+                      <div>
+                        <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "5px", fontWeight: 600 }}>Budget Line Label</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={addBudgetForm.label}
+                          onChange={(e) => setAddBudgetForm((f) => ({ ...f, label: e.target.value }))}
+                          placeholder="e.g. Woolworths Groceries"
+                          style={{ fontSize: "13px" }}
+                        />
+                      </div>
+
+                      {/* Monthly amount */}
+                      <div>
+                        <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "5px", fontWeight: 600 }}>Monthly Budget Amount (ZAR)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-input"
+                          value={addBudgetForm.amount}
+                          onChange={(e) => setAddBudgetForm((f) => ({ ...f, amount: e.target.value }))}
+                          placeholder="0.00"
+                          style={{ fontSize: "13px" }}
+                        />
+                        <div style={{ fontSize: "10.5px", color: "#475569", marginTop: "4px" }}>Pre-filled from this transaction — adjust to your expected monthly spend</div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAddToBudget}
+                        disabled={addingToBudget || !addBudgetForm.label || !addBudgetForm.amount}
+                        style={{
+                          padding: "11px", borderRadius: "12px", border: "none",
+                          background: "linear-gradient(135deg,#f59e0b,#d97706)",
+                          color: "#000", fontSize: "13px", fontWeight: 800, cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
+                          boxShadow: "0 4px 16px rgba(245,158,11,0.4)",
+                          opacity: (!addBudgetForm.label || !addBudgetForm.amount) ? 0.5 : 1,
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <PiggyBank size={15}/>
+                        {addingToBudget ? "Adding…" : "Add to Budget Plan"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Map to existing budget item ── */}
+              <div style={{
+                borderRadius: "16px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                padding: "16px 18px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                  <Target size={15} style={{ color: "#10b981" }}/>
+                  <span style={{ fontSize: "12.5px", fontWeight: 700, color: "#e2e8f0" }}>Assign to Budget Line</span>
+                  {selectedTx.isBudgeted && <span style={{ fontSize: "10px", color: "#10b981", marginLeft: "auto" }}>✓ Currently matched</span>}
+                </div>
+                <select
+                  className="form-select"
+                  value={editForm.budgetItemId}
+                  onChange={(e) => setEditForm({ ...editForm, budgetItemId: e.target.value })}
+                  style={{ fontSize: "12px", background: "rgba(7,11,20,0.8)", borderColor: "rgba(255,255,255,0.1)" }}
+                >
+                  <option value="">— Unassigned / General Spend —</option>
+                  {budgetItemsList.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      [{BUDGET_CATEGORY_CONFIG[b.category]?.shortLabel || b.category}] {b.label} — {formatZAR(b.amount)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* ── Edit details (collapsible) ── */}
+              <details style={{ borderRadius: "16px", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
+                <summary style={{
+                  padding: "14px 18px", cursor: "pointer", fontSize: "12.5px",
+                  fontWeight: 700, color: "#94a3b8", background: "rgba(255,255,255,0.02)",
+                  display: "flex", alignItems: "center", gap: "8px", listStyle: "none",
+                  userSelect: "none",
+                }}>
+                  <Edit3 size={14}/> Edit Transaction Details
+                </summary>
+                <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "5px", fontWeight: 600 }}>Merchant Name</label>
+                    <input type="text" className="form-input" value={editForm.merchantName}
+                      onChange={(e) => setEditForm({ ...editForm, merchantName: e.target.value })}
+                      placeholder="e.g. Woolworths Sandton City" style={{ fontSize: "13px" }}/>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "5px", fontWeight: 600 }}>Physical Address</label>
+                    <div style={{ position: "relative" }}>
+                      <input type="text" className="form-input" value={editForm.merchantAddress}
+                        onChange={(e) => setEditForm({ ...editForm, merchantAddress: e.target.value })}
+                        placeholder="Street address for geo-tagging" style={{ fontSize: "13px", paddingLeft: "34px" }}/>
+                      <MapPin size={14} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#f59e0b" }}/>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div>
+                      <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "5px", fontWeight: 600 }}>Flow Category</label>
+                      <select className="form-select" value={editForm.flowType}
+                        onChange={(e) => setEditForm({ ...editForm, flowType: e.target.value })} style={{ fontSize: "12px" }}>
+                        <option value="CASH_SPENDING">Cash Spending</option>
+                        <option value="INCOME">Income</option>
+                        <option value="DEBT_PAYMENT">Debt Payment</option>
+                        <option value="TRANSFER">Transfer</option>
+                        <option value="CASH_WITHDRAWAL">ATM Withdrawal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "5px", fontWeight: 600 }}>Amount (ZAR)</label>
+                      <input type="number" step="0.01" className="form-input" value={editForm.amount}
+                        onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} style={{ fontSize: "13px" }}/>
+                    </div>
                   </div>
                 </div>
+              </details>
 
-                {/* Document Metadata Auto-Extraction Card */}
-                <div
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(13, 20, 36, 0.9) 100%)",
-                    border: "1px solid rgba(245, 158, 11, 0.35)",
-                    borderRadius: "14px",
-                    padding: "14px 16px",
-                    marginBottom: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Sparkles size={16} style={{ color: "#f59e0b" }} />
-                      <span
-                        style={{
-                          fontSize: "12.5px",
-                          fontWeight: 700,
-                          color: "#f8fafc",
-                        }}
-                      >
-                        Auto-Extract Metadata from Document Vault
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleExtractFromDocument()}
-                      disabled={extracting}
-                      id="extract-metadata-btn"
+              {/* ── Document extract ── */}
+              <details style={{ borderRadius: "16px", border: "1px solid rgba(245,158,11,0.2)", overflow: "hidden" }}>
+                <summary style={{
+                  padding: "14px 18px", cursor: "pointer", fontSize: "12.5px",
+                  fontWeight: 700, color: "#94a3b8", background: "rgba(245,158,11,0.04)",
+                  display: "flex", alignItems: "center", gap: "8px", listStyle: "none",
+                  userSelect: "none",
+                }}>
+                  <Sparkles size={14} style={{ color: "#f59e0b" }}/> Extract Metadata from Document Vault
+                </summary>
+                <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "10px", borderTop: "1px solid rgba(245,158,11,0.15)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>Auto-populate from uploaded statement PDFs</span>
+                    <button type="button" onClick={() => handleExtractFromDocument()} disabled={extracting}
                       style={{
-                        background:
-                          "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                        color: "#070b14",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "5px 12px",
-                        fontSize: "11.5px",
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        boxShadow: "0 2px 10px rgba(245, 158, 11, 0.3)",
-                      }}
-                    >
-                      <FileText size={13} />
-                      <span>
-                        {extracting ? "Extracting PDF…" : "⚡ Extract & Pre-populate"}
-                      </span>
+                        background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#000",
+                        border: "none", borderRadius: "8px", padding: "6px 12px",
+                        fontSize: "11.5px", fontWeight: 800, cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", gap: "4px",
+                      }}>
+                      <FileText size={13}/>{extracting ? "Extracting…" : "⚡ Extract"}
                     </button>
                   </div>
-
                   {extractedNotice && (
-                    <div
-                      style={{
-                        fontSize: "11.5px",
-                        color: "#fbbf24",
-                        fontFamily: "var(--font-mono, monospace)",
-                        background: "rgba(7, 11, 20, 0.7)",
-                        border: "1px solid rgba(245, 158, 11, 0.3)",
-                        borderRadius: "8px",
-                        padding: "8px 12px",
-                        wordBreak: "break-word",
-                      }}
-                    >
+                    <div style={{ fontSize: "11.5px", color: "#fbbf24", fontFamily: "var(--font-mono,monospace)",
+                      background: "rgba(7,11,20,0.7)", border: "1px solid rgba(245,158,11,0.3)",
+                      borderRadius: "8px", padding: "8px 12px", wordBreak: "break-word" }}>
                       {extractedNotice}
                     </div>
                   )}
-
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      flexWrap: "wrap",
-                      fontSize: "11px",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    <span>Extract sample document PDF:</span>
-                    {[
-                      { label: "Woolworths Slip", query: "Woolworths" },
-                      { label: "Telkom Invoice", query: "Telkom" },
-                      { label: "Ekurhuleni Bill", query: "Ekurhuleni" },
-                      { label: "SARS Payroll", query: "SARS" },
-                    ].map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => handleExtractFromDocument(preset.query)}
-                        style={{
-                          background: "rgba(255, 255, 255, 0.05)",
-                          border: "1px solid rgba(255, 255, 255, 0.1)",
-                          borderRadius: "6px",
-                          padding: "2px 8px",
-                          color: "#e2e8f0",
-                          fontSize: "10.5px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        📄 {preset.label}
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    {["Telkom","Ekurhuleni","SARS","Woolworths"].map((q) => (
+                      <button key={q} type="button" onClick={() => handleExtractFromDocument(q)}
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: "6px", padding: "3px 8px", color: "#e2e8f0", fontSize: "10.5px", cursor: "pointer" }}>
+                        📄 {q}
                       </button>
                     ))}
                   </div>
                 </div>
+              </details>
 
-                {/* Bank Account Info Card Banner */}
-                <div
-                  style={{
-                    background: "rgba(10, 16, 30, 0.7)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    borderRadius: "12px",
-                    padding: "12px 16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: "14px",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#94a3b8",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        fontWeight: 700,
-                      }}
-                    >
-                      Bank Account &amp; Institution
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        color: "#f8fafc",
-                        marginTop: "2px",
-                      }}
-                    >
-                      {selectedTx.institution} — {selectedTx.accountName}
-                    </div>
-                  </div>
-                  <span className="badge active" style={{ fontSize: "10px" }}>
-                    ✓ Settled
-                  </span>
-                </div>
+            </div>
 
-                {/* Editable Merchant / Location Name */}
-                <div className="form-group">
-                  <label className="form-label required">
-                    Merchant / Processed Location Name
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editForm.merchantName}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, merchantName: e.target.value })
-                    }
-                    placeholder="e.g. Woolworths Sandton City"
-                    required
-                    id="edit-tx-merchant-input"
-                  />
-                  <div className="form-hint">
-                    Appears on your spending analytics and geotagged map cards.
-                  </div>
-                </div>
-
-                {/* Editable Merchant / Recipient Physical Address (Geo-Tagging) */}
-                <div className="form-group" style={{ marginTop: "12px" }}>
-                  <label className="form-label">
-                    Merchant / Recipient Physical Address (Geo-Tagging)
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editForm.merchantAddress}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          merchantAddress: e.target.value,
-                        })
-                      }
-                      placeholder="e.g. 83 Rivonia Rd, Sandhurst, Sandton, 2196, South Africa"
-                      id="edit-tx-address-input"
-                      style={{ paddingLeft: "36px" }}
-                    />
-                    <MapPin
-                      size={16}
-                      style={{
-                        position: "absolute",
-                        left: "12px",
-                        top: "14px",
-                        color: "#f59e0b",
-                      }}
-                    />
-                  </div>
-                  <div className="form-hint">
-                    Supply the exact street address for GPS geotagging &amp; location map analytics.
-                  </div>
-                </div>
-
-                <div className="two-col">
-                  {/* Editable Flow Category */}
-                  <div className="form-group">
-                    <label className="form-label required">Flow Category</label>
-                    <select
-                      className="form-select"
-                      value={editForm.flowType}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, flowType: e.target.value })
-                      }
-                      id="edit-tx-category-select"
-                    >
-                      <option value="CASH_SPENDING">Cash Spending / Everyday</option>
-                      <option value="INCOME">Income &amp; Payroll</option>
-                      <option value="DEBT_PAYMENT">Debt Service &amp; Repayment</option>
-                      <option value="TRANSFER">Internal Transfer</option>
-                      <option value="CASH_WITHDRAWAL">ATM Cash Withdrawal</option>
-                    </select>
-                  </div>
-
-                  {/* Editable Amount (ZAR) */}
-                  <div className="form-group">
-                    <label className="form-label required">Amount (ZAR)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      value={editForm.amount}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, amount: e.target.value })
-                      }
-                      required
-                      id="edit-tx-amount-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="two-col">
-                  {/* AI Confidence Score */}
-                  <div className="form-group">
-                    <label className="form-label">AI Categorization Confidence</label>
-                    <select
-                      className="form-select"
-                      value={editForm.confidence}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, confidence: e.target.value })
-                      }
-                      id="edit-tx-confidence-select"
-                    >
-                      <option value="CONFIRMED">CONFIRMED (User Verified)</option>
-                      <option value="ESTIMATED">ESTIMATED (AI Categorized)</option>
-                    </select>
-                  </div>
-
-                  {/* Processed Hub City */}
-                  <div className="form-group">
-                    <label className="form-label">Processed RSA City / Hub</label>
-                    <select
-                      className="form-select"
-                      value={editForm.city}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, city: e.target.value })
-                      }
-                      id="edit-tx-city-select"
-                    >
-                      <option value="Johannesburg">
-                        Johannesburg (Sandton / Rosebank)
-                      </option>
-                      <option value="Pretoria">Pretoria (Menlyn / Centurion)</option>
-                      <option value="Cape Town">Cape Town (V&amp;A Waterfront)</option>
-                      <option value="Durban">Durban (Umhlanga)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsEditingModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary flex items-center gap-1.5"
-                  disabled={saving}
-                  id="save-tx-btn"
-                >
-                  <Save size={15} />
-                  <span>{saving ? "Saving Changes…" : "Save Metadata"}</span>
-                </button>
-              </div>
-            </form>
+            {/* ── Footer ── */}
+            <div style={{
+              padding: "16px 28px 24px",
+              borderTop: "1px solid rgba(255,255,255,0.07)",
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
+            }}>
+              <button
+                type="button"
+                onClick={() => setIsEditingModalOpen(false)}
+                style={{
+                  padding: "10px 20px", borderRadius: "12px",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#94a3b8", fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                }}
+              >Cancel</button>
+              <button
+                onClick={handleSaveTransaction}
+                disabled={saving}
+                style={{
+                  padding: "10px 24px", borderRadius: "12px", border: "none",
+                  background: "linear-gradient(135deg,#f59e0b,#d97706)",
+                  color: "#000", fontSize: "13px", fontWeight: 800, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "7px",
+                  boxShadow: "0 4px 16px rgba(245,158,11,0.35)",
+                }}
+              >
+                <Save size={14}/>{saving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       )}

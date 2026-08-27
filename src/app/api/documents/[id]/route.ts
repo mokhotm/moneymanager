@@ -69,7 +69,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const resolvedParams = await params;
     const documentId = resolvedParams.id;
     const body = await req.json().catch(() => ({}));
-    const newStatus = body.status || "APPLIED";
+    const newStatus = body.status;
+    const allowedStatuses = new Set(["PENDING", "PARSED_AWAITING_REVIEW", "APPLIED", "REJECTED_DUPLICATE", "FAILED"]);
+    if (!newStatus || typeof newStatus !== "string" || !allowedStatuses.has(newStatus)) {
+      return NextResponse.json({ error: "A valid status is required" }, { status: 400 });
+    }
 
     const scope = await getUserEntityScope(userId);
 
@@ -95,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
       if (doc.documentType === "PAYSLIP") {
         const nettPay = parsedFields.nettPay || parsedFields.basicSalary;
-        const employer = parsedFields.employer || "SARS Employer Salary";
+        const employer = parsedFields.employer || "Unmapped Employer";
         const taxNumber = parsedFields.taxNumber;
         const jobTitle = parsedFields.jobTitle;
 

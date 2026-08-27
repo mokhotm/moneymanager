@@ -71,7 +71,7 @@ export default function MoneyJourneyPage() {
   // Visual Controls State
   const [viewMode, setViewMode] = useState<"NEURAL" | "BUBBLE" | "LIST">("NEURAL");
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [activePayPeriod, setActivePayPeriod] = useState<string>("2026-07");
+  const [activePayPeriod, setActivePayPeriod] = useState<string>("ALL");
   const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [isCanvasExpanded, setIsCanvasExpanded] = useState<boolean>(false);

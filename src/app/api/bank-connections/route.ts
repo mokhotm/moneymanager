@@ -3,10 +3,32 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
 import crypto from "crypto";
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? "fallback-dev-key-32-bytes-padding";
+function getEncryptionKey(): Buffer {
+  const raw = process.env.ENCRYPTION_KEY;
+  if (!raw) {
+    throw new Error("ENCRYPTION_KEY is not configured");
+  }
+
+  const trimmed = raw.trim();
+  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) {
+    return Buffer.from(trimmed, "hex");
+  }
+
+  const asBase64 = Buffer.from(trimmed, "base64");
+  if (asBase64.length === 32 && asBase64.toString("base64").replace(/=+$/, "") === trimmed.replace(/=+$/, "")) {
+    return asBase64;
+  }
+
+  const asUtf8 = Buffer.from(raw, "utf8");
+  if (asUtf8.length === 32) {
+    return asUtf8;
+  }
+
+  throw new Error("ENCRYPTION_KEY must be 32-byte UTF-8, 64-char hex, or base64-encoded 32 bytes");
+}
 
 function encryptToken(token: string): string {
-  const key = Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32));
+  const key = getEncryptionKey();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
   const encrypted = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
@@ -14,8 +36,8 @@ function encryptToken(token: string): string {
 }
 
 function decryptToken(encrypted: string): string {
+  const key = getEncryptionKey();
   const [ivHex, dataHex] = encrypted.split(":");
-  const key = Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32));
   const iv = Buffer.from(ivHex, "hex");
   const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
   return Buffer.concat([decipher.update(Buffer.from(dataHex, "hex")), decipher.final()]).toString("utf8");

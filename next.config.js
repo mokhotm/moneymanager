@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: false, // Prevents duplicate mounting and duplicate API fetches in dev mode
   devIndicators: false,
+  output: "standalone",
   poweredByHeader: false,
   compress: true,
   experimental: {

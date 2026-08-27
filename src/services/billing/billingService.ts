@@ -1,5 +1,5 @@
 import { PrismaClient, PaymentStatus, SubscriptionStatus, BillingPeriod, UrgencyFlag } from '@prisma/client';
-import { MockPaymentGateway, PaymentGatewayProvider } from './paymentGateway';
+import { PaymentGatewayProvider, UnconfiguredPaymentGateway } from './paymentGateway';
 import crypto from 'crypto';
 
 export class BillingService {
@@ -8,7 +8,7 @@ export class BillingService {
 
   constructor(prismaClient?: PrismaClient, gatewayProvider?: PaymentGatewayProvider) {
     this.prisma = prismaClient || new PrismaClient();
-    this.gateway = gatewayProvider || new MockPaymentGateway();
+    this.gateway = gatewayProvider || new UnconfiguredPaymentGateway();
   }
 
   /**
@@ -89,7 +89,10 @@ export class BillingService {
   /**
    * §17.5 / Scenario AL, AM, AN: Process signed webhook callback exactly once
    */
-  async processPaymentWebhook(payloadRaw: string, signature: string, secret: string = 'mock_secret') {
+  async processPaymentWebhook(payloadRaw: string, signature: string, secret: string) {
+    if (!secret) {
+      return { success: false, statusCode: 500, error: 'Webhook secret is not configured' };
+    }
     const isValid = this.gateway.verifyWebhookSignature(payloadRaw, signature, secret);
     if (!isValid) {
       return { success: false, statusCode: 401, error: 'Invalid webhook signature' };

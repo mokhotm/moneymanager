@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { generateEmbeddingVector } from "../src/lib/embeddings";
 
 const prisma = new PrismaClient();
@@ -8,6 +11,7 @@ async function main() {
   console.log("Seeding database with User, UserProfile, Assets, Goals, Agent Recommendations, and Artifact data...");
 
   // Clear existing
+  await prisma.moneyFlow.deleteMany();
   await prisma.documentEmbedding.deleteMany();
   await prisma.agentModelAssignment.deleteMany();
   await prisma.lLMProviderConfig.deleteMany();
@@ -36,37 +40,108 @@ async function main() {
     },
   });
 
-  // ─── LLM PROVIDER BYOK CONFIGURATIONS (NEW v3) ─────────────────────────────
+  // ─── LLM PROVIDER BYOK CONFIGURATIONS & PRESERVATION ─────────────────────
+  // Check for environment keys (GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY, DEEPSEEK_API_KEY, etc.)
+  const geminiEnvKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
+  const anthropicEnvKey = (process.env.ANTHROPIC_API_KEY || "").trim();
+  const openaiEnvKey = (process.env.OPENAI_API_KEY || "").trim();
+  const deepseekEnvKey = (process.env.DEEPSEEK_API_KEY || "").trim();
+  const groqEnvKey = (process.env.GROQ_API_KEY || "").trim();
 
+  // Helper encryption
+  const encKeyBuffer = Buffer.from(
+    (process.env.ENCRYPTION_KEY || process.env.SESSION_SECRET || "money-manager-vault-key-32-chars-aes256")
+      .padEnd(32)
+      .slice(0, 32)
+  );
+
+  function seedEncrypt(plain: string): string {
+    const cipher = crypto.createCipheriv("aes-256-cbc", encKeyBuffer, Buffer.alloc(16, 0));
+    let enc = cipher.update(plain, "utf8", "hex");
+    enc += cipher.final("hex");
+    return enc;
+  }
+
+  // 1. Google Gemini (Gemini 3.7 Flash)
+  const geminiConfig = await prisma.lLMProviderConfig.create({
+    data: {
+      provider: "GOOGLE",
+      displayName: geminiEnvKey ? "Google Gemini (Active Key)" : "Google Gemini 3.7 Flash",
+      apiKeyEncrypted: geminiEnvKey ? seedEncrypt(geminiEnvKey) : seedEncrypt("AIzaSy-demo-gemini-key-masked"),
+      modelName: "gemini-3.7-flash",
+      supportsVision: true,
+      status: geminiEnvKey ? "ACTIVE" : "ACTIVE",
+      lastValidatedAt: new Date(),
+    },
+  });
+
+  // 2. Anthropic Claude (Claude 3.7 Sonnet)
   const claudeConfig = await prisma.lLMProviderConfig.create({
     data: {
       provider: "ANTHROPIC",
-      displayName: "Anthropic Claude (Personal BYOK Key)",
-      apiKeyEncrypted: "enc_sk-ant-api03-demo-key-masked",
+      displayName: anthropicEnvKey ? "Anthropic Claude (Active Key)" : "Anthropic Claude (Personal BYOK Key)",
+      apiKeyEncrypted: anthropicEnvKey ? seedEncrypt(anthropicEnvKey) : seedEncrypt("sk-ant-demo-claude-key-masked"),
       modelName: "claude-3-7-sonnet-20250219",
       supportsVision: true,
-      status: "ACTIVE",
+      status: anthropicEnvKey ? "ACTIVE" : "ACTIVE",
       lastValidatedAt: new Date(),
     },
   });
 
+  // 3. OpenAI (GPT-4o)
   const gptConfig = await prisma.lLMProviderConfig.create({
     data: {
       provider: "OPENAI",
-      displayName: "OpenAI GPT-4o (Work Account Key)",
-      apiKeyEncrypted: "enc_sk-proj-demo-openai-key-masked",
+      displayName: openaiEnvKey ? "OpenAI GPT-4o (Active Key)" : "OpenAI GPT-4o (Work Account Key)",
+      apiKeyEncrypted: openaiEnvKey ? seedEncrypt(openaiEnvKey) : seedEncrypt("sk-proj-demo-openai-key-masked"),
       modelName: "gpt-4o",
       supportsVision: true,
-      status: "ACTIVE",
+      status: openaiEnvKey ? "ACTIVE" : "ACTIVE",
       lastValidatedAt: new Date(),
     },
   });
 
-  // Agent Assignments
+  // 4. DeepSeek (if env set or starter)
+  let deepseekConfig = null;
+  if (deepseekEnvKey) {
+    deepseekConfig = await prisma.lLMProviderConfig.create({
+      data: {
+        provider: "CUSTOM",
+        displayName: "DeepSeek V3 (Active Key)",
+        apiKeyEncrypted: seedEncrypt(deepseekEnvKey),
+        modelName: "deepseek-chat",
+        baseUrl: "https://api.deepseek.com/v1",
+        supportsVision: false,
+        status: "ACTIVE",
+        lastValidatedAt: new Date(),
+      },
+    });
+  }
+
+  // 5. Groq (if env set)
+  if (groqEnvKey) {
+    await prisma.lLMProviderConfig.create({
+      data: {
+        provider: "CUSTOM",
+        displayName: "Groq Cloud Llama 3.3 70B",
+        apiKeyEncrypted: seedEncrypt(groqEnvKey),
+        modelName: "llama-3.3-70b-versatile",
+        baseUrl: "https://api.groq.com/openai/v1",
+        supportsVision: false,
+        status: "ACTIVE",
+        lastValidatedAt: new Date(),
+      },
+    });
+  }
+
+  // Assign Primary Agents (Defaulting to Gemini if available, or Claude/GPT)
+  const primaryConfig = geminiEnvKey ? geminiConfig : claudeConfig;
+  const secondaryConfig = openaiEnvKey ? gptConfig : (geminiEnvKey ? geminiConfig : gptConfig);
+
   await prisma.agentModelAssignment.create({
     data: {
       agent: "DOCUMENT_AGENT",
-      llmProviderConfigId: claudeConfig.id,
+      llmProviderConfigId: primaryConfig.id,
       isDefault: true,
     },
   });
@@ -74,21 +149,21 @@ async function main() {
   await prisma.agentModelAssignment.create({
     data: {
       agent: "BUDGET_AGENT",
-      llmProviderConfigId: gptConfig.id,
+      llmProviderConfigId: secondaryConfig.id,
     },
   });
 
   await prisma.agentModelAssignment.create({
     data: {
       agent: "DEBT_AGENT",
-      llmProviderConfigId: claudeConfig.id,
+      llmProviderConfigId: primaryConfig.id,
     },
   });
 
   await prisma.agentModelAssignment.create({
     data: {
       agent: "GOALS_AGENT",
-      llmProviderConfigId: claudeConfig.id,
+      llmProviderConfigId: primaryConfig.id,
     },
   });
 
@@ -105,7 +180,34 @@ async function main() {
     },
   });
 
-  await prisma.userProfile.create({
+  const tierFree = await prisma.subscriptionTier.create({
+    data: {
+      name: "Starter Free",
+      priceMonthly: 0,
+      priceAnnual: 0,
+      entitlements: { byokLLM: false, dualTrackWaterfall: false },
+    },
+  });
+
+  const tierPro = await prisma.subscriptionTier.create({
+    data: {
+      name: "Pro Wealth Accelerator",
+      priceMonthly: 199,
+      priceAnnual: 1990,
+      entitlements: { byokLLM: true, dualTrackWaterfall: true, spendingLocationRadar: true },
+    },
+  });
+
+  const tierEnterprise = await prisma.subscriptionTier.create({
+    data: {
+      name: "Executive Enterprise",
+      priceMonthly: 499,
+      priceAnnual: 4990,
+      entitlements: { byokLLM: true, dualTrackWaterfall: true, spendingLocationRadar: true, windeedValuations: true },
+    },
+  });
+
+  const profile = await prisma.userProfile.create({
     data: {
       userId: user.id,
       firstName: "Ezrom Mote",
@@ -118,7 +220,19 @@ async function main() {
     },
   });
 
-  console.log(`Created system user: ${user.username} (ID: ${user.id})`);
+  await prisma.userSubscription.create({
+    data: {
+      userProfileId: profile.id,
+      tierId: tierEnterprise.id,
+      status: "ACTIVE",
+      billingPeriod: "MONTHLY",
+      currentPeriodStart: new Date("2026-08-01"),
+      currentPeriodEnd: new Date("2027-08-01"),
+      autoRenew: true,
+    },
+  });
+
+  console.log(`Created system user: ${user.username} (ID: ${user.id}) with Executive Enterprise subscription.`);
 
   // ─── ACCOUNTS & DEBTS ───────────────────────────────────────────────────────
 
@@ -487,6 +601,192 @@ async function main() {
     },
   });
 
+  const accCashWallet = await prisma.account.create({
+    data: {
+      userId: user.id,
+      name: "Physical Cash Wallet",
+      institution: "Physical Cash",
+      accountNumberMasked: "CASH-WALLET-01",
+      type: "CASH_WALLET",
+      currency: "ZAR",
+      openingBalance: 0,
+      openingBalanceDate: new Date("2026-07-15"),
+      isDebt: false,
+      isAsset: true,
+      notes: "Physical cash on hand withdrawn from ATM bank accounts.",
+    },
+  });
+
+  // ─── MONEY FLOWS (COMPLETE 1,357 BANK STATEMENT TRANSACTIONS & CASH WALLET) ──
+  const dbPath = path.join(process.cwd(), "transactions_db.json");
+  if (fs.existsSync(dbPath)) {
+    const rawTx: any[] = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+    const accountMap: Record<string, string | undefined> = {
+      prestige: accPrestige.id,
+      mymo: accMyMo.id,
+      creditcard: accCard.id,
+      credit: accCard.id,
+      rcp: accRev.id,
+      revolving: accRev.id,
+      plusplan: accRev.id,
+    };
+
+    const flowsToInsert: any[] = [];
+
+    for (let idx = 0; idx < rawTx.length; idx++) {
+      const t = rawTx[idx];
+      const sourceAccId = accountMap[t.account] || accPrestige.id;
+      const desc1 = (t.desc1 || "").trim();
+      const desc2 = (t.desc2 || "").trim();
+      const fullDesc = `${desc1} ${desc2}`.trim();
+      const fullDescLower = fullDesc.toLowerCase();
+      const rawAmt = Number(t.amount);
+      const absAmt = Math.abs(rawAmt);
+
+      let flowType = "OTHER";
+      let sourceType = "ACCOUNT";
+      let sourceRef = sourceAccId;
+      let destinationType = "EXTERNAL";
+      let destinationRef = fullDesc || "Transaction";
+      let status = "ACTIVE";
+
+      if (rawAmt > 0) {
+        flowType = "INCOME";
+        sourceType = "EXTERNAL";
+        sourceRef = fullDescLower.includes("salary") || absAmt > 45000 ? "SARS Primary Salary Inflow" : desc1 || "Income Deposit";
+        destinationType = "ACCOUNT";
+        destinationRef = sourceAccId;
+      } else {
+        sourceType = "ACCOUNT";
+        sourceRef = sourceAccId;
+
+        if (fullDescLower.includes("autobank cash") || fullDescLower.includes("atm cash") || fullDescLower.includes("cash withdrawal") || fullDescLower.includes("cash to")) {
+          flowType = "CASH_WITHDRAWAL";
+          destinationType = "CASH_WALLET";
+          destinationRef = accCashWallet.id;
+          status = "PARTIALLY_CONSUMED";
+        } else if (fullDescLower.includes("home loan") || fullDescLower.includes("homel") || fullDescLower.includes("534812597")) {
+          flowType = "DEBT_PAYMENT";
+          destinationType = "DEBT";
+          destinationRef = accHomeLoan.id;
+        } else if (fullDescLower.includes("nedbank") || fullDescLower.includes("nedbpl") || fullDescLower.includes("80056262500")) {
+          flowType = "DEBT_PAYMENT";
+          destinationType = "DEBT";
+          destinationRef = accNedbank.id;
+        } else if (fullDescLower.includes("wesbank") || fullDescLower.includes("clio") || fullDescLower.includes("hyundai") || fullDescLower.includes("85361174582") || fullDescLower.includes("85401320912")) {
+          flowType = "DEBT_PAYMENT";
+          destinationType = "DEBT";
+          destinationRef = fullDescLower.includes("85401320912") || fullDescLower.includes("hyundai") ? accWesi10.id : accWesClio.id;
+        } else if (fullDescLower.includes("titanium") || fullDescLower.includes("credit card") || fullDescLower.includes("5773529")) {
+          flowType = "DEBT_PAYMENT";
+          destinationType = "ACCOUNT";
+          destinationRef = accCard.id;
+        } else if (fullDescLower.includes("rcp") || fullDescLower.includes("revolving") || fullDescLower.includes("22043551000022")) {
+          flowType = "DEBT_PAYMENT";
+          destinationType = "ACCOUNT";
+          destinationRef = accRev.id;
+        } else if (fullDescLower.includes("sbg sec") || fullDescLower.includes("money market") || fullDescLower.includes("securities")) {
+          flowType = "INVESTMENT";
+          destinationType = "EXTERNAL";
+          destinationRef = "SBG Securities Money Market Trust";
+        } else if (fullDescLower.includes("ib transfer") || fullDescLower.includes("transfer to") || fullDescLower.includes("inter account")) {
+          flowType = "TRANSFER";
+          destinationType = "ACCOUNT";
+          destinationRef = t.account === "mymo" ? accPrestige.id : accMyMo.id;
+        } else if (fullDescLower.includes("fee") || fullDescLower.includes("ucount") || fullDescLower.includes("monthly fee")) {
+          flowType = "FEE";
+          destinationType = "EXTERNAL";
+          destinationRef = fullDesc || "Bank Service Fee";
+        } else if (fullDescLower.includes("spar") || fullDescLower.includes("pick n pay") || fullDescLower.includes("checkers") || fullDescLower.includes("bakerton") || fullDescLower.includes("al-aswad")) {
+          flowType = "CASH_SPENDING";
+          destinationType = "EXTERNAL";
+          destinationRef = fullDesc || "Groceries & Daily Essentials";
+        } else {
+          flowType = "OTHER";
+          destinationType = "EXTERNAL";
+          destinationRef = fullDesc || "Card Purchase / EFT";
+        }
+      }
+
+      flowsToInsert.push({
+        originTransactionId: t.id || `txn_stmt_${idx + 1}`,
+        sourceType: sourceType as any,
+        sourceRef,
+        destinationType: destinationType as any,
+        destinationRef,
+        amount: absAmt,
+        currentAmount: absAmt,
+        flowType: flowType as any,
+        status: status as any,
+        confidence: "CONFIRMED" as const,
+        createdAt: new Date(t.date || "2026-08-01T00:00:00Z"),
+      });
+    }
+
+    // Insert in chunks of 100
+    for (let i = 0; i < flowsToInsert.length; i += 100) {
+      await prisma.moneyFlow.createMany({
+        data: flowsToInsert.slice(i, i + 100),
+      });
+    }
+
+    // Cash wallet child splits
+    const latestAtmFlow = await prisma.moneyFlow.findFirst({
+      where: { flowType: "CASH_WITHDRAWAL" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (latestAtmFlow) {
+      await prisma.moneyFlow.create({
+        data: {
+          parentFlowId: latestAtmFlow.id,
+          sourceType: "CASH_WALLET",
+          sourceRef: accCashWallet.id,
+          destinationType: "EXTERNAL",
+          destinationRef: "Domestic Worker Weekly Wage",
+          amount: 950.0,
+          currentAmount: 0,
+          flowType: "CASH_SPENDING",
+          status: "FULLY_CONSUMED",
+          confidence: "CONFIRMED",
+          createdAt: new Date(latestAtmFlow.createdAt.getTime() + 3600000),
+        },
+      });
+
+      await prisma.moneyFlow.create({
+        data: {
+          parentFlowId: latestAtmFlow.id,
+          sourceType: "CASH_WALLET",
+          sourceRef: accCashWallet.id,
+          destinationType: "EXTERNAL",
+          destinationRef: "Garden Services & Grounds Maintenance",
+          amount: 700.0,
+          currentAmount: 0,
+          flowType: "CASH_SPENDING",
+          status: "FULLY_CONSUMED",
+          confidence: "CONFIRMED",
+          createdAt: new Date(latestAtmFlow.createdAt.getTime() + 7200000),
+        },
+      });
+
+      await prisma.moneyFlow.create({
+        data: {
+          parentFlowId: latestAtmFlow.id,
+          sourceType: "CASH_WALLET",
+          sourceRef: accCashWallet.id,
+          destinationType: "EXTERNAL",
+          destinationRef: "Bakerton Fresh Produce & Local Bakeries",
+          amount: 600.0,
+          currentAmount: 0,
+          flowType: "CASH_SPENDING",
+          status: "FULLY_CONSUMED",
+          confidence: "CONFIRMED",
+          createdAt: new Date(latestAtmFlow.createdAt.getTime() + 14400000),
+        },
+      });
+    }
+  }
+
   // ─── ASSETS (NEW v2) ────────────────────────────────────────────────────────
 
   await prisma.asset.create({
@@ -604,10 +904,10 @@ async function main() {
     data: {
       userId: user.id,
       sourceName: "SARS Salary (Nett)",
-      recurringAmount: 71026.9,
+      recurringAmount: 74438.26,
       recurringAmountConfidence: "CONFIRMED",
       payDayOfMonth: 15,
-      lastConfirmedDate: new Date("2026-07-15"),
+      lastConfirmedDate: new Date("2026-08-14"),
     },
   });
 
@@ -1097,20 +1397,24 @@ async function main() {
     { category: "ONE_OFF_UNEXPECTED", label: "Weekend Getaway", amount: 5920.00, confidence: "CONFIRMED", note: "One-off family leisure trip & accommodation" },
   ];
 
-  for (const b of budgetItems) {
-    await prisma.budgetLineItem.create({
-      data: {
-        userId: user.id,
-        category: b.category as any,
-        label: b.label,
-        amount: b.amount,
-        isComputed: b.isComputed ?? false,
-        confidence: (b.confidence as any) ?? "CONFIRMED",
-        note: b.note ?? null,
-        sourceRef: (b as any).sourceRef ?? null,
-        month: currentMonth,
-      },
-    });
+  const monthsToSeed = ["2026-05", "2026-06", "2026-07", "2026-08"];
+
+  for (const m of monthsToSeed) {
+    for (const b of budgetItems) {
+      await prisma.budgetLineItem.create({
+        data: {
+          userId: user.id,
+          category: b.category as any,
+          label: b.label,
+          amount: b.amount,
+          isComputed: b.isComputed ?? false,
+          confidence: (b.confidence as any) ?? "CONFIRMED",
+          note: b.note ?? null,
+          sourceRef: (b as any).sourceRef ?? null,
+          month: m,
+        },
+      });
+    }
   }
 
   // ─── AGENT RECOMMENDATIONS INBOX (NEW v2) ───────────────────────────────────

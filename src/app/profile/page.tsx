@@ -36,6 +36,9 @@ interface UserProfileData {
   subscriptionTier?: string;
   subscriptionStatus?: string;
   billingCycle?: string;
+  accountsCount?: number;
+  debtsCount?: number;
+  specs?: any;
   createdAt: string;
   profile: {
     fullName: string | null;

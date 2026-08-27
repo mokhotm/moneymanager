@@ -24,9 +24,21 @@ export async function getActiveCycleMonthKey(userId?: string): Promise<string> {
   }
 
   try {
-    let whereClause: any = { documentType: "PAYSLIP" };
-
     if (userId) {
+      // Check latest confirmed income date
+      const latestIncome = await prisma.income.findFirst({
+        where: { userId },
+        orderBy: { lastConfirmedDate: "desc" },
+        select: { lastConfirmedDate: true },
+      });
+
+      if (latestIncome?.lastConfirmedDate) {
+        const d = parseSafeDate(latestIncome.lastConfirmedDate);
+        const cycleMonthKey = getPayCycleBounds(d, "PAYSLIP_AUTO").cycleMonthKey;
+        _cachedCycleMap.set(cacheKey, { key: cycleMonthKey, expires: now + CYCLE_KEY_CACHE_TTL_MS });
+        return cycleMonthKey;
+      }
+
       const [accounts, incomes] = await Promise.all([
         prisma.account.findMany({ where: { userId }, select: { id: true } }),
         prisma.income.findMany({ where: { userId }, select: { id: true } }),
@@ -36,32 +48,25 @@ export async function getActiveCycleMonthKey(userId?: string): Promise<string> {
       if (entityIds.length === 0) {
         return currentMonthKey();
       }
-      whereClause.relatedEntityId = { in: entityIds };
+
+      const latestDoc = await prisma.document.findFirst({
+        where: {
+          relatedEntityId: { in: entityIds },
+          documentType: { in: ["PAYSLIP", "BANK_STATEMENT"] },
+        },
+        orderBy: [{ periodStart: "desc" }, { uploadedAt: "desc" }],
+        select: { periodStart: true, periodEnd: true },
+      });
+
+      if (latestDoc?.periodStart || latestDoc?.periodEnd) {
+        const d = parseSafeDate(latestDoc.periodEnd || latestDoc.periodStart);
+        const cycleMonthKey = getPayCycleBounds(d, "PAYSLIP_AUTO").cycleMonthKey;
+        _cachedCycleMap.set(cacheKey, { key: cycleMonthKey, expires: now + CYCLE_KEY_CACHE_TTL_MS });
+        return cycleMonthKey;
+      }
     }
 
-    const payslip = await prisma.document.findFirst({
-      where: whereClause,
-      orderBy: { uploadedAt: "desc" },
-      select: { parsedData: true, periodStart: true },
-    });
-
-    if (!payslip) {
-      return currentMonthKey();
-    }
-
-    let targetYear = 2026;
-    let targetMonth = 8;
-    if (payslip?.periodStart) {
-      const d = parseSafeDate(payslip.periodStart);
-      targetYear = d.getUTCFullYear();
-      targetMonth = d.getUTCMonth() + 1;
-    }
-
-    const basePayDate = new Date(Date.UTC(targetYear, targetMonth - 1, 15));
-    const cycleMonthKey = getPayCycleBounds(basePayDate, "PAYSLIP_AUTO").cycleMonthKey;
-
-    _cachedCycleMap.set(cacheKey, { key: cycleMonthKey, expires: now + CYCLE_KEY_CACHE_TTL_MS });
-    return cycleMonthKey;
+    return currentMonthKey();
   } catch {
     return currentMonthKey();
   }

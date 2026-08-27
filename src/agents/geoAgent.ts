@@ -18,35 +18,28 @@ export interface AIGeoLocationResult {
 const SA_GEO_SYSTEM_PROMPT = `You are an elite South African Financial Geocoding & Merchant Intelligence AI Agent.
 Your job is to analyze raw South African bank statement transaction descriptions (e.g. Standard Bank, FNB, Nedbank, Capitec) and determine:
 1. The exact clean merchant trading name (removing bank noise, POS prefixes like "C*", "S2S*", "POS", terminal numbers, card suffixes).
-2. The exact physical location, corner, shopping centre, street, suburb, city, and province in South Africa.
-3. Rooftop-accurate latitude and longitude GPS coordinates (South Africa latitudes are negative, around -25 to -34, longitudes +18 to +32).
-4. Major regional hub (e.g. "Springs & Bakerton", "East Rand", "Pretoria & Centurion", "Johannesburg Metro", "Bloemfontein", "National / Other").
-5. Spending Category ("Groceries & Household", "Dining & Treats", "Fuel & Transport", "Auto & Repairs", "Retail & Shopping", "Education & Tuition", "Municipal Utilities").
+2. The merchant physical location / branch / suburb (e.g. "Woodmead Retail Park", "Menlyn Park", "V&A Waterfront", "Centurion Mall").
+3. Suburb, City, and South African Province / Region.
+4. Approximate GPS Coordinates (latitude, longitude) for South Africa.
+5. Standard Spending Category: Groceries, Fuel & Transport, Utilities, Dining & Takeout, Shopping & Retail, Health & Medical, Entertainment, Subscriptions, Insurance, Debt Payment, Transfer, Income, Cash & ATM, Other.
+6. Confidence Score (0.0 to 1.0).
+7. Brief 1-sentence analytical rationale.
 
-Special South African Knowledge:
-- Bakerton is a suburb in Springs, Gauteng. Al-Aswad Supermarket & Butchery is on Cnr Honeysuckle Dr & Pampas Rd, Bakerton (-26.2249, 28.4772). Bakerton Veg is on Blossom Rd & Honeysuckle Dr (-26.2235, 28.4780). RK Store is on Pampas Rd (-26.2252, 28.4770).
-- Geduld is a suburb in Springs. Springbok SuperSPAR is at 102 4th Avenue, Geduld (-26.2439, 28.4286).
-- Springs CBD / The Avenues Shopping Centre is on 6th Street, Springs Central (-26.2520, 28.4380).
-- Springs Mall is on Jan Smuts Rd, Casseldale, Springs (-26.2625, 28.4550).
-- Bapsfontein: BP Bapsfontein Oasis is on Cnr Magic Ave & Delmas Rd R50 (-26.0044, 28.4133). Astron Energy is at R50 & R25 (-25.9985, 28.4140).
-- Erasmuskloof / Pretoria East: Castle Gate Shopping Centre is on Solomon Mahlangu Dr & Van Ryneveld Ave (-25.8085, 28.2612).
-- Bloemfontein / UFS: Nelson Mandela Dr, Park West (-29.1107, 26.1850).
-
-Output MUST strictly be valid JSON adhering to this schema:
+Respond with strict JSON matching this schema:
 {
   "results": [
     {
-      "merchant": "<raw search string>",
-      "cleanMerchant": "<Official Store/Company Name>",
-      "locationName": "<Full Address or Shopping Center>",
-      "suburb": "<Suburb>",
-      "city": "<City/Town>",
-      "region": "<Regional Hub>",
-      "lat": <number>,
-      "lng": <number>,
-      "category": "<Category>",
-      "confidence": <0.0 to 1.0>,
-      "rationale": "<1 sentence reasoning>"
+      "merchant": "raw description",
+      "cleanMerchant": "Pick n Pay",
+      "locationName": "Pick n Pay Woodmead",
+      "suburb": "Woodmead",
+      "city": "Sandton",
+      "region": "Gauteng",
+      "lat": -26.0617,
+      "lng": 28.0863,
+      "category": "Groceries",
+      "confidence": 0.95,
+      "rationale": "Identified standard Pick n Pay store in Woodmead Sandton."
     }
   ]
 }`;
@@ -58,29 +51,16 @@ export async function calibrateLocationsWithAI(
   if (!rawDescriptions || rawDescriptions.length === 0) return [];
 
   // 1. Retrieve configured LLM provider from DB or environment
-  let provider = "GOOGLE";
-  let apiKey = process.env.GEMINI_API_KEY || "";
-  let modelName = "gemini-3.7-flash";
-  let baseUrl: string | null = null;
-
-  try {
-    const activeConfig = await prisma.lLMProviderConfig.findFirst({
-      where: { status: "ACTIVE" },
-      orderBy: { updatedAt: "desc" },
-    });
-
-    if (activeConfig) {
-      provider = activeConfig.provider;
-      modelName = activeConfig.modelName;
-      baseUrl = activeConfig.baseUrl;
-      const decrypted = decryptApiKey(activeConfig.apiKeyEncrypted);
-      if (decrypted && decrypted !== "__DECRYPT_FAILED__") {
-        apiKey = decrypted;
-      }
-    }
-  } catch (e) {
-    console.warn("Using fallback AI geocoding credentials:", e);
+  const config = await resolveAgentLLMConfig("DOCUMENT_AGENT");
+  if (!config || !config.apiKey) {
+    console.warn("No active LLM configuration available for Geo Agent");
+    return [];
   }
+
+  const provider = config.provider;
+  const apiKey = config.apiKey;
+  const modelName = config.modelName;
+  const baseUrl = config.baseUrl;
 
   const userPrompt = `Analyze and geocode these South African bank transaction statement descriptions:\n${rawDescriptions
     .slice(0, 15)

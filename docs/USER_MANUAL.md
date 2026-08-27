@@ -1,6 +1,6 @@
 # MoneyManager — Complete User Manual
 
-**Version 1.0 · August 2026**
+**Version 2.5 · Obsidian Gold Edition · August 2026**
 **Wealth & Finance Intelligence Platform**
 
 ---
@@ -15,26 +15,29 @@
 4. [Overview & Wealth](#4-overview--wealth)
    - [Net Worth Tracker](#41-net-worth-tracker)
    - [Goals & Wealth](#42-goals--wealth)
-   - [Money Journey](#43-money-journey)
+   - [Money Journey (3-Tier Lineage Flow)](#43-money-journey)
+   - [Multi-Entity & Family Office Switcher](#44-multi-entity--family-office-switcher)
 5. [Cashflow & Banking](#5-cashflow--banking)
-   - [Accounts](#51-accounts)
-   - [Transactions](#52-transactions)
-   - [Cash Wallet](#53-cash-wallet)
-   - [Monthly Budget](#54-monthly-budget)
+   - [Accounts & Financial Register](#51-accounts)
+   - [Transactions & Statement Ledger](#52-transactions)
+   - [Cash Wallet & Informal Cash Ingestion](#53-cash-wallet)
+   - [Monthly Budget Cycle Planner](#54-monthly-budget)
 6. [Debt & Freedom Engine](#6-debt--freedom-engine)
-   - [Debt Register](#61-debt-register)
+   - [Debt Register (Snowball & Avalanche)](#61-debt-register)
    - [Payoff Timeline](#62-payoff-timeline)
-   - [Scenario Planner](#63-scenario-planner)
+   - [Scenario Planner & Stress Testing](#63-scenario-planner)
 7. [Intelligence & Vault](#7-intelligence--vault)
-   - [Agent Inbox](#71-agent-inbox)
-   - [ChatBot AI](#72-chatbot-ai)
-   - [Document Vault](#73-document-vault)
-   - [Reports & Leakages](#74-reports--leakages)
+   - [Agent Inbox (Action Proposals)](#71-agent-inbox)
+   - [ChatBot AI (Financial Copilot)](#72-chatbot-ai)
+   - [Document Vault (OCR & PDF Parser)](#73-document-vault)
+   - [Reports, Leakages & Forensic Audit](#74-reports--leakages)
+   - [SARS Tax HUD & Ground Truth Reconciliation](#75-sars-tax-hud)
 8. [System & Settings](#8-system--settings)
-   - [Settings & BYOK](#81-settings--byok)
-   - [Billing & Plans](#82-billing--plans)
-   - [Profile](#83-profile)
-9. [AI Agents Architecture](#9-ai-agents-architecture)
+   - [Settings & BYOK Multi-LLM Vault](#81-settings--byok)
+   - [System Readiness & Zero-Trust Verification](#82-system-readiness)
+   - [Billing & Subscription Plans](#83-billing--plans)
+   - [User Profile & Identity Credentials](#84-profile)
+9. [AI Agents Architecture & Model Routing](#9-ai-agents-architecture)
 10. [Security & Data Privacy](#10-security--data-privacy)
 11. [South African Financial Context](#11-south-african-financial-context)
 12. [Troubleshooting & FAQ](#12-troubleshooting--faq)
@@ -62,7 +65,10 @@ MoneyManager is a comprehensive personal finance intelligence platform purpose-b
 
 - Modern web browser (Chrome, Edge, Firefox, Safari)
 - Internet connection
-- Supported document formats: PDF bank statements, payslips, and invoices from South African institutions
+- Supported document formats: PDF bank statements, payslips, and invoices from South African and international institutions
+
+> [!NOTE]
+> For the complete architectural blueprint and 100x system specification, see the [Product & Technical System Specification](file:///c:/Ezzy/Projects/Money/docs/PRODUCT_SPECIFICATION.md).
 
 ---
 
@@ -281,6 +287,47 @@ Each flow type has a distinct color:
 - 🩷 **Cash Spending** — Physical cash expenditures
 - 🔷 **Investment** — Unit trusts, ETFs, retirement contributions
 - ⬜ **Other** — Uncategorized flows
+
+---
+
+### 4.4 Multi-Entity & Family Office Switcher
+
+**Navigation:** Top of Sidebar → *Entity Selector Dropdown*
+
+The **Multi-Entity & Family Office Workspace Switcher** allows High-Net-Worth Individuals (HNWIs), executives, entrepreneurs, and trust beneficiaries to compartmentalize and toggle between separate financial personas within a single master login.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 Authenticated Master User                   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+       ┌───────────────────────┼───────────────────────┐
+       ▼                       ▼                       ▼
+┌──────────────┐        ┌──────────────┐        ┌──────────────┐
+│   PERSONAL   │        │ FAMILY TRUST │        │  OPERATING   │
+│    WEALTH    │        │ (Inter Vivos)│        │  (Pty) Ltd   │
+└──────┬───────┘        └──────┬───────┘        └──────┬───────┘
+       │                       │                       │
+       ▼                       ▼                       ▼
+  Personal Net Worth       Trust Solvency       Corporate P&L
+  & Household Budget       & Property Deeds     & VAT Invoicing
+```
+
+#### Supported Entity Types
+
+| Entity Type | Purpose | Primary Assets / Liabilities |
+| :--- | :--- | :--- |
+| **Personal Wealth** (`PERSONAL`) | Individual finances & household runway | Salary, checking accounts, credit cards, domestic vehicles, household budget |
+| **Family Trust** (`TRUST`) | Estate planning & wealth preservation | Inter vivos trusts, primary residential properties, unit trust endowments, bonds |
+| **Operating Company** (`BUSINESS`) | Commercial business operations | (Pty) Ltd / CC accounts, merchant cash flows, contractor payroll, ITR14 tax |
+| **Property SPV** (`SPV_PROPERTY`) | Ring-fenced real estate holdings | Commercial mortgages, sectional title units, rental revenue, municipal utility registers |
+
+#### Key Capabilities & Benefits
+
+1. **One-Click Workspace Switching:** Instantly switch your active workspace in the sidebar without logging out or juggling multiple credentials.
+2. **Dynamic Ground-Truth Aggregation:** The switcher dynamically computes each entity's Net Worth by summing verified bank balances and tangible assets minus active liabilities.
+3. **Legal & Tax Ring-Fencing:** Isolates personal income tax (SARS ITR12) from corporate tax (ITR14) and trust distributions (IT12TR), preventing audit exposure.
+4. **Ring-Fenced Debt Snowballs:** Debt cascades, emergency buffer calculations, and 365-day cash runways are computed strictly within the active legal entity.
 
 ---
 
@@ -788,131 +835,139 @@ Comprehensive financial analytics with a focus on finding money "leaks" — unne
 
 ---
 
+---
+
 ## 8. System & Settings
 
-### 8.1 Settings & BYOK
+### 8.1 Settings & BYOK Multi-LLM Vault
 
 **Navigation:** Sidebar → *Settings & BYOK*
 
-**BYOK = Bring Your Own Key** — MoneyManager lets you connect your own AI provider API keys for maximum privacy and cost control.
+**BYOK = Bring Your Own Key** — MoneyManager gives you total data sovereignty and cost flexibility by allowing you to connect, configure, and dynamically edit custom AI models and API credentials.
 
-#### LLM Provider Configuration
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AES-256 VAULT STORAGE                    │
+├──────────────────────────┬──────────────────────────────────┤
+│ Google Gemini 3.7 / 2.0  │ Free Tier & High-Speed Reasoning │
+│ Anthropic Claude Opus 4.8│ Complex Financial Logic & OCR    │
+│ OpenAI GPT-5.6 / 4o      │ General Purpose Multi-Modal      │
+│ DeepSeek V4 / R1 Reasoner│ Ultra Low Cost ($0.14 / 1M tokens)│
+│ Alibaba Qwen 3 Max       │ High-Context Multilingual        │
+│ Local Ollama / LM Studio │ 100% Free Zero-Cloud Privacy     │
+└──────────────────────────┴──────────────────────────────────┘
+```
 
-1. Click **"+ Add Provider"**
-2. Select a **provider**:
-   - **Google (Gemini)** — Recommended. Supports Gemini 3.7 Flash, 2.5 Flash, 2.5 Pro, 2.0 Flash, 1.5 Pro, 1.5 Flash
-   - **OpenAI** — GPT-4o, GPT-4o Mini, GPT-4 Turbo
-   - **Anthropic** — Claude 4 Opus, Claude 3.5 Sonnet
-   - **Ollama (Local)** — Run models locally with zero cost and full privacy
-   - **OpenRouter** — Access hundreds of models through a single API
-3. Enter your **API Key** (encrypted with AES-256 before storage)
-4. Select the **model** from verified presets or enter a custom model name
-5. Optionally set a **Base URL** (for self-hosted or proxied endpoints)
-6. Check **Supports Vision** if the model can process images (for document OCR)
-7. Click **"Save & Validate"** — the system tests the key with a live API call
+#### Adding & Configuring LLM Keys
+
+1. Click **"+ Add LLM Provider Key"** in the top right.
+2. Select your provider preset (Google Gemini, Anthropic Claude, OpenAI, DeepSeek, Qwen, GLM, Kimi, or Custom).
+3. Select your target **Model Version** from the dropdown list or click *"Type custom model ID"* to enter unlisted/frontier IDs.
+4. Enter your **API Key** (automatically encrypted at rest with AES-256).
+5. Optionally set a custom **Base URL / API Endpoint** (e.g. `http://localhost:11434/v1` for local Ollama or private proxy).
+6. Click **"Save LLM Key"** — the engine performs a live round-trip test and activates the key.
+
+#### Editing Existing Keys & Provider Settings
+
+You can update any existing provider key, model version, label, or activation status at any time:
+
+1. Locate the key row in the **Active BYOK LLM Keys** table.
+2. Click the blue **"Edit"** button (✏️).
+3. In the edit modal:
+   - **Update API Key:** Paste a new key, or leave it blank to retain your existing encrypted key.
+   - **Switch Model Version:** Choose a new model ID from the dropdown or type a custom version.
+   - **Rename Description:** Update the display label for clarity.
+   - **Toggle Status:** Switch between **`ACTIVE`** and **`DISABLED`**.
+4. Click **"Save Changes"** to re-validate and apply the updates instantly.
+
+#### Syncing Environment Keys
+
+If you have pre-configured environment variables in your `.env` file (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.), click **"Sync .env Keys"** to automatically ingest and encrypt them into your private vault.
 
 #### Agent Assignment Matrix
 
-After adding providers, you can assign specific models to specific agents:
+Assign dedicated AI engines to specialized financial workloads:
 
-| Agent | Default | Can Be Overridden To |
+| Agent | Optimal Recommended Model | Specialization |
 | :--- | :--- | :--- |
-| Document Agent | Primary provider | Any configured provider (vision-capable preferred) |
-| Debt Agent | Primary provider | Any configured provider |
-| Budget Agent | Primary provider | Any configured provider |
-| Goals Agent | Primary provider | Any configured provider |
-| Coach Agent | Primary provider | Any configured provider |
-| ChatBot | Primary provider | Any configured provider |
+| **Document Agent** | Gemini 3.7 Flash / Claude 3.7 Sonnet | Multi-page bank statement OCR & table extraction |
+| **Debt Snowball Agent** | DeepSeek R1 / Claude Opus 4.8 | High-precision interest & mathematical cascades |
+| **Budget Agent** | Gemini 3.7 Flash / GPT-4o | 5-Tier categorization & variance detection |
+| **Goals Agent** | Claude 3.7 Sonnet / GPT-4o | Multi-year milestone projection & runway modeling |
+| **Forensics Audit Agent** | Claude Opus 4.8 / DeepSeek V4 | Statement ground-truth reconciliation & leakage audits |
 
-#### Provider Status
+#### Property Data Integration (Deeds Office)
 
-- 🟢 **Active** — API key validated and working
-- 🟡 **Validating** — Currently testing the connection
-- 🔴 **Invalid** — Key rejected or endpoint unreachable
-
-#### Pricing Categories
-
-Models are labelled by cost tier:
-- **Free (Local)** — Ollama models running on your machine
-- **Free Tier** — Free API tiers (e.g., Gemini Flash free quota)
-- **Ultra Low Cost** — Sub-cent per query models
-- **Paid API** — Premium models with per-token billing
-
-> [!IMPORTANT]
-> Your API keys are **encrypted at rest** using AES-256 with your unique encryption key. They are never logged, never sent to MoneyManager servers, and are only used to make direct API calls to your chosen provider.
+Configure enterprise property valuation services to automatically pull deed records:
+- **Windeed:** Username and password for CIPC & Deeds Office lookup.
+- **Lightstone:** API Key for automated valuation models (AVM) and municipal boundary data.
 
 ---
 
-### 8.2 Billing & Plans
+### 8.2 System Readiness & Zero-Trust Verification
+
+**Navigation:** Sidebar → *System Readiness*
+
+The **System Readiness** console performs real-time runtime diagnostics, verifying that all sovereign cryptographic keys, session signers, and external aggregators meet strict deployment standards.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│             SYSTEM READINESS DIAGNOSTIC MATRIX              │
+├─────────────────────────┬───────────┬───────────────────────┤
+│ Check                   │ Required  │ Verification Standard │
+├─────────────────────────┼───────────┼───────────────────────┤
+│ ENCRYPTION_KEY          │ Strict    │ 256-bit AES Validated │
+│ SESSION_SIGNING_SECRET  │ Strict    │ HMAC-SHA256 Signed    │
+│ GATEWAY_WEBHOOK_SECRET  │ Strict    │ PCI-DSS Webhook Secret│
+│ OPEN_BANKING_SYNC_URL   │ Strict    │ Aggregator Endpoint   │
+│ OPEN_BANKING_API_KEY    │ Optional  │ Mutual TLS / Bearer   │
+└─────────────────────────┴───────────┴───────────────────────┘
+```
+
+#### Diagnostic Indicators
+
+- 🟢 **`VERIFIED PASS`** — The subsystem is verified, compliant, and operational.
+- 🔴 **`FAIL / MISSING`** — A required runtime variable is missing or malformed in `.env`.
+- **Re-test Readiness:** Click the refresh button to trigger a live re-evaluation of all security subsystems without restarting the server.
+
+---
+
+### 8.3 Billing & Plans
 
 **Navigation:** Sidebar → *Billing & Plans*
 
-Manage your MoneyManager subscription tier.
+Manage your MoneyManager subscription tier and payment gateways.
 
 #### Subscription Tiers
 
-The platform offers multiple subscription tiers with ascending feature access. Each tier card shows:
-- **Price** (monthly and annual options)
-- **Feature entitlements** — What's included
-- **Current plan indicator** — Highlights your active subscription
+- **Starter Free:** Basic single-account statement ingestion and standard budgeting.
+- **Pro Wealth Accelerator:** Unlimited bank accounts, 365-day neural forecasting, BYOK custom LLM vault, and Cash Wallet tracking.
+- **Executive Enterprise:** Full Multi-Entity & Family Office workspaces, Deeds Office property valuations, priority AI agent queue, and SARS tax audit packs.
 
-#### Billing Features
+#### Payment Methods & Gateways
 
-- **Toggle Monthly / Annual** — Annual billing typically offers a discount
-- **Upgrade / Downgrade** — Switch tiers instantly
-- **Checkout** — Secure payment processing with idempotency protection
-- **Billing History** — View past invoices and payment dates
-- **Current Period** — Shows your billing cycle start and end dates
-
-#### Payment Methods
-
-- Credit/debit card
-- EFT (Electronic Funds Transfer)
-- Apple Pay (where supported)
-
-#### Subscription Status
-
-| Status | Meaning |
-| :--- | :--- |
-| **Active** | Subscription is current and all features are available |
-| **Past Due** | Payment failed — dunning process initiated |
-| **Cancelled** | Subscription cancelled — access continues until period end |
-| **Expired** | Subscription has ended — limited to free tier features |
+- Credit / Debit Card (Visa, Mastercard via PayFast / Peach Payments)
+- DebiCheck Recurring EFT
+- Instant EFT (Ozow, Capitec Pay)
 
 ---
 
-### 8.3 Profile
+### 8.4 Profile
 
 **Navigation:** Sidebar → *Profile*
 
-View and manage your personal account information.
+View and manage your verified user identity, SARS tax metadata, and session security credentials.
 
 #### Profile Fields
 
 | Field | Description |
 | :--- | :--- |
-| **Username** | Your unique login identifier (read-only after creation) |
-| **Full Name** | Your legal name |
-| **Email** | Contact email for notifications and recovery |
-| **Job Title** | Professional title (displayed in sidebar) |
-| **Employer Name** | Your employer for payroll alignment |
-| **Tax Reference** | SARS tax reference number (for tax-related calculations) |
-| **Preferred Currency** | Defaults to ZAR |
-
-#### Editing Your Profile
-
-1. Click **"Edit"** (✏️)
-2. Modify any editable fields
-3. Click **"Save Changes"**
-4. A toast notification confirms the update
-
-#### Account Information
-
-- **Account ID** — Unique system identifier (click to copy)
-- **Role** — Your permission level (e.g., Owner, Admin)
-- **Subscription Tier** — Current plan name and status
-- **Billing Cycle** — Monthly or Annual
-- **Member Since** — Account creation date
+| **Username** | Unique login handle (e.g. `mokhotm`) |
+| **Full Legal Name** | Name used for statement ownership matching (e.g. `Ezrom Mote Mokhotla`) |
+| **Designation / Job Title** | Professional title (e.g. `Senior Specialist Developer (NAT/MS/JAVA)`) |
+| **Employer / Organization** | Employer for statutory payroll cycle anchoring (e.g. `South African Revenue Service (SARS)`) |
+| **SARS Tax Reference Number** | 10-digit tax number used for ITR12 tax reports |
+| **Preferred Currency** | Default monetary currency (defaults to `ZAR`) |
 
 ---
 

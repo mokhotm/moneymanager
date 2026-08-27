@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
-import { getUserSubscription } from "@/lib/subscriptionGate";
+import { getUserSubscriptionDetails } from "@/lib/subscriptionGate";
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const subInfo = await getUserSubscription(userId);
+    const subInfo = await getUserSubscriptionDetails(userId);
 
     return NextResponse.json({
       ...user,

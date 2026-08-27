@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
     const enriched = documents.map((doc) => {
       const parsedData = (doc.parsedData as any) || {};
       const parsedFields = parsedData.parsedFields || parsedData;
-      const rawText: string = parsedData.rawText || parsedData.fullText || "";
 
       let documentName = "";
       let institution = "";
@@ -64,68 +63,26 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Check text or parsed fields for specific account matches if institution/name is generic
-      if (!accountName || accountName === "Default") {
-        if (rawText.includes("02 307 446 9") || rawText.includes("PRESTIGE CURRENT")) {
-          institution = "Standard Bank";
-          accountName = "Prestige Current Account";
-          accountNumber = "02 307 446 9";
-        } else if (rawText.includes("02 593 650 6") || rawText.includes("MYMO")) {
-          institution = "Standard Bank";
-          accountName = "MyMo Account";
-          accountNumber = "02 593 650 6";
-        } else if (rawText.includes("02 596 759 2") || rawText.includes("PLUSPLAN")) {
-          institution = "Standard Bank";
-          accountName = "PlusPlan Savings";
-          accountNumber = "02 596 759 2";
-        } else if (rawText.includes("22 043 551 0") || rawText.includes("REVOLVING CREDIT")) {
-          institution = "Standard Bank";
-          accountName = "Revolving Credit Plan";
-          accountNumber = "22 043 551 0";
-        } else if (rawText.includes("5239-xxxx-xxxx-3529") || rawText.includes("TITANIUM PRESTIGE")) {
-          institution = "Standard Bank";
-          accountName = "Titanium Credit Card";
-          accountNumber = "5239-xxxx-3529";
-        } else if (rawText.includes("62819203948") || rawText.includes("FNB") || rawText.includes("First National Bank")) {
-          institution = "FNB";
-          accountName = "Cheque Account";
-          accountNumber = "62819203948";
-        } else if (rawText.includes("EKURHULENI") || rawText.includes("MUNICIPAL")) {
-          institution = "City of Ekurhuleni";
-          accountName = "Municipal Rates & Electricity";
-        } else if (rawText.includes("VODACOM")) {
-          institution = "Vodacom";
-          accountName = "Monthly Cellular Contract";
-        }
-      }
-
-      // Default fallbacks based on document type
+      // Use explicit unknown labels when no linked entity metadata exists.
       if (!accountName) {
-        if (doc.documentType === "PAYSLIP" || parsedFields.employer) {
-          accountName = parsedFields.employer || "Employer Salary / SARS";
-          if (!institution) institution = "SARS / Payroll";
-        } else if (doc.documentType === "MUNICIPAL_BILL") {
-          accountName = "City Municipal Rates";
-          if (!institution) institution = "Municipality";
-        } else if (doc.documentType === "INVOICE") {
-          accountName = "Telecom / Service Invoice";
-          if (!institution) institution = "Service Provider";
-        } else {
-          accountName = "Standard Bank Account";
-          if (!institution) institution = "Standard Bank";
-        }
+        accountName = parsedFields.employer || "Unmapped Account";
+      }
+      if (!institution) {
+        institution = doc.documentType === "PAYSLIP" && parsedFields.employer
+          ? "SARS / Employer"
+          : "Unmapped Institution";
       }
 
       // Formulate clear, descriptive document name
       if (parsedFields.employer || doc.documentType === "PAYSLIP") {
-        const emp = parsedFields.employer || "Employer Salary";
+        const emp = parsedFields.employer || "Unmapped Employer";
         documentName = `${emp} — Payslip / IRP5`;
       } else if (doc.documentType === "MUNICIPAL_BILL") {
-        documentName = `${institution || "Municipal"} — ${accountName}`;
+        documentName = `${institution} — ${accountName}`;
       } else if (doc.documentType === "INVOICE") {
-        documentName = `${institution || "Provider"} — ${accountName}`;
+        documentName = `${institution} — ${accountName}`;
       } else {
-        documentName = `${institution ? `${institution} ` : ""}${accountName} — Statement`;
+        documentName = `${institution} — ${accountName}`;
       }
 
       // Exclude heavy raw text blob from list response to keep JSON payload lightweight
@@ -134,8 +91,8 @@ export async function GET(req: NextRequest) {
       return {
         ...docBase,
         documentName,
-        institution: institution || "Standard Bank",
-        accountName: accountName || "Standard Bank Account",
+        institution,
+        accountName,
         accountNumber: accountNumber || "",
       };
     });

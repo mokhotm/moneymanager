@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
 import { getPayCycleBounds, BudgetCycleMode, parseSafeDate } from "@/lib/payrollCalendar";
 
-// In-memory runtime cache for demonstration / user session cycle preference
+// In-memory runtime cache for current process cycle preference
 let runtimeCyclePreference: {
   mode: BudgetCycleMode;
   customStartDate?: string;
@@ -15,8 +15,12 @@ let runtimeCyclePreference: {
 export async function GET(request: NextRequest) {
   try {
     const userId = await getEffectiveUserId(request);
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     const modeParam = (searchParams.get("mode") as BudgetCycleMode) || runtimeCyclePreference.mode;
+    const monthParam = searchParams.get("month"); // e.g. "2026-08"
     const startParam = searchParams.get("startDate") || runtimeCyclePreference.customStartDate;
     const endParam = searchParams.get("endDate") || runtimeCyclePreference.customEndDate;
 
@@ -38,11 +42,16 @@ export async function GET(request: NextRequest) {
           orderBy: { uploadedAt: "desc" },
         });
 
-    // Derive the target pay month (statutory 15th base pay date in South Africa)
-    let targetYear = 2026;
-    let targetMonth = 8;
+    // Derive the target pay month based on requested month or latest payslip
+    const now = new Date();
+    let targetYear = now.getUTCFullYear();
+    let targetMonth = now.getUTCMonth() + 1;
 
-    if (latestPayslip?.periodStart) {
+    if (monthParam && monthParam.includes("-")) {
+      const [y, m] = monthParam.split("-");
+      targetYear = parseInt(y, 10);
+      targetMonth = parseInt(m, 10);
+    } else if (latestPayslip?.periodStart) {
       const d = parseSafeDate(latestPayslip.periodStart);
       targetYear = d.getUTCFullYear();
       targetMonth = d.getUTCMonth() + 1;
@@ -64,8 +73,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = await getEffectiveUserId(request);
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
     const body = await request.json();
-    const { mode, customStartDate, customEndDate } = body;
+    const { mode, month: monthBody, customStartDate, customEndDate } = body;
 
     if (mode) {
       runtimeCyclePreference.mode = mode as BudgetCycleMode;
@@ -91,9 +103,15 @@ export async function POST(request: NextRequest) {
           orderBy: { uploadedAt: "desc" },
         });
 
-    let targetYear = 2026;
-    let targetMonth = 8;
-    if (latestPayslip?.periodStart) {
+    const now = new Date();
+    let targetYear = now.getUTCFullYear();
+    let targetMonth = now.getUTCMonth() + 1;
+
+    if (monthBody && monthBody.includes("-")) {
+      const [y, m] = monthBody.split("-");
+      targetYear = parseInt(y, 10);
+      targetMonth = parseInt(m, 10);
+    } else if (latestPayslip?.periodStart) {
       const d = parseSafeDate(latestPayslip.periodStart);
       targetYear = d.getUTCFullYear();
       targetMonth = d.getUTCMonth() + 1;

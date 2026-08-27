@@ -61,9 +61,9 @@ export function LocationAdjustModal({
   const [lng, setLng] = useState<number>(location.lng);
   const [locationName, setLocationName] = useState<string>(location.locationName);
   const [suburb, setSuburb] = useState<string>(location.suburb || "");
-  const [city, setCity] = useState<string>(location.city || "Springs");
-  const [region, setRegion] = useState<string>(location.region || "Springs & Bakerton");
-  const [category, setCategory] = useState<string>(location.category || "Groceries & Household");
+  const [city, setCity] = useState<string>(location.city || "");
+  const [region, setRegion] = useState<string>(location.region || "");
+  const [category, setCategory] = useState<string>(location.category || "");
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -78,9 +78,9 @@ export function LocationAdjustModal({
       setLng(location.lng);
       setLocationName(location.locationName);
       setSuburb(location.suburb || "");
-      setCity(location.city || "Springs");
-      setRegion(location.region || "Springs & Bakerton");
-      setCategory(location.category || "Groceries & Household");
+      setCity(location.city || "");
+      setRegion(location.region || "");
+      setCategory(location.category || "");
       setAiRationale("");
       setSaveSuccess(false);
     }

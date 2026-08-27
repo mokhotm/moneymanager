@@ -46,11 +46,12 @@ export async function POST(req: NextRequest) {
       supportsEft = true,
       supportsRecurringBilling = true,
       settlementAccount,
+      merchantCredentialsEncrypted,
     } = body;
 
-    if (!provider || !settlementAccount) {
+    if (!provider || !settlementAccount || !merchantCredentialsEncrypted) {
       return NextResponse.json(
-        { error: 'Provider and settlementAccount details are required' },
+        { error: 'Provider, settlementAccount details, and encrypted merchant credentials are required' },
         { status: 400 }
       );
     }
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       data: {
         provider: provider as PaymentGatewayProvider,
         mode: mode as GatewayMode,
-        merchantCredentialsEncrypted: 'mock_encrypted_creds_' + Date.now(),
+        merchantCredentialsEncrypted,
         supportsCards,
         supportsEft,
         supportsRecurringBilling,

@@ -27,14 +27,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!targetTier) {
-      targetTier = await prisma.subscriptionTier.create({
-        data: {
-          name: tier,
-          priceMonthly: parseFloat(amount) || (tier === "PRO_WEALTH" ? 199 : 499),
-          entitlements: { tier, features: ["all"] },
-          isActive: true,
-        },
-      });
+      return NextResponse.json(
+        { error: "Selected tier does not exist. Please choose a valid configured subscription tier." },
+        { status: 400 }
+      );
     }
 
     let profile = await prisma.userProfile.findUnique({

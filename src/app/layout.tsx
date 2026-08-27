@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
-import Sidebar from "@/components/Sidebar";
-import ChatWidget from "@/components/ChatWidget";
+import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "MoneyManager — Personal Finance Dashboard",
@@ -13,12 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <div className="app-layout">
-          <Sidebar />
-          <main className="main-content">{children}</main>
-        </div>
-        <ChatWidget />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
 }
+

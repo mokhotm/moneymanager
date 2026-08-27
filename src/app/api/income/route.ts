@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       include: { incomeEvents: { orderBy: { dateReceived: "desc" } } },
       orderBy: { createdAt: "asc" },
     });
+
     return NextResponse.json(income);
   } catch {
     return NextResponse.json({ error: "Failed to fetch income" }, { status: 500 });

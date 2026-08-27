@@ -6,18 +6,25 @@ import { getEffectiveUserId } from "@/lib/session";
 
 const OVERRIDES_FILE = path.join(process.cwd(), "merchant_overrides.json");
 
-function saveOverrides(newOverrides: Record<string, any>) {
+function saveOverrides(userId: string, newOverrides: Record<string, any>) {
   try {
     let existing: Record<string, any> = {};
     if (fs.existsSync(OVERRIDES_FILE)) {
       existing = JSON.parse(fs.readFileSync(OVERRIDES_FILE, "utf-8"));
     }
-    const merged = { ...existing, ...newOverrides };
+    const userOverrides = existing[userId] || {};
+    const merged = {
+      ...existing,
+      [userId]: {
+        ...userOverrides,
+        ...newOverrides,
+      },
+    };
     fs.writeFileSync(OVERRIDES_FILE, JSON.stringify(merged, null, 2), "utf-8");
     return merged;
   } catch (e) {
     console.error("Error updating overrides file:", e);
-    return newOverrides;
+    return { [userId]: newOverrides };
   }
 }
 
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest) {
           updatedAt: new Date().toISOString(),
         };
       }
-      saveOverrides(overridesToSave);
+      saveOverrides(userId, overridesToSave);
     }
 
     return NextResponse.json({

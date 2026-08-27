@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionCookie = request.cookies.get("auth_session");
-    if (!sessionCookie || !sessionCookie.value) {
-      return NextResponse.json({ authenticated: false }, { status: 200 });
-    }
-
-    const payload = JSON.parse(Buffer.from(sessionCookie.value, "base64").toString("utf-8"));
-    if (!payload || !payload.userId || payload.exp < Date.now()) {
+    const sessionUser = await getCurrentUser(request);
+    if (!sessionUser) {
       return NextResponse.json({ authenticated: false }, { status: 200 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: sessionUser.id },
       include: { profile: true },
     });
 

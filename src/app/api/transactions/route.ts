@@ -3,6 +3,30 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId, getCurrentUser } from "@/lib/session";
 import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
 import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
+import { buildUserFlowWhere } from "@/lib/moneyFlowRefs";
+
+function shiftMonthKey(monthKey: string, delta: number): string {
+  const [yearStr, monthStr] = monthKey.split("-");
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const d = new Date(Date.UTC(year, month - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function resolveCycleKeyForDate(date: Date): string | null {
+  const baseKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  const candidateDeltas = [-2, -1, 0, 1, 2];
+
+  for (const delta of candidateDeltas) {
+    const key = shiftMonthKey(baseKey, delta);
+    const bounds = resolveSalaryCycleRange(key);
+    if (date.getTime() >= bounds.startDate.getTime() && date.getTime() <= bounds.endDate.getTime()) {
+      return key;
+    }
+  }
+
+  return null;
+}
 
 export interface BankingTransaction {
   id: string;
@@ -57,19 +81,74 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const userEntityIds = [...accounts.map((a) => a.id), ...debts.map((d) => d.id)];
+    // Build robust ownership predicate that supports both ID-based and legacy name-based flow refs.
+    const userFlowWhere = buildUserFlowWhere(accounts, debts);
 
-    const flows = userEntityIds.length === 0
+    const [latestFlowRecord, latestStatementDoc] = await Promise.all([
+      userFlowWhere.OR.length > 0
+        ? prisma.moneyFlow.findFirst({
+            where: userFlowWhere,
+            orderBy: { createdAt: "desc" },
+            select: { createdAt: true },
+          })
+        : Promise.resolve(null),
+      accounts.length > 0
+        ? prisma.document.findFirst({
+            where: {
+              documentType: "BANK_STATEMENT",
+              parseStatus: "APPLIED",
+              relatedEntityId: { in: accounts.map((a) => a.id) },
+            },
+            orderBy: [{ periodEnd: "desc" }, { uploadedAt: "desc" }],
+            select: { periodEnd: true, uploadedAt: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    const latestFlowDate = latestFlowRecord?.createdAt ?? null;
+    const latestStatementPeriodEnd = latestStatementDoc?.periodEnd ?? null;
+    const latestCoverageAnchor = latestStatementPeriodEnd ?? latestFlowDate;
+    const suggestedSalaryPayPeriod = latestCoverageAnchor
+      ? resolveCycleKeyForDate(latestCoverageAnchor)
+      : null;
+
+    let periodWindow: { startDate: Date; endDate: Date } | null = null;
+    if (payPeriod && payPeriod !== "ALL") {
+      if (periodType === "CALENDAR") {
+        const [yearStr, monthStr] = payPeriod.split("-");
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        periodWindow = {
+          startDate: new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)),
+          endDate: new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)),
+        };
+      } else {
+        const cycleBounds = resolveSalaryCycleRange(payPeriod);
+        periodWindow = {
+          startDate: cycleBounds.startDate,
+          endDate: cycleBounds.endDate,
+        };
+      }
+    }
+
+    const moneyFlowWhere: any = {
+      ...userFlowWhere,
+      ...(periodWindow
+        ? {
+            createdAt: {
+              gte: periodWindow.startDate,
+              lte: periodWindow.endDate,
+            },
+          }
+        : {}),
+    };
+
+    const flows = userFlowWhere.OR.length === 0
       ? []
       : await prisma.moneyFlow.findMany({
-          where: {
-            OR: [
-              { sourceRef: { in: userEntityIds } },
-              { destinationRef: { in: userEntityIds } },
-            ],
-          },
+          where: moneyFlowWhere,
           orderBy: { createdAt: "desc" },
-          take: 350,
+          take: periodWindow ? 5000 : 1500,
         });
 
     const accountMap = new Map(accounts.map((a) => [a.id, a]));
@@ -271,7 +350,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Priority 4: Flow-type Fallback
+      // Priority 4: Flow-type classification when no direct pattern match exists
       if (flowType === "DEBT_PAYMENT") {
         return {
           budgetItemId: null,
@@ -389,7 +468,9 @@ export async function GET(request: NextRequest) {
       }
 
       const amountNum = Number(f.amount);
-      const merchantAddress = `${merchantName}, Sandton Central, Johannesburg, South Africa`;
+      const merchantAddress = f.destinationType === "EXTERNAL" && f.destinationRef
+        ? String(f.destinationRef)
+        : "";
 
       // Budget Matching
       let budgetInfo: {
@@ -434,6 +515,7 @@ export async function GET(request: NextRequest) {
       return {
         id: f.id,
         date: f.createdAt.toISOString().split("T")[0],
+        dateTime: f.createdAt.toISOString(),
         merchantName,
         merchantAddress,
         accountName,
@@ -493,20 +575,10 @@ export async function GET(request: NextRequest) {
 
     // Pay Period Filtering with South African Statutory Payroll & Statement Synchronization
     if (payPeriod && payPeriod !== "ALL") {
-      let startDate: Date;
-      let endDate: Date;
-
-      if (periodType === "CALENDAR") {
-        const [yearStr, monthStr] = payPeriod.split("-");
-        const year = parseInt(yearStr, 10);
-        const month = parseInt(monthStr, 10);
-        startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-        endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-      } else {
-        // South African statutory payroll adjustment (Friday 14th if Sat 15th, Mon 16th if Sun 15th, preceding if holiday)
-        const cycleBounds = resolveSalaryCycleRange(payPeriod);
-        startDate = cycleBounds.startDate;
-        endDate = cycleBounds.endDate;
+      const startDate = periodWindow?.startDate;
+      const endDate = periodWindow?.endDate;
+      if (!startDate || !endDate) {
+        return NextResponse.json({ error: "Invalid pay period" }, { status: 400 });
       }
 
       const startDayStr = startDate.toISOString().split("T")[0];
@@ -580,6 +652,12 @@ export async function GET(request: NextRequest) {
         unbudgetedOutflow,
         budgetAdherenceRate,
         categoryBreakdown,
+      },
+      meta: {
+        activeMonth,
+        suggestedPayPeriod: suggestedSalaryPayPeriod,
+        latestFlowDate: latestFlowDate ? latestFlowDate.toISOString() : null,
+        latestStatementPeriodEnd: latestStatementPeriodEnd ? latestStatementPeriodEnd.toISOString() : null,
       },
     });
   } catch (error: any) {

@@ -30,6 +30,21 @@ export interface CashReconciliationResult {
   newTrackedBalance: number;
 }
 
+export interface CashSplitItem {
+  description: string;
+  category: string;
+  amount: number;
+  budgetCategory?: string;
+  spendDate?: Date;
+}
+
+export interface CashSplitResult {
+  parentFlow: MoneyFlowItem;
+  childFlows: MoneyFlowItem[];
+  allocatedTotal: number;
+  remainingCashOnHand: number;
+}
+
 /**
  * Handle an ATM cash withdrawal transaction (§12.3).
  * Generates a CASH_WITHDRAWAL MoneyFlow into the CASH_WALLET account.
@@ -52,12 +67,65 @@ export function recordATMWithdrawal(
     destinationType: "CASH_WALLET",
     destinationRef: cashWalletAccountId,
     amount,
+    currentAmount: amount,
     flowType: "CASH_WITHDRAWAL",
     confidence: "CONFIRMED",
     createdAt: date ?? new Date(),
   });
 
   return { flow, amount };
+}
+
+/**
+ * Split an ATM Cash Withdrawal into multiple categorized cash expenses (§12.3 / 100x Architecture).
+ * Creates child CASH_SPENDING flows linked to the parentFlowId and updates parent status.
+ */
+export function splitWithdrawalIntoSpends(
+  parentWithdrawalFlow: MoneyFlowItem,
+  cashWalletAccountId: string,
+  splits: CashSplitItem[]
+): CashSplitResult {
+  const allocatedTotal = round2(splits.reduce((sum, item) => sum + item.amount, 0));
+  if (allocatedTotal > parentWithdrawalFlow.amount) {
+    throw new Error(`Total split amount (R${allocatedTotal.toFixed(2)}) exceeds withdrawal amount (R${parentWithdrawalFlow.amount.toFixed(2)})`);
+  }
+
+  const childFlows: MoneyFlowItem[] = splits.map((item) => {
+    return createMoneyFlow({
+      parentFlowId: parentWithdrawalFlow.id,
+      sourceType: "CASH_WALLET",
+      sourceRef: cashWalletAccountId,
+      destinationType: "EXTERNAL",
+      destinationRef: item.category,
+      amount: round2(item.amount),
+      currentAmount: 0,
+      flowType: "CASH_SPENDING",
+      confidence: "CONFIRMED",
+      createdAt: item.spendDate ?? new Date(),
+    });
+  });
+
+  const remainingCashOnHand = round2(parentWithdrawalFlow.amount - allocatedTotal);
+  
+  let newStatus = parentWithdrawalFlow.status;
+  if (remainingCashOnHand <= 0) {
+    newStatus = "FULLY_CONSUMED";
+  } else if (remainingCashOnHand < parentWithdrawalFlow.amount) {
+    newStatus = "PARTIALLY_CONSUMED";
+  }
+
+  const updatedParent: MoneyFlowItem = {
+    ...parentWithdrawalFlow,
+    currentAmount: remainingCashOnHand,
+    status: newStatus,
+  };
+
+  return {
+    parentFlow: updatedParent,
+    childFlows,
+    allocatedTotal,
+    remainingCashOnHand,
+  };
 }
 
 /**

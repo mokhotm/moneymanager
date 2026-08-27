@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import EntitySwitcher from "@/components/EntitySwitcher";
 import {
   LayoutDashboard,
   Gem,
@@ -24,6 +25,9 @@ import {
   ArrowLeftRight,
   Bot,
   BarChart3,
+  Activity,
+  FileText,
+  ShieldCheck,
 } from "lucide-react";
 
 interface NavGroup {
@@ -44,6 +48,7 @@ const navGroups: NavGroup[] = [
       { href: "/net-worth", icon: Gem, label: "Net Worth" },
       { href: "/goals", icon: Target, label: "Goals & Wealth" },
       { href: "/money-journey", icon: GitCommit, label: "Money Journey" },
+      { href: "/forecast", icon: Activity, label: "365d Forecast", badge: "100x" },
     ],
   },
   {
@@ -51,7 +56,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/accounts", icon: Landmark, label: "Accounts" },
       { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
-      { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet" },
+      { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet", badge: "Split" },
       { href: "/budget", icon: Receipt, label: "Monthly Budget" },
     ],
   },
@@ -70,17 +75,23 @@ const navGroups: NavGroup[] = [
       { href: "/chatbot", icon: Bot, label: "ChatBot AI" },
       { href: "/documents", icon: FolderOpen, label: "Document Vault" },
       { href: "/reports", icon: BarChart3, label: "Reports & Leakages" },
+      { href: "/reports/tax", icon: FileText, label: "SARS Tax HUD", badge: "100x" },
     ],
   },
   {
     sectionTitle: "System & Settings",
     items: [
       { href: "/settings", icon: Settings, label: "Settings & BYOK" },
+      { href: "/system/readiness", icon: ShieldCheck, label: "System Readiness" },
       { href: "/billing", icon: Sparkles, label: "Billing & Plans" },
       { href: "/profile", icon: User, label: "Profile" },
     ],
   },
 ];
+
+const SIDEBAR_MIN_W = 200;
+const SIDEBAR_MAX_W = 480;
+const SIDEBAR_DEFAULT_W = 260;
 
 interface UserSession {
   username: string;
@@ -91,6 +102,42 @@ interface UserSession {
 export default function Sidebar() {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const widthRef = useRef(SIDEBAR_DEFAULT_W);
+
+  // Load persisted width and apply CSS variable
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-width");
+    if (saved) {
+      const w = parseInt(saved, 10);
+      if (w >= SIDEBAR_MIN_W && w <= SIDEBAR_MAX_W) {
+        widthRef.current = w;
+        document.documentElement.style.setProperty("--sidebar-w", `${w}px`);
+      }
+    }
+  }, []);
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const newWidth = Math.min(SIDEBAR_MAX_W, Math.max(SIDEBAR_MIN_W, ev.clientX));
+      widthRef.current = newWidth;
+      document.documentElement.style.setProperty("--sidebar-w", `${newWidth}px`);
+    };
+
+    const onMouseUp = () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      localStorage.setItem("sidebar-width", String(widthRef.current));
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, []);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -115,7 +162,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={{ position: "fixed" }}>
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
           <Coins size={22} style={{ color: "#070b14" }} />
@@ -126,7 +173,12 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="sidebar-nav" style={{ padding: "14px 12px", gap: "2px" }}>
+      {/* Multi-Entity & Family Office Workspace Switcher */}
+      <div style={{ padding: "0 12px 14px" }}>
+        <EntitySwitcher />
+      </div>
+
+      <nav className="sidebar-nav" style={{ padding: "0 12px 14px", gap: "2px" }}>
         {navGroups.map((group, groupIdx) => (
           <div key={group.sectionTitle} style={{ marginBottom: groupIdx === navGroups.length - 1 ? 0 : "12px" }}>
             <div
@@ -278,6 +330,24 @@ export default function Sidebar() {
           </button>
         </div>
       )}
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        title="Drag to resize"
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: "5px",
+          height: "100%",
+          cursor: "ew-resize",
+          zIndex: 101,
+          background: "transparent",
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,158,11,0.25)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+      />
     </aside>
   );
 }
