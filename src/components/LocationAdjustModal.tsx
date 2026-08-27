@@ -119,27 +119,30 @@ export function LocationAdjustModal({
     }
   };
 
-  // Geocode address search
+  // Geocode address search using Nominatim proxy
   const handleGeocodeSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
     try {
-      const q = encodeURIComponent(`${searchQuery}, South Africa`);
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
-        headers: { "User-Agent": "MoneyManagerApp/1.0" },
-      });
+      const res = await fetch(`/api/locations/geocode?q=${encodeURIComponent(searchQuery.trim())}`);
       const data = await res.json();
 
-      if (data && data[0]) {
-        const newLat = parseFloat(data[0].lat);
-        const newLng = parseFloat(data[0].lon);
-        setLat(newLat);
-        setLng(newLng);
-        setLocationName(data[0].display_name.split(",").slice(0, 3).join(","));
+      if (data.results && data.results.length > 0) {
+        const best = data.results[0];
+        setLat(best.lat);
+        setLng(best.lng);
+        setLocationName(best.road ? `${best.road}, ${best.suburb || best.city}` : best.displayName.split(",").slice(0, 3).join(","));
+        if (best.suburb) setSuburb(best.suburb);
+        if (best.city) setCity(best.city);
+        if (best.state) {
+          if (/gauteng|springs|pretoria|johannesburg/i.test(best.state) || /springs/i.test(best.city || "")) {
+            setRegion(/pretoria|centurion/i.test(best.city || best.suburb || "") ? "Pretoria & Centurion" : /springs|bakerton/i.test(best.city || best.suburb || "") ? "Springs & Bakerton" : "East Rand");
+          }
+        }
       } else {
-        alert("Location not found. Try searching with a suburb name like 'Bakerton, Springs' or 'Geduld, Springs'.");
+        alert("Location not found on OpenStreetMap. Try searching with a landmark or suburb like '5th Avenue Springs' or 'Geduld Springs'.");
       }
     } catch (err: any) {
       console.error("Geocoding search error:", err);

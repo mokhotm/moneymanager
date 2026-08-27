@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { currentMonthKey } from "@/lib/formatters";
 import { getEffectiveUserId } from "@/lib/session";
@@ -277,8 +279,19 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Geotagged spending locations & radar
-    const geoIntelligence = resolveSpendingLocations(flows);
+    // Geotagged spending locations & radar with user-calibrated overrides
+    let userOverrides: Record<string, any> = {};
+    try {
+      const overridesPath = path.join(process.cwd(), "merchant_overrides.json");
+      if (fs.existsSync(overridesPath)) {
+        const allOverrides = JSON.parse(fs.readFileSync(overridesPath, "utf-8"));
+        userOverrides = allOverrides[userId] || {};
+      }
+    } catch (e) {
+      console.warn("Could not load merchant overrides:", e);
+    }
+
+    const geoIntelligence = resolveSpendingLocations(flows, userOverrides);
     const spendingLocations = geoIntelligence.physicalLocations;
 
     // Debt Breakdown Progress
