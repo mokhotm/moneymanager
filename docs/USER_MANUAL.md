@@ -159,7 +159,11 @@ The **Wealth & Financial Dashboard** is your command center — a real-time over
    - **Spending Heatmap** — Heat map showing spending patterns by day/time
    - **Debt Distribution** — Breakdown of debt balances by account
 
-5. **Geotagged Spending Radar** — Interactive Leaflet map pinpointing transaction locations with merchant categories and amounts.
+5. **Geotagged Spending Radar & Pin Calibrator** — Interactive geospatial radar pinpointing in-store merchant locations across South African hubs (Springs, Pretoria, Johannesburg, Bloemfontein).
+   - **Watermark-Free OpenStreetMap Tiles:** Clean, unwatermarked high-resolution map tiles.
+   - **Interactive Drag-and-Drop Calibration:** Click on any merchant marker and select **"Adjust Pin Location"** to drag the marker directly onto the exact building rooftop or search addresses via live Nominatim geocoding.
+   - **AI Geo-Agent Verification:** Click **"AI Verify Locations"** to batch-geocode all raw bank statement lines with rooftop precision.
+   - **Privacy Shield Mode:** 1-click toggle to mask exact addresses and monetary figures for safe screen sharing.
 
 ### Quick Actions (Top Right)
 
