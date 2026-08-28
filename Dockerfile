@@ -27,6 +27,7 @@ RUN npx prisma generate
 # Build Next.js in standalone mode
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 RUN npm run build
 
