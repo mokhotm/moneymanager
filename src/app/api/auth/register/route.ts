@@ -77,9 +77,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const isHttps =
+      request.nextUrl.protocol === "https:" ||
+      request.headers.get("x-forwarded-proto") === "https";
+
     response.cookies.set("auth_session", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       sameSite: "lax",
       path: "/",
       maxAge: 86400, // 24 hours
