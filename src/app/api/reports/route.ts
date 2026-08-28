@@ -4,6 +4,9 @@ import { getEffectiveUserId } from "@/lib/session";
 import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 import { buildForensicAuditReport } from "@/lib/forensicAudit";
 import { buildUserFlowWhere } from "@/lib/moneyFlowRefs";
+import { resolveSpendingLocations } from "@/lib/geoResolver";
+import fs from "fs";
+import path from "path";
 
 export async function GET(request: NextRequest) {
   try {
@@ -488,6 +491,57 @@ export async function GET(request: NextRequest) {
         selectedMonth === "ALL" ? null : cycleBounds
       ),
       cumulativeForensicAudit: buildForensicAuditReport(flows, null),
+      locationAuditData: (() => {
+        let userOverrides: Record<string, any> = {};
+        try {
+          const overridesPath = path.join(process.cwd(), "merchant_overrides.json");
+          if (fs.existsSync(overridesPath)) {
+            const allOverrides = JSON.parse(fs.readFileSync(overridesPath, "utf-8"));
+            userOverrides = allOverrides[userId] || {};
+          }
+        } catch (e) {
+          console.warn("Could not load merchant overrides:", e);
+        }
+
+        const geoIntelligence = resolveSpendingLocations(flows, userOverrides);
+        const physical = geoIntelligence.physicalLocations;
+        const digital = geoIntelligence.digitalServices;
+
+        const totalInStoreTxs = physical.reduce((s, p) => s + (p.transactionCount || 1), 0);
+        const totalDigitalTxs = digital.reduce((s, d) => s + (d.transactionCount || 1), 0);
+        const feeCount = flows.filter((f) => f.flowType === "FEE").length;
+        const incomeCount = flows.filter((f) => f.flowType === "INCOME").length;
+        const debtOrderCount = flows.filter((f) => f.flowType === "DEBT_PAYMENT").length;
+        const cashDrawCount = flows.filter((f) => f.flowType === "CASH_WITHDRAWAL").length;
+        const transferCount = flows.filter((f) => f.flowType === "TRANSFER").length;
+        const billPaymentsCount = Math.max(
+          0,
+          flows.length - (totalInStoreTxs + totalDigitalTxs + feeCount + incomeCount + debtOrderCount + cashDrawCount + transferCount)
+        );
+
+        return {
+          totalFlowsCount: flows.length,
+          distinctPhysicalVenuesCount: physical.length,
+          totalInStoreCardSwipes: totalInStoreTxs,
+          totalPhysicalSpendZAR: geoIntelligence.totalPhysicalSpend,
+          distinctDigitalServicesCount: digital.length,
+          totalDigitalSubscriptionsTxs: totalDigitalTxs,
+          totalDigitalSpendZAR: geoIntelligence.totalDigitalSpend,
+          topHub: geoIntelligence.topHub,
+          breakdownMatrix: [
+            { category: "In-Store POS Purchases", count: totalInStoreTxs, amount: geoIntelligence.totalPhysicalSpend, note: `Mapped to ${physical.length} physical GPS pins across SA`, icon: "MapPin" },
+            { category: "Digital & Online Subscriptions", count: totalDigitalTxs, amount: geoIntelligence.totalDigitalSpend, note: `${digital.length} recurring cloud & internet services`, icon: "Globe" },
+            { category: "Bank Charges, POS & VAT Fees", count: feeCount, amount: flows.filter((f) => f.flowType === "FEE").reduce((s, f) => s + Number(f.amount), 0), note: "Monthly bank service fees, card fees & VAT", icon: "Coins" },
+            { category: "Income Inflows & Salaries", count: incomeCount, amount: flows.filter((f) => f.flowType === "INCOME").reduce((s, f) => s + Number(f.amount), 0), note: "Direct salary deposits, SARS refunds & EFTs", icon: "TrendingUp" },
+            { category: "Debt Debit Order Mandates", count: debtOrderCount, amount: flows.filter((f) => f.flowType === "DEBT_PAYMENT").reduce((s, f) => s + Number(f.amount), 0), note: "Automated monthly vehicle & loan debits", icon: "CreditCard" },
+            { category: "ATM Cash Withdrawals", count: cashDrawCount, amount: flows.filter((f) => f.flowType === "CASH_WITHDRAWAL").reduce((s, f) => s + Number(f.amount), 0), note: "Physical ATM draws tracked in Cash Wallet", icon: "Banknote" },
+            { category: "Internal Account Transfers", count: transferCount, amount: flows.filter((f) => f.flowType === "TRANSFER").reduce((s, f) => s + Number(f.amount), 0), note: "Inter-account shifts (Cheque ↔ Savings)", icon: "ArrowLeftRight" },
+            { category: "Electronic Bill & EFT Payments", count: billPaymentsCount, amount: flows.filter((f) => f.flowType === "OTHER").reduce((s, f) => s + Number(f.amount), 0), note: "EFTs and non-POS bill settlements", icon: "FileText" },
+          ],
+          physicalLocations: physical,
+          digitalServices: digital,
+        };
+      })(),
     });
   } catch (error) {
     console.error("Error generating reports:", error);

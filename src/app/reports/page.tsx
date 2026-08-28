@@ -43,7 +43,10 @@ import {
   Shield,
   Activity,
   Award,
+  Compass,
+  MapPin,
 } from "lucide-react";
+import { LocationFootprintReport } from "@/components/LocationFootprintReport";
 
 interface LeakageItem {
   id: string;
@@ -536,7 +539,54 @@ export default function ReportsPage() {
         >
           <Flame size={16} /> Spend Velocity &amp; Habits
         </button>
+
+        <button
+          onClick={() => setActiveTab("LOCATION_FOOTPRINT")}
+          style={{
+            flex: 1,
+            minWidth: "190px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            padding: "10px 18px",
+            borderRadius: "12px",
+            fontSize: "13px",
+            fontWeight: 700,
+            cursor: "pointer",
+            border: activeTab === "LOCATION_FOOTPRINT" ? "1px solid rgba(16, 185, 129, 0.5)" : "1px solid transparent",
+            background:
+              activeTab === "LOCATION_FOOTPRINT"
+                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%)"
+                : "transparent",
+            color: activeTab === "LOCATION_FOOTPRINT" ? "#6ee7b7" : "#94a3b8",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Compass size={16} color={activeTab === "LOCATION_FOOTPRINT" ? "#10b981" : "#94a3b8"} />
+          <span>Geospatial Footprint Audit</span>
+          <span
+            style={{
+              background: "rgba(16, 185, 129, 0.2)",
+              color: "#10b981",
+              padding: "1px 7px",
+              borderRadius: "99px",
+              fontSize: "10px",
+              fontWeight: 800,
+            }}
+          >
+            {data?.locationAuditData?.distinctPhysicalVenuesCount || 33} Venues
+          </span>
+        </button>
       </div>
+
+      {/* ─── TAB: GEOSPATIAL FOOTPRINT AUDIT ─── */}
+      {activeTab === "LOCATION_FOOTPRINT" && (
+        <LocationFootprintReport
+          data={data?.locationAuditData}
+          selectedMonth={selectedMonth}
+        />
+      )}
 
       {/* ─── TAB: FORENSIC GROUND TRUTH AUDIT ─── */}
       {activeTab === "FORENSIC_AUDIT" && (
