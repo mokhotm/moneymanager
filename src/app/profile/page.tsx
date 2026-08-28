@@ -280,7 +280,7 @@ export default function ProfilePage() {
             </span>
           </h1>
           <p className="page-subtitle">
-            Personal identity details, SARS tax metadata, security encryption status &amp; subscription entitlements
+            Personal identity details, tax metadata, security encryption status &amp; subscription entitlements
           </p>
         </div>
 
@@ -453,12 +453,12 @@ export default function ProfilePage() {
 
           <div className="stat-card">
             <div className="stat-label text-blue-400 flex items-center gap-1.5">
-              <FileText size={14} /> SARS Tax Reference
+              <FileText size={14} /> Tax Reference
             </div>
             <div className="stat-value text-blue-400 font-extrabold" style={{ fontSize: "17px" }}>
               {userData?.profile?.taxReference ? `Ref: ${userData.profile.taxReference}` : "Registered"}
             </div>
-            <div className="stat-sub text-muted">South African Revenue Service</div>
+            <div className="stat-sub text-muted">National Tax Agency</div>
           </div>
 
           <div className="stat-card">
@@ -550,7 +550,7 @@ export default function ProfilePage() {
 
                 <div style={{ background: "rgba(7, 11, 20, 0.5)", padding: "16px 20px", borderRadius: "14px", border: "1px solid rgba(245, 158, 11, 0.2)" }}>
                   <div className="stat-label text-muted flex items-center gap-1.5 mb-1.5" style={{ fontSize: "12px" }}>
-                    <FileText size={14} className="text-amber-400" /> SARS Tax Reference Number
+                    <FileText size={14} className="text-amber-400" /> Tax Reference Number
                   </div>
                   <div className="font-mono font-bold text-amber-400" style={{ fontSize: "16px" }}>
                     {userData?.profile?.taxReference ?? "—"}
@@ -617,7 +617,7 @@ export default function ProfilePage() {
 
                 <div className="two-col mb-4">
                   <div className="form-group">
-                    <label className="form-label">SARS Tax Reference Number</label>
+                    <label className="form-label">Tax Reference Number</label>
                     <input
                       className="form-input"
                       placeholder="e.g. 9820194817"

@@ -25,7 +25,7 @@ const DOCUMENTS: DocItem[] = [
     title: "Latest Payslip",
     description: "Confirms your take-home income, pay date, and any retro/bonus amounts.",
     required: true,
-    examples: "SARS payslip, private employer payslip (PDF)",
+    examples: "Official employer payslip, payroll tax certificate (PDF)",
     tip: "This is the single most important document — without it the budget and snowball calculations use estimates.",
   },
   {

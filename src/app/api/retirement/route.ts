@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     const netIncome = income ? Number(income.recurringAmount) : 71026.90;
-    const grossIncome = netIncome * 1.38; // Estimated gross from net SARS salary
+    const grossIncome = netIncome * 1.38; // Estimated gross from net salary
 
     // Check existing retirement accounts
     const retirementAccounts = accounts.filter(

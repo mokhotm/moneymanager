@@ -189,12 +189,12 @@ export function computeSouthAfricanRetirementPlan(input: RetirementProfileInput)
       features: ['100% Tax-Free growth (no CGT, no dividend withholding tax)', 'R36,000/yr annual limit (R3,000/mo)', 'No Regulation 28 asset class limits (100% global equity permitted)'],
       suitabilityScore: 95,
       pros: ['Uncapped global offshore equity potential (100% MSCI World/S&P 500)', 'Zero platform administration fees', 'Fully accessible tax-free cash cushion at age 65'],
-      cons: ['Strict R36k/yr limit with SARS penalties for over-contribution'],
+      cons: ['Strict R36k/yr limit with statutory penalties for over-contribution'],
     },
   ];
 
   const strategicRecommendations = [
-    `**Max Out Section 11F RA Contributions**: You can contribute up to 27.5% of your taxable income (up to R350k/yr). This will generate an estimated **R${Math.round(annualTaxRebatePotentialZAR).toLocaleString('en-ZA')} annual tax refund from SARS**, which should be immediately reinvested into your retirement pool.`,
+    `**Max Out Section 11F RA Contributions**: You can contribute up to 27.5% of your taxable income (up to R350k/yr). This will generate an estimated **R${Math.round(annualTaxRebatePotentialZAR).toLocaleString('en-ZA')} annual tax refund from your tax return**, which should be immediately reinvested into your retirement pool.`,
     `**Debt Snowball Surplus Redirection**: Once your consumer debts clear over the next ~18 months, roll the **R25,000+/mo surplus pool** straight into your retirement and ETF accumulation accounts without inflating lifestyle spending.`,
     `**Standard Bank + Low-Cost RA Combination**: If you value having your retirement inside your Standard Bank app, consider Stanlib for convenience, while pairing it with a low-cost provider like **Sygnia Skeleton RA (0.45% TIC)** to save hundreds of thousands in compounding fees over your 14-year runway to age 65.`,
     `**Utilize R36,000/yr TFSA**: Complement your RA with a Tax-Free Savings Account (R3,000/month) invested 100% in offshore equities (e.g. S&P 500 / MSCI World ETF) to build an un-annuitized, tax-free cash reserve for age 65.`,

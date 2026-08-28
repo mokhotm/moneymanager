@@ -438,7 +438,7 @@ export async function GET(request: NextRequest) {
         merchantName =
           (srcAcc ? srcAcc.name : null) ||
           (destAcc ? destAcc.name : null) ||
-          "SARS Employer Salary";
+          "Primary Employer Salary";
         direction = "INFLOW";
         categoryName = "Income & Payroll";
         if (destAcc) {
@@ -485,7 +485,7 @@ export async function GET(request: NextRequest) {
       if (f.flowType === "INCOME") {
         budgetInfo = {
           budgetItemId: null,
-          budgetItemLabel: "SARS Salary (Nett)",
+          budgetItemLabel: "Primary Salary (Nett)",
           budgetCategory: "INCOME",
           budgetAmount: amountNum,
           isBudgeted: true,

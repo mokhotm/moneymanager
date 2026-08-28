@@ -447,7 +447,7 @@ export async function GET(request: NextRequest) {
             friendlyTitle = "Titanium Prestige Credit Card";
             accountInfo = "5239-xxxx-3529";
           } else if (d.documentType === "PAYSLIP" || text.includes("PAYSLIP") || text.includes("SARS")) {
-            friendlyTitle = "Official SARS Payslip";
+            friendlyTitle = "Official Verified Payslip";
             accountInfo = "Emp #00011185";
           } else if (text.includes("85361174582") || text.includes("Renault Clio")) {
             friendlyTitle = "WesBank Finance (Renault Clio V)";
@@ -532,7 +532,7 @@ export async function GET(request: NextRequest) {
             { category: "In-Store POS Purchases", count: totalInStoreTxs, amount: geoIntelligence.totalPhysicalSpend, note: `Mapped to ${physical.length} physical GPS pins across SA`, icon: "MapPin" },
             { category: "Digital & Online Subscriptions", count: totalDigitalTxs, amount: geoIntelligence.totalDigitalSpend, note: `${digital.length} recurring cloud & internet services`, icon: "Globe" },
             { category: "Bank Charges, POS & VAT Fees", count: feeCount, amount: flows.filter((f) => f.flowType === "FEE").reduce((s, f) => s + Number(f.amount), 0), note: "Monthly bank service fees, card fees & VAT", icon: "Coins" },
-            { category: "Income Inflows & Salaries", count: incomeCount, amount: flows.filter((f) => f.flowType === "INCOME").reduce((s, f) => s + Number(f.amount), 0), note: "Direct salary deposits, SARS refunds & EFTs", icon: "TrendingUp" },
+            { category: "Income Inflows & Salaries", count: incomeCount, amount: flows.filter((f) => f.flowType === "INCOME").reduce((s, f) => s + Number(f.amount), 0), note: "Direct salary deposits, tax refunds & EFTs", icon: "TrendingUp" },
             { category: "Debt Debit Order Mandates", count: debtOrderCount, amount: flows.filter((f) => f.flowType === "DEBT_PAYMENT").reduce((s, f) => s + Number(f.amount), 0), note: "Automated monthly vehicle & loan debits", icon: "CreditCard" },
             { category: "ATM Cash Withdrawals", count: cashDrawCount, amount: flows.filter((f) => f.flowType === "CASH_WITHDRAWAL").reduce((s, f) => s + Number(f.amount), 0), note: "Physical ATM draws tracked in Cash Wallet", icon: "Banknote" },
             { category: "Internal Account Transfers", count: transferCount, amount: flows.filter((f) => f.flowType === "TRANSFER").reduce((s, f) => s + Number(f.amount), 0), note: "Inter-account shifts (Cheque ↔ Savings)", icon: "ArrowLeftRight" },

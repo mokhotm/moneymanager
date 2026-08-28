@@ -186,7 +186,7 @@ export default function MoneyJourneyPage() {
               >
                 <div className="stat-label text-emerald-400">Total Tracked Inflows</div>
                 <div className="stat-value text-emerald-400 font-extrabold">{formatZAR(summary?.totalIncome ?? 0)}</div>
-                <div className="stat-sub">SARS Salary &amp; Incomes</div>
+                <div className="stat-sub">Verified Salary &amp; Incomes</div>
               </div>
 
               <div className="stat-card">

@@ -1920,8 +1920,8 @@ export function BankingTransactionsCard({
                     </div>
                   )}
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    {["Telkom","Ekurhuleni","SARS","Woolworths"].map((q) => (
-                      <button key={q} type="button" onClick={() => handleExtractFromDocument(q)}
+                    {["Telkom","Ekurhuleni","Tax / Revenue","Woolworths"].map((q) => (
+                      <button key={q} type="button" onClick={() => handleExtractFromDocument(q === "Tax / Revenue" ? "Tax" : q)}
                         style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
                           borderRadius: "6px", padding: "3px 8px", color: "#e2e8f0", fontSize: "10.5px", cursor: "pointer" }}>
                         📄 {q}

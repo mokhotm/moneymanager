@@ -91,7 +91,7 @@ function formatDisplayLabel(name: string, type?: string, flowType?: string): str
 
   // Salary Inflow
   if (type === "INFLOW" || flowType === "INCOME" || lower.includes("salary") || lower.includes("inflow")) {
-    return name.includes("SARS") ? "SARS Net Salary Inflow" : "Net Salary Inflow";
+    return name.includes("SARS") || name.includes("Primary") ? "Primary Net Salary Inflow" : "Net Salary Inflow";
   }
 
   return name;
@@ -166,7 +166,7 @@ export function MoneyFlowNetworkCanvas({
       if (!nodeMap.has(srcName)) {
         let layer = 1;
         let type = "ACCOUNT";
-        if (f.flowType === "INCOME" || f.sourceType === "EXTERNAL" || srcName === "SARS Net Salary Inflow") {
+        if (f.flowType === "INCOME" || f.sourceType === "EXTERNAL" || srcName.includes("Salary Inflow")) {
           layer = 0;
           type = "INFLOW";
         }

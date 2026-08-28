@@ -76,7 +76,7 @@ const navGroups: NavGroup[] = [
       { href: "/chatbot", icon: Bot, label: "ChatBot AI" },
       { href: "/documents", icon: FolderOpen, label: "Document Vault" },
       { href: "/reports", icon: BarChart3, label: "Reports & Leakages" },
-      { href: "/reports/tax", icon: FileText, label: "SARS Tax HUD", badge: "100x" },
+      { href: "/reports/tax", icon: FileText, label: "Tax HUD", badge: "100x" },
     ],
   },
   {

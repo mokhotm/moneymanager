@@ -953,7 +953,7 @@ export default function ReportsPage() {
               6-Month Verified Historical Income & Surplus Trends
             </h3>
             <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 20px 0" }}>
-              Reconciled historical performance across official SARS payslips and bank statement cycles:
+              Reconciled historical performance across verified payslips and bank statement cycles:
             </p>
 
             {historicalTrends.length === 0 ? (

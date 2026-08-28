@@ -79,7 +79,7 @@ export async function executeDocumentSyncPipeline(
               agent: "DOCUMENT_AGENT",
               title: `Updated Verified Net Salary: R ${nettAmount.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`,
               description: `Uploaded payslip parsed recurring net remuneration of R ${nettAmount.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}.`,
-              rationale: "Matches SARS official net pay distribution. Realigned with active monthly budget.",
+              rationale: "Matches official payroll net pay distribution. Realigned with active monthly budget.",
               payload: { newNetSalary: nettAmount, documentId },
               status: "APPROVED",
               reviewedAt: new Date()

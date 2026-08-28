@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       } else if (doc.relatedEntityType === "INCOME") {
         const inc = incomeMap.get(doc.relatedEntityId);
         if (inc) {
-          institution = "SARS / Employer";
+          institution = "Payroll / Employer";
           accountName = inc.sourceName;
         }
       } else if (doc.relatedEntityType === "ASSET") {
@@ -69,14 +69,14 @@ export async function GET(req: NextRequest) {
       }
       if (!institution) {
         institution = doc.documentType === "PAYSLIP" && parsedFields.employer
-          ? "SARS / Employer"
+          ? "Payroll / Employer"
           : "Unmapped Institution";
       }
 
       // Formulate clear, descriptive document name
       if (parsedFields.employer || doc.documentType === "PAYSLIP") {
         const emp = parsedFields.employer || "Unmapped Employer";
-        documentName = `${emp} — Payslip / IRP5`;
+        documentName = `${emp} — Payslip / Tax Certificate`;
       } else if (doc.documentType === "MUNICIPAL_BILL") {
         documentName = `${institution} — ${accountName}`;
       } else if (doc.documentType === "INVOICE") {

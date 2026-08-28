@@ -67,7 +67,7 @@ interface Account {
 
 const DOCUMENT_TYPE_LABELS: Record<string, { label: string; color: string; Icon: any }> = {
   BANK_STATEMENT: { label: "Bank Statement", color: "#3b82f6", Icon: Landmark },
-  PAYSLIP: { label: "SARS Payslip / IRP5", color: "#f59e0b", Icon: FileText },
+  PAYSLIP: { label: "Payslip / Tax Certificate", color: "#f59e0b", Icon: FileText },
   MUNICIPAL_BILL: { label: "Municipal Utilities", color: "#ef4444", Icon: ShieldAlert },
   INVOICE: { label: "Invoice / Telecom", color: "#06b6d4", Icon: Phone },
   CREDIT_REPORT: { label: "Credit Bureau Report", color: "#a855f7", Icon: ShieldCheck },
@@ -541,7 +541,7 @@ export default function DocumentsPage() {
             <input
               className="form-input"
               style={{ flex: 1 }}
-              placeholder="e.g. Find SARS retro pay lump sum or Ekurhuleni electricity disconnection notice…"
+              placeholder="e.g. Find salary retro pay lump sum or Ekurhuleni electricity disconnection notice…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               id="semantic-search-input"
@@ -612,7 +612,7 @@ export default function DocumentsPage() {
               <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "2px", color: "var(--text-primary)" }}>
                 Upload Bank Statement, Payslip or Invoice
               </h2>
-              <p className="text-muted text-sm">PDF bank statements, SARS payslips, municipal bills, telecom invoices.</p>
+              <p className="text-muted text-sm">PDF bank statements, employer payslips, municipal bills, telecom invoices.</p>
             </div>
           </div>
 
@@ -1055,7 +1055,7 @@ export default function DocumentsPage() {
                     const displayInstitution =
                       doc.institution ||
                       (linkedAcc ? linkedAcc.institution : null) ||
-                      (doc.documentType === "PAYSLIP" ? "SARS / Payroll" : "Standard Bank");
+                      (doc.documentType === "PAYSLIP" ? "Payroll / Employer" : "Standard Bank");
 
                     const displayAccountNumber =
                       doc.accountNumber ||
