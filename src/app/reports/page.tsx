@@ -148,7 +148,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 import { ForensicAuditReport } from "@/components/ForensicAuditReport";
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<"FORENSIC_AUDIT" | "AUDIT_REPORT" | "OVERVIEW" | "VARIANCE" | "LEAKAGE" | "HABITS" | "LOCATION_FOOTPRINT">("LOCATION_FOOTPRINT");
+  const [activeTab, setActiveTab] = useState<"FORENSIC_AUDIT" | "AUDIT_REPORT" | "OVERVIEW" | "VARIANCE" | "LEAKAGE" | "HABITS" | "LOCATION_FOOTPRINT">("FORENSIC_AUDIT");
   const [timeframe, setTimeframe] = useState<string>("MONTHLY_CYCLE");
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);

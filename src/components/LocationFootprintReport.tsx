@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { formatZAR } from "@/lib/formatters";
 import {
   Compass,
@@ -15,13 +15,10 @@ import {
   Store,
   ShieldCheck,
   Search,
-  Filter,
   Layers,
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Award,
-  Calendar,
   Activity,
   Zap,
 } from "lucide-react";
@@ -357,19 +354,19 @@ export function LocationFootprintReport({
           </div>
         </div>
 
-        {/* Venues Luxury Table */}
+        {/* Venues Clean Table */}
         <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/40">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 bg-white/[0.02]">
               <tr>
-                <th className="py-3 px-4 text-center">Rank</th>
-                <th className="py-3 px-4">Physical Venue / Billboard Name</th>
-                <th className="py-3 px-4">Location &amp; Region</th>
-                <th className="py-3 px-4 text-center">Card Swipes</th>
-                <th className="py-3 px-4 text-right">Consolidated Spend</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4 text-center">GPS Precision</th>
-                <th className="py-3 px-4 text-center">Swipes</th>
+                <th className="py-3.5 px-4 text-center w-14">Rank</th>
+                <th className="py-3.5 px-4">Physical Venue / Billboard Name</th>
+                <th className="py-3.5 px-4">Location &amp; Region</th>
+                <th className="py-3.5 px-4 text-center">Card Swipes</th>
+                <th className="py-3.5 px-4 text-right">Consolidated Spend</th>
+                <th className="py-3.5 px-4">Category</th>
+                <th className="py-3.5 px-4 text-center">GPS Precision</th>
+                <th className="py-3.5 px-4 text-center w-12">View</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -379,121 +376,112 @@ export function LocationFootprintReport({
                 const isTop3 = idx < 3;
 
                 return (
-                  <tr
-                    key={loc.id}
-                    className={`transition-colors ${isExpanded ? "bg-white/[0.06]" : "hover:bg-white/[0.02]"}`}
-                  >
-                    <td colSpan={8} className="p-0">
-                      <div
-                        onClick={() => setExpandedVenueId(isExpanded ? null : loc.id)}
-                        className="grid grid-cols-[50px_2.2fr_1.6fr_100px_130px_130px_120px_60px] items-center py-3.5 px-4 cursor-pointer"
-                      >
-                        {/* Rank Badge */}
-                        <div className="text-center">
-                          {isTop3 ? (
-                            <span
-                              className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
-                                idx === 0
-                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                                  : idx === 1
-                                  ? "bg-slate-300/20 text-slate-200 border border-slate-300/40"
-                                  : "bg-amber-700/20 text-amber-500 border border-amber-700/40"
-                              }`}
-                            >
-                              {idx + 1}
-                            </span>
-                          ) : (
-                            <span className="font-mono text-slate-500 font-semibold">{idx + 1}</span>
-                          )}
-                        </div>
-
-                        {/* Venue Title & Street Address */}
-                        <div className="pr-4">
-                          <div className="font-bold text-white text-sm tracking-tight">{loc.merchant}</div>
-                          <div className="text-[11px] text-slate-400 truncate mt-0.5">{loc.locationName}</div>
-                        </div>
-
-                        {/* Suburb & Region */}
-                        <div>
-                          <div className="text-slate-200 font-medium">{loc.suburb || loc.city}</div>
-                          <div className="text-[10px] text-slate-400">{loc.region}</div>
-                        </div>
-
-                        {/* Card Swipes Counter Badge */}
-                        <div className="text-center">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-mono font-bold text-emerald-400 border border-emerald-500/30 text-[11px]">
-                            {loc.transactionCount} {loc.transactionCount === 1 ? "swipe" : "swipes"}
-                          </span>
-                        </div>
-
-                        {/* Spend */}
-                        <div className="text-right font-mono font-black text-white text-sm tracking-tight">
-                          {formatZAR(spend)}
-                        </div>
-
-                        {/* Category */}
-                        <div>
-                          <span className="inline-block rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-white/5">
-                            {loc.category}
-                          </span>
-                        </div>
-
-                        {/* GPS */}
-                        <div className="text-center">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
-                            {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
-                          </span>
-                        </div>
-
-                        {/* Drawer Toggle */}
-                        <div className="text-center">
-                          <button
-                            className="rounded-lg p-1 text-slate-400 hover:text-white transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedVenueId(isExpanded ? null : loc.id);
-                            }}
+                  <React.Fragment key={loc.id}>
+                    <tr
+                      className={`transition-colors cursor-pointer ${isExpanded ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}
+                      onClick={() => setExpandedVenueId(isExpanded ? null : loc.id)}
+                    >
+                      <td className="py-3.5 px-4 text-center">
+                        {isTop3 ? (
+                          <span
+                            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
+                              idx === 0
+                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                : idx === 1
+                                ? "bg-slate-300/20 text-slate-200 border border-slate-300/40"
+                                : "bg-amber-700/20 text-amber-500 border border-amber-700/40"
+                            }`}
                           >
-                            {isExpanded ? <ChevronUp className="h-4 w-4 text-emerald-400" /> : <ChevronDown className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </div>
+                            {idx + 1}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-slate-500 font-semibold">{idx + 1}</span>
+                        )}
+                      </td>
 
-                      {/* Expandable Swipes Drawer */}
-                      {isExpanded && loc.recentTransactions && loc.recentTransactions.length > 0 && (
-                        <div className="border-t border-white/10 bg-slate-950/90 p-5 space-y-3">
-                          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                            <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                              <Sparkles className="h-4 w-4 text-emerald-400" />
-                              All {loc.recentTransactions.length} Verified Card Transactions for {loc.merchant}
-                            </span>
-                            <span className="text-xs font-mono text-emerald-400 font-bold">
-                              Consolidated: {formatZAR(spend)}
-                            </span>
-                          </div>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-white text-sm tracking-tight">{loc.merchant}</div>
+                        <div className="text-[11px] text-slate-400 truncate max-w-xs">{loc.locationName}</div>
+                      </td>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
-                            {loc.recentTransactions.map((tx) => (
-                              <div
-                                key={tx.id}
-                                className="rounded-xl border border-white/5 bg-white/[0.02] p-3 flex items-center justify-between gap-3 hover:border-white/10 transition-colors"
-                              >
-                                <div className="min-w-0">
-                                  <div className="text-[10px] font-mono text-slate-400 font-semibold">{tx.date}</div>
-                                  <div className="text-xs text-slate-200 truncate mt-0.5" title={tx.description}>
-                                    {tx.description}
+                      <td className="py-3.5 px-4">
+                        <div className="text-slate-200 font-medium">{loc.suburb || loc.city}</div>
+                        <div className="text-[10px] text-slate-400">{loc.region}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-mono font-bold text-emerald-400 border border-emerald-500/30 text-[11px]">
+                          {loc.transactionCount} {loc.transactionCount === 1 ? "swipe" : "swipes"}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono font-black text-white text-sm tracking-tight">
+                        {formatZAR(spend)}
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <span className="inline-block rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-white/5">
+                          {loc.category}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                          {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          className="rounded-lg p-1 text-slate-400 hover:text-white transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedVenueId(isExpanded ? null : loc.id);
+                          }}
+                        >
+                          {isExpanded ? <ChevronUp className="h-4 w-4 text-emerald-400" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Expandable Individual Swipes Drawer */}
+                    {isExpanded && loc.recentTransactions && loc.recentTransactions.length > 0 && (
+                      <tr className="border-b border-white/10 bg-slate-950/90">
+                        <td colSpan={8} className="p-5">
+                          <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-4 space-y-3">
+                            <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <Sparkles className="h-4 w-4 text-emerald-400" />
+                                All {loc.recentTransactions.length} Recorded Swipes for {loc.merchant}
+                              </span>
+                              <span className="text-xs font-mono text-emerald-400 font-bold">
+                                Total: {formatZAR(spend)}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                              {loc.recentTransactions.map((tx) => (
+                                <div
+                                  key={tx.id}
+                                  className="rounded-xl border border-white/5 bg-white/[0.02] p-3 flex items-center justify-between gap-3 hover:border-white/10 transition-colors"
+                                >
+                                  <div className="min-w-0">
+                                    <div className="text-[10px] font-mono text-slate-400 font-semibold">{tx.date}</div>
+                                    <div className="text-xs text-slate-200 truncate mt-0.5" title={tx.description}>
+                                      {tx.description}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs font-mono font-bold text-emerald-400 shrink-0">
+                                    {formatZAR(tx.amount)}
                                   </div>
                                 </div>
-                                <div className="text-xs font-mono font-bold text-emerald-400 shrink-0">
-                                  {formatZAR(tx.amount)}
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
