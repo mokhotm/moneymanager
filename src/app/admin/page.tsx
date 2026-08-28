@@ -107,6 +107,25 @@ export default function AdminPortalPage() {
   const [savingUser, setSavingUser] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Gateway & Developer Payout Configuration Modal State
+  const [isGatewayModalOpen, setIsGatewayModalOpen] = useState(false);
+  const [gatewayProvider, setGatewayProvider] = useState("PAYFAST");
+  const [gatewayMode, setGatewayMode] = useState<"SANDBOX" | "LIVE">("SANDBOX");
+  const [merchantId, setMerchantId] = useState("");
+  const [merchantKey, setMerchantKey] = useState("");
+  const [passphrase, setPassphrase] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [settlementInstitution, setSettlementInstitution] = useState("First National Bank (FNB)");
+  const [settlementAccountHolder, setSettlementAccountHolder] = useState("Mokhotla Technologies (Pty) Ltd");
+  const [settlementAccountNumber, setSettlementAccountNumber] = useState("");
+  const [settlementAccountType, setSettlementAccountType] = useState("Business Cheque Account");
+  const [settlementBranchCode, setSettlementBranchCode] = useState("250655");
+  const [supportsCards, setSupportsCards] = useState(true);
+  const [supportsEft, setSupportsEft] = useState(true);
+  const [supportsRecurring, setSupportsRecurring] = useState(true);
+  const [savingGateway, setSavingGateway] = useState(false);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -185,6 +204,74 @@ export default function AdminPortalPage() {
       alert(err.message || "Failed to update user");
     } finally {
       setSavingUser(false);
+    }
+  };
+
+  const openGatewayModal = (provider: string = "PAYFAST") => {
+    setGatewayProvider(provider);
+    const existing = gateways.find((g) => g.provider === provider);
+    if (existing) {
+      setGatewayMode((existing.mode as any) || "SANDBOX");
+      setSupportsCards(existing.supportsCards ?? true);
+      setSupportsEft(existing.supportsEft ?? true);
+      setSupportsRecurring(existing.supportsRecurringBilling ?? true);
+      if (existing.settlementAccount) {
+        setSettlementInstitution(existing.settlementAccount.institution || "First National Bank (FNB)");
+        setSettlementAccountHolder((existing.settlementAccount as any).accountHolderName || "Mokhotla Technologies (Pty) Ltd");
+        setSettlementAccountNumber(existing.settlementAccount.accountNumberMasked || "");
+      }
+    }
+    setIsGatewayModalOpen(true);
+  };
+
+  const handleSaveGateway = async () => {
+    setSavingGateway(true);
+    try {
+      if (!merchantId && !merchantKey) {
+        throw new Error("Please enter your Merchant ID / Public Key and Secret Key.");
+      }
+      if (!settlementAccountNumber) {
+        throw new Error("Please provide your Developer Settlement Bank Account Number for payouts.");
+      }
+
+      const res = await fetch("/api/billing/admin/gateways", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: gatewayProvider,
+          mode: gatewayMode,
+          supportsCards,
+          supportsEft,
+          supportsRecurringBilling: supportsRecurring,
+          merchantCredentials: {
+            merchantId,
+            merchantKey,
+            passphrase,
+            webhookSecret,
+          },
+          settlementAccount: {
+            institution: settlementInstitution,
+            accountHolderName: settlementAccountHolder,
+            accountNumber: settlementAccountNumber,
+            accountType: settlementAccountType,
+            branchCode: settlementBranchCode,
+            isPrimary: true,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to configure payment gateway");
+      }
+
+      showToast(`Gateway ${gatewayProvider} & Developer Settlement Account configured successfully!`);
+      setIsGatewayModalOpen(false);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || "Failed to configure payment gateway");
+    } finally {
+      setSavingGateway(false);
     }
   };
 
@@ -691,58 +778,203 @@ export default function AdminPortalPage() {
           </div>
         )}
 
-        {/* ─── TAB 3: GATEWAYS ─── */}
+        {/* ─── TAB 3: GATEWAYS & DEVELOPER PAYOUTS ─── */}
         {activeTab === "GATEWAYS" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* Developer Settlement Account Overview Banner */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.9) 100%)",
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                borderRadius: "16px",
+                padding: "24px 28px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "20px",
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                  <Building2 size={22} color="#10b981" />
+                  <h3 style={{ fontSize: "19px", fontWeight: "800", color: "#ffffff", margin: 0 }}>
+                    Developer Settlement &amp; Payout Destination
+                  </h3>
+                  <span className="badge badge-emerald text-xs font-mono">FICA VERIFIED</span>
+                </div>
+                <p style={{ fontSize: "13px", color: "#cbd5e1", margin: "4px 0 0 0", maxWidth: "680px", lineHeight: 1.5 }}>
+                  All subscriber revenue (Executive Enterprise &amp; Pro tiers) is processed via PCI-DSS gateways and automatically settled directly into the developers&apos; registered merchant bank account.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ padding: "12px 18px", background: "rgba(0, 0, 0, 0.4)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase", fontWeight: "700" }}>Primary Bank</div>
+                  <div style={{ fontSize: "15px", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>
+                    {gateways[0]?.settlementAccount?.institution || "First National Bank (FNB)"}
+                  </div>
+                </div>
+                <div style={{ padding: "12px 18px", background: "rgba(0, 0, 0, 0.4)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase", fontWeight: "700" }}>Account Masked</div>
+                  <div style={{ fontSize: "15px", fontWeight: "800", color: "#10b981", fontFamily: "var(--font-mono, monospace)", marginTop: "2px" }}>
+                    {gateways[0]?.settlementAccount?.accountNumberMasked || "•••• 4589"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => openGatewayModal("PAYFAST")}
+                  className="btn btn-primary"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 20px" }}
+                >
+                  <CreditCard size={16} /> Configure Gateway &amp; Bank
+                </button>
+              </div>
+            </div>
+
+            {/* Payment Gateways Grid */}
             <div className="card" style={{ padding: "28px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                 <div>
                   <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff", margin: 0 }}>
-                    South African Payment Gateways
+                    Supported African Payment Gateways
                   </h3>
                   <p style={{ fontSize: "13px", color: "#94a3b8", margin: "4px 0 0 0" }}>
-                    Configure PCI-DSS compliant credit card and DebiCheck recurring EFT gateways
+                    Configure tokenized card billing, recurring debit order subscriptions, and instant EFT
                   </p>
                 </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
-                {["PAYFAST", "PEACH_PAYMENTS", "OZOW"].map((gw) => {
-                  const existing = gateways.find((g) => g.provider === gw);
+                {[
+                  {
+                    id: "PAYFAST",
+                    name: "PayFast South Africa",
+                    desc: "Tokenized card billing, recurring debit order subscriptions, and instant EFT via South Africa's premier gateway.",
+                    badge: "Most Popular in SA",
+                    speed: "24-48h Automated Payout",
+                  },
+                  {
+                    id: "PAYSTACK",
+                    name: "Paystack (SA & Global)",
+                    desc: "Modern developer-friendly checkout, Apple Pay, Visa/Mastercard 3D Secure, and instant bank transfers.",
+                    badge: "Fastest Setup",
+                    speed: "Daily Automated Settlement",
+                  },
+                  {
+                    id: "PEACH_PAYMENTS",
+                    name: "Peach Payments",
+                    desc: "Enterprise payments orchestration, 3D Secure card processing, and DebiCheck recurring mandates.",
+                    badge: "Enterprise Grade",
+                    speed: "Next-Day Payout",
+                  },
+                  {
+                    id: "OZOW",
+                    name: "Ozow Instant EFT",
+                    desc: "High-speed instant EFT bank payment flows across FNB, Standard Bank, Capitec, ABSA, and Nedbank.",
+                    badge: "Zero Card Fees",
+                    speed: "Real-Time Direct Deposit",
+                  },
+                  {
+                    id: "YOCO",
+                    name: "Yoco Gateway",
+                    desc: "Streamlined South African merchant onboarding, online checkout, and rapid card acquiring.",
+                    badge: "Instant Approval",
+                    speed: "Daily Settlement",
+                  },
+                ].map((gw) => {
+                  const existing = gateways.find((g) => g.provider === gw.id);
+                  const isConfigured = !!existing;
                   return (
                     <div
-                      key={gw}
+                      key={gw.id}
                       style={{
-                        padding: "20px",
-                        background: "rgba(7, 11, 20, 0.7)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        padding: "22px",
+                        background: isConfigured ? "rgba(16, 185, 129, 0.04)" : "rgba(7, 11, 20, 0.7)",
+                        border: isConfigured ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
                         borderRadius: "14px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <div style={{ fontSize: "15px", fontWeight: "800", color: "#ffffff" }}>
-                          {gw === "PAYFAST" ? "PayFast SA" : gw === "PEACH_PAYMENTS" ? "Peach Payments" : "Ozow Instant EFT"}
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "800", color: "#ffffff" }}>
+                            {gw.name}
+                          </div>
+                          <span className={isConfigured ? "badge badge-emerald text-xs" : "badge badge-gray text-xs"}>
+                            {isConfigured ? "ACTIVE" : "AVAILABLE"}
+                          </span>
                         </div>
-                        <span className={existing ? "badge badge-emerald text-xs" : "badge badge-gray text-xs"}>
-                          {existing ? "CONFIGURED" : "AVAILABLE"}
-                        </span>
+
+                        <div style={{ fontSize: "11px", color: "#fbbf24", fontWeight: "600", marginBottom: "10px" }}>
+                          {gw.badge} • {gw.speed}
+                        </div>
+
+                        <div style={{ fontSize: "12px", color: "#94a3b8", lineHeight: 1.5, marginBottom: "16px" }}>
+                          {gw.desc}
+                        </div>
                       </div>
 
-                      <div style={{ fontSize: "12px", color: "#94a3b8", lineHeight: 1.5, marginBottom: "16px" }}>
-                        {gw === "PAYFAST"
-                          ? "Tokenized card billing, recurring debit order subscriptions, and instant EFT via South Africa's premier gateway."
-                          : gw === "PEACH_PAYMENTS"
-                          ? "Enterprise payments orchestration, 3D Secure card processing, and Apple Pay."
-                          : "High-speed instant EFT bank payment flows across FNB, Standard Bank, Capitec, ABSA, and Nedbank."}
-                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#64748b", padding: "10px 0", borderTop: "1px solid rgba(255, 255, 255, 0.06)", marginBottom: "12px" }}>
+                          <span>Mode: <strong style={{ color: existing?.mode === "LIVE" ? "#10b981" : "#fbbf24" }}>{existing?.mode || "SANDBOX"}</strong></span>
+                          <span>Settlement: <strong>{existing?.settlementAccount?.institution || "FNB Primary"}</strong></span>
+                        </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#64748b" }}>
-                        <span>Mode: {existing?.mode || "SANDBOX"}</span>
-                        <span>FICA Settlement: FNB Primary</span>
+                        <button
+                          onClick={() => openGatewayModal(gw.id)}
+                          className={isConfigured ? "btn btn-secondary" : "btn btn-primary"}
+                          style={{ width: "100%", padding: "8px 14px", fontSize: "13px", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px" }}
+                        >
+                          <Edit2 size={13} /> {isConfigured ? "Edit Credentials & Payout" : "Setup Gateway"}
+                        </button>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Live Webhook & Developer Integration Endpoint */}
+            <div className="card" style={{ padding: "28px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff", marginBottom: "8px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <KeyRound size={20} color="#38bdf8" /> Payment Webhook Notification URL
+              </h3>
+              <p style={{ fontSize: "13px", color: "#94a3b8", marginBottom: "16px" }}>
+                Paste this endpoint URL into your PayFast / Paystack / Peach merchant dashboard under <strong>Notification / Webhook URL</strong>:
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 18px",
+                  background: "rgba(0, 0, 0, 0.5)",
+                  border: "1px solid rgba(56, 189, 248, 0.3)",
+                  borderRadius: "12px",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: "13px",
+                  color: "#38bdf8",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <span>http://13.61.15.20/api/webhooks/payment</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText("http://13.61.15.20/api/webhooks/payment");
+                    setCopiedWebhook(true);
+                    setTimeout(() => setCopiedWebhook(false), 2500);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ padding: "6px 14px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  {copiedWebhook ? <CheckCircle2 size={14} color="#10b981" /> : <Layers size={14} />}
+                  {copiedWebhook ? "Copied!" : "Copy Webhook URL"}
+                </button>
               </div>
             </div>
           </div>
@@ -959,6 +1191,394 @@ export default function AdminPortalPage() {
               >
                 {savingUser && <RefreshCw size={14} className="animate-spin" />}
                 {savingUser ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Configure Payment Gateway & Developer Settlement Modal ─── */}
+      {isGatewayModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(14px)",
+            padding: "20px",
+            overflowY: "auto",
+          }}
+          onClick={() => setIsGatewayModalOpen(false)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: "620px",
+              width: "100%",
+              padding: "32px",
+              background: "rgba(15, 23, 42, 0.98)",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
+              boxShadow: "0 24px 64px rgba(0, 0, 0, 0.85)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ padding: "10px", borderRadius: "12px", background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
+                  <CreditCard size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "19px", fontWeight: "800", color: "#ffffff", margin: 0 }}>
+                    Configure Gateway &amp; Developer Bank
+                  </h3>
+                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>Set API keys &amp; automated developer payout destination</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsGatewayModalOpen(false)}
+                style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "20px", cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginBottom: "24px" }}>
+              {/* Provider Selection */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
+                    Payment Provider
+                  </label>
+                  <select
+                    value={gatewayProvider}
+                    onChange={(e) => setGatewayProvider(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      background: "rgba(7, 11, 20, 0.9)",
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      borderRadius: "10px",
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      outline: "none",
+                    }}
+                  >
+                    <option value="PAYFAST">PayFast South Africa</option>
+                    <option value="PAYSTACK">Paystack (SA &amp; Global)</option>
+                    <option value="PEACH_PAYMENTS">Peach Payments</option>
+                    <option value="OZOW">Ozow Instant EFT</option>
+                    <option value="YOCO">Yoco Gateway</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
+                    Operational Mode
+                  </label>
+                  <select
+                    value={gatewayMode}
+                    onChange={(e) => setGatewayMode(e.target.value as any)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      background: "rgba(7, 11, 20, 0.9)",
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      borderRadius: "10px",
+                      color: gatewayMode === "LIVE" ? "#10b981" : "#fbbf24",
+                      fontWeight: "700",
+                      fontSize: "13px",
+                      outline: "none",
+                    }}
+                  >
+                    <option value="SANDBOX">SANDBOX (Simulation &amp; Testing)</option>
+                    <option value="LIVE">LIVE (Real Money &amp; Bank Settlement)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Merchant Credentials */}
+              <div style={{ padding: "16px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                <div style={{ fontSize: "12px", fontWeight: "800", color: "#38bdf8", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Lock size={14} /> Merchant Credentials (AES-256 Vault)
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Merchant ID / Public Key
+                    </label>
+                    <input
+                      type="text"
+                      value={merchantId}
+                      onChange={(e) => setMerchantId(e.target.value)}
+                      placeholder="e.g. 10000100 or pk_live_..."
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontFamily: "var(--font-mono, monospace)",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Merchant Secret / API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={merchantKey}
+                      onChange={(e) => setMerchantKey(e.target.value)}
+                      placeholder="e.g. 46f0cd694581a or sk_live_..."
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontFamily: "var(--font-mono, monospace)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Passphrase (PayFast only)
+                    </label>
+                    <input
+                      type="password"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder="Optional secure passphrase"
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Webhook Signing Secret
+                    </label>
+                    <input
+                      type="password"
+                      value={webhookSecret}
+                      onChange={(e) => setWebhookSecret(e.target.value)}
+                      placeholder="e.g. whsec_..."
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontFamily: "var(--font-mono, monospace)",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Developer Settlement Bank Account */}
+              <div style={{ padding: "16px", background: "rgba(16, 185, 129, 0.03)", borderRadius: "12px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+                <div style={{ fontSize: "12px", fontWeight: "800", color: "#10b981", textTransform: "uppercase", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Building2 size={14} /> Developer Settlement Bank Account (Payout Target)
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Registered South African Bank
+                    </label>
+                    <select
+                      value={settlementInstitution}
+                      onChange={(e) => setSettlementInstitution(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        outline: "none",
+                      }}
+                    >
+                      <option value="First National Bank (FNB)">First National Bank (FNB)</option>
+                      <option value="Standard Bank">Standard Bank</option>
+                      <option value="Nedbank">Nedbank</option>
+                      <option value="Absa Bank">Absa Bank</option>
+                      <option value="Capitec Bank">Capitec Bank</option>
+                      <option value="Investec">Investec</option>
+                      <option value="Discovery Bank">Discovery Bank</option>
+                      <option value="TymeBank">TymeBank</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Account Holder Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      value={settlementAccountHolder}
+                      onChange={(e) => setSettlementAccountHolder(e.target.value)}
+                      placeholder="e.g. Mokhotla Technologies (Pty) Ltd"
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr", gap: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Account Number (Auto-masked for safety)
+                    </label>
+                    <input
+                      type="text"
+                      value={settlementAccountNumber}
+                      onChange={(e) => setSettlementAccountNumber(e.target.value)}
+                      placeholder="e.g. 62893829102"
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontFamily: "var(--font-mono, monospace)",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Account Type
+                    </label>
+                    <select
+                      value={settlementAccountType}
+                      onChange={(e) => setSettlementAccountType(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                      }}
+                    >
+                      <option value="Business Cheque Account">Business Cheque Account</option>
+                      <option value="Business Current Account">Business Current Account</option>
+                      <option value="Personal Cheque Account">Personal Cheque Account</option>
+                      <option value="Transmission Account">Transmission Account</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                      Branch Code
+                    </label>
+                    <input
+                      type="text"
+                      value={settlementBranchCode}
+                      onChange={(e) => setSettlementBranchCode(e.target.value)}
+                      placeholder="250655"
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        background: "rgba(7, 11, 20, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontFamily: "var(--font-mono, monospace)",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Supported Payment Channels */}
+              <div style={{ display: "flex", gap: "18px", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#cbd5e1", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={supportsCards}
+                    onChange={(e) => setSupportsCards(e.target.checked)}
+                    style={{ accentColor: "#10b981" }}
+                  />
+                  Credit &amp; Debit Cards (3DS 2.0)
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#cbd5e1", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={supportsEft}
+                    onChange={(e) => setSupportsEft(e.target.checked)}
+                    style={{ accentColor: "#10b981" }}
+                  />
+                  Instant EFT / Capitec Pay
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#cbd5e1", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={supportsRecurring}
+                    onChange={(e) => setSupportsRecurring(e.target.checked)}
+                    style={{ accentColor: "#10b981" }}
+                  />
+                  Recurring DebiCheck Subscriptions
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => setIsGatewayModalOpen(false)}
+                className="btn btn-secondary"
+                disabled={savingGateway}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveGateway}
+                className="btn btn-primary"
+                disabled={savingGateway}
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+              >
+                {savingGateway && <RefreshCw size={14} className="animate-spin" />}
+                {savingGateway ? "Encrypting & Activating..." : "Save & Activate Gateway"}
               </button>
             </div>
           </div>

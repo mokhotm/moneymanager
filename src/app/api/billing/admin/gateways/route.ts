@@ -3,8 +3,24 @@ import { PaymentGatewayProvider, GatewayMode, GatewayConfigStatus } from '@prism
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { BillingService } from '@/services/billing/billingService';
+import crypto from 'crypto';
 
 const billingService = new BillingService(prisma);
+
+function getEncryptionKey(): Buffer {
+  const secret = process.env.ENCRYPTION_KEY || 'moneymanager_default_super_secure_vault_key_2026';
+  return crypto.createHash('sha256').update(secret).digest();
+}
+
+function encryptCredentials(data: any): string {
+  const key = getEncryptionKey();
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const jsonStr = typeof data === 'string' ? data : JSON.stringify(data);
+  let encrypted = cipher.update(jsonStr, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return `${iv.toString('hex')}:${encrypted}`;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,19 +62,46 @@ export async function POST(req: NextRequest) {
       supportsEft = true,
       supportsRecurringBilling = true,
       settlementAccount,
+      merchantCredentials,
       merchantCredentialsEncrypted,
     } = body;
 
-    if (!provider || !settlementAccount || !merchantCredentialsEncrypted) {
+    if (!provider || !settlementAccount) {
       return NextResponse.json(
-        { error: 'Provider, settlementAccount details, and encrypted merchant credentials are required' },
+        { error: 'Provider and settlementAccount details are required' },
         { status: 400 }
       );
     }
 
-    // §17.4 / Scenario AP: Enforce strict settlement account validation (no crypto / Luno)
+    let finalEncrypted = merchantCredentialsEncrypted;
+    if (!finalEncrypted && merchantCredentials) {
+      finalEncrypted = encryptCredentials(merchantCredentials);
+    }
+
+    if (!finalEncrypted) {
+      return NextResponse.json(
+        { error: 'Merchant credentials are required' },
+        { status: 400 }
+      );
+    }
+
+    // Mask raw account number if full number provided
+    let rawAccNum = settlementAccount.accountNumber || settlementAccount.accountNumberMasked || '•••• 0000';
+    let maskedAccNum = rawAccNum;
+    if (!rawAccNum.includes('•') && rawAccNum.length > 4) {
+      maskedAccNum = `•••• ${rawAccNum.slice(-4)}`;
+    }
+
+    const normalizedSettlement = {
+      institution: settlementAccount.institution || 'First National Bank (FNB)',
+      accountNumberMasked: maskedAccNum,
+      accountType: settlementAccount.accountType || 'Business Cheque Account',
+      isPrimary: settlementAccount.isPrimary ?? true,
+    };
+
+    // Enforce strict settlement account validation (no crypto / Luno)
     try {
-      billingService.validateSettlementAccount(settlementAccount);
+      billingService.validateSettlementAccount(normalizedSettlement);
     } catch (valError: any) {
       return NextResponse.json({ error: valError.message }, { status: 400 });
     }
@@ -66,37 +109,64 @@ export async function POST(req: NextRequest) {
     // Create or reuse settlement account
     let settledAcc = await prisma.settlementAccount.findFirst({
       where: {
-        accountNumberMasked: settlementAccount.accountNumberMasked,
-        institution: settlementAccount.institution,
+        accountNumberMasked: normalizedSettlement.accountNumberMasked,
+        institution: normalizedSettlement.institution,
       },
     });
 
     if (!settledAcc) {
       settledAcc = await prisma.settlementAccount.create({
+        data: normalizedSettlement,
+      });
+    } else {
+      settledAcc = await prisma.settlementAccount.update({
+        where: { id: settledAcc.id },
         data: {
-          institution: settlementAccount.institution,
-          accountNumberMasked: settlementAccount.accountNumberMasked,
-          accountType: settlementAccount.accountType || 'Business Current Account',
-          isPrimary: settlementAccount.isPrimary ?? true,
+          accountType: normalizedSettlement.accountType,
+          isPrimary: true,
         },
       });
     }
 
-    const config = await prisma.paymentGatewayConfig.create({
-      data: {
-        provider: provider as PaymentGatewayProvider,
-        mode: mode as GatewayMode,
-        merchantCredentialsEncrypted,
-        supportsCards,
-        supportsEft,
-        supportsRecurringBilling,
-        settlementAccountId: settledAcc.id,
-        status: GatewayConfigStatus.ACTIVE,
-      },
-      include: {
-        settlementAccount: true,
-      },
+    // Check if configuration already exists for this provider
+    const existingConfig = await prisma.paymentGatewayConfig.findFirst({
+      where: { provider: provider as PaymentGatewayProvider },
     });
+
+    let config;
+    if (existingConfig) {
+      config = await prisma.paymentGatewayConfig.update({
+        where: { id: existingConfig.id },
+        data: {
+          mode: mode as GatewayMode,
+          merchantCredentialsEncrypted: finalEncrypted,
+          supportsCards,
+          supportsEft,
+          supportsRecurringBilling,
+          settlementAccountId: settledAcc.id,
+          status: GatewayConfigStatus.ACTIVE,
+        },
+        include: {
+          settlementAccount: true,
+        },
+      });
+    } else {
+      config = await prisma.paymentGatewayConfig.create({
+        data: {
+          provider: provider as PaymentGatewayProvider,
+          mode: mode as GatewayMode,
+          merchantCredentialsEncrypted: finalEncrypted,
+          supportsCards,
+          supportsEft,
+          supportsRecurringBilling,
+          settlementAccountId: settledAcc.id,
+          status: GatewayConfigStatus.ACTIVE,
+        },
+        include: {
+          settlementAccount: true,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, config });
   } catch (error: any) {
