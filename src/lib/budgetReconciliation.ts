@@ -360,7 +360,7 @@ async function fetchAllStatementTransactions(
             data: {
               parsedData: {
                 ...(pd || {}),
-                rawText: rawText.replace(/[^\x00-\x7F]/g, " "), // Sanitize non-ASCII for DB encoding
+                rawText: rawText.replace(/\0/g, "").replace(/[^\x20-\x7E\n\r\t]/g, " "), // Sanitize null and non-ASCII for DB encoding
                 transactions: extracted.map((tx) => ({
                   id: tx.id,
                   date: tx.dateObj.toISOString(),
@@ -516,7 +516,7 @@ function tokenContainment(needle: string, haystack: string): number {
  * share domain-specific keywords that indicate they refer to the same obligation.
  */
 const DOMAIN_KEYWORD_GROUPS: string[][] = [
-  ["ekurhuleni", "municipal", "rates", "water", "refuse", "springs"],
+  ["ekurhuleni", "municipal", "rates", "water", "refuse", "sewer", "springs", "arrears", "ratestaxes", "3505137295"],
   ["telkom", "510600671", "510625198", "landline", "broadband", "lte", "fibre", "9c27", "5e6e", "a295", "debt", "settlement", "arrangement"],
   ["vodacom", "mobile", "cellular", "i2754234", "fibre"],
   ["wesbank", "vehicle", "finance", "renault", "clio", "85361174582"],
