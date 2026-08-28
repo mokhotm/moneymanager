@@ -14,7 +14,21 @@ export DEBIAN_FRONTEND=noninteractive
 sudo -E apt-get update -y
 sudo -E apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
-# 2. Install Docker & Docker Compose if not already installed
+# 2. Add Swap Space if RAM is under 2GB (Prevents OOM during Next.js build on t2.micro/t3.micro)
+TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+if [ "$TOTAL_RAM_KB" -lt 2000000 ]; then
+    if [ ! -f /swapfile ]; then
+        echo "💾 Low RAM detected (<2GB). Creating 2GB swap space for smooth build..."
+        sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+        echo "✅ Swap created successfully."
+    fi
+fi
+
+# 3. Install Docker & Docker Compose if not already installed
 if ! command -v docker &> /dev/null; then
     echo "🐳 Installing Docker Engine..."
     sudo apt-get install -y ca-certificates curl gnupg lsb-release
@@ -29,7 +43,7 @@ if ! command -v docker &> /dev/null; then
     echo "✅ Docker installed successfully."
 fi
 
-# 3. Create .env file if it doesn't exist
+# 4. Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     echo "🔑 Generating secure production .env configuration..."
     SESSION_SEC=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
@@ -50,11 +64,13 @@ EOF
     echo "✅ Created .env with cryptographically strong secrets."
 fi
 
-# 4. Build and start containers with docker-compose
+# 5. Build and start containers with docker-compose
 echo "🏗️ Building and launching Docker containers..."
 
 # Support both docker compose (v2) and docker-compose (v1)
-if command -v docker-compose &> /dev/null; then
+if docker compose version &> /dev/null; then
+    DC="sudo docker compose"
+elif command -v docker-compose &> /dev/null; then
     DC="sudo docker-compose"
 else
     DC="sudo docker compose"
@@ -64,15 +80,22 @@ $DC down --remove-orphans || true
 $DC build --no-cache
 $DC up -d
 
-# 5. Wait for Database to become healthy
+# 6. Wait for Database to become healthy
 echo "⏳ Waiting for PostgreSQL database to initialize..."
-sleep 10
+sleep 12
 
-# 6. Apply Prisma Schema to Database
+# 7. Apply Prisma Schema to Database
 echo "🔄 Synchronizing database schema with Prisma..."
 $DC exec -T web npx prisma db push --accept-data-loss || true
 
+# 8. Seed Initial Data (if requested or on fresh db)
+echo "🌱 Initializing baseline data & money flows..."
+$DC exec -T web npm run seed || true
+$DC exec -T web npm run seed:flows || true
+
+PUBLIC_IP=$(curl -s http://checkip.amazonaws.com || curl -s https://ifconfig.me || echo "your-instance-ip")
+
 echo "=========================================================="
-echo "🎉 MoneyManager is successfully running on AWS EC2!"
-echo "🌐 Access your app at: http://$(curl -s http://checkip.amazonaws.com)"
+echo "🎉 MoneyManager is successfully deployed and running!"
+echo "🌐 Access your app at: http://${PUBLIC_IP}"
 echo "=========================================================="
