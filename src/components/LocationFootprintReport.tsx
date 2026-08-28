@@ -136,8 +136,23 @@ export function LocationFootprintReport({
 
   if (!data) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-3xl border border-white/10 bg-slate-950/60 p-8 text-center backdrop-blur-2xl">
-        <p className="text-sm font-medium text-slate-400">Loading geospatial and transaction footprint audit data…</p>
+      <div
+        style={{
+          display: "flex",
+          height: "240px",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "24px",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          background: "rgba(13, 20, 36, 0.6)",
+          padding: "32px",
+          textAlign: "center",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <p style={{ fontSize: "14px", fontWeight: 600, color: "#94a3b8" }}>
+          Loading geospatial and transaction footprint audit data…
+        </p>
       </div>
     );
   }
@@ -145,47 +160,80 @@ export function LocationFootprintReport({
   const getMatrixMeta = (category: string) => {
     switch (category) {
       case "In-Store POS Purchases":
-        return { icon: MapPin, color: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10" };
+        return { icon: MapPin, color: "#34d399", border: "rgba(16, 185, 129, 0.3)", bg: "rgba(16, 185, 129, 0.12)" };
       case "Digital & Online Subscriptions":
-        return { icon: Globe, color: "text-sky-400", border: "border-sky-500/30", bg: "bg-sky-500/10" };
+        return { icon: Globe, color: "#38bdf8", border: "rgba(56, 189, 248, 0.3)", bg: "rgba(56, 189, 248, 0.12)" };
       case "Bank Charges, POS & VAT Fees":
-        return { icon: Coins, color: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/10" };
+        return { icon: Coins, color: "#fbbf24", border: "rgba(245, 158, 11, 0.3)", bg: "rgba(245, 158, 11, 0.12)" };
       case "Income Inflows & Salaries":
-        return { icon: TrendingUp, color: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10" };
+        return { icon: TrendingUp, color: "#34d399", border: "rgba(16, 185, 129, 0.3)", bg: "rgba(16, 185, 129, 0.12)" };
       case "Debt Debit Order Mandates":
-        return { icon: CreditCard, color: "text-purple-400", border: "border-purple-500/30", bg: "bg-purple-500/10" };
+        return { icon: CreditCard, color: "#c084fc", border: "rgba(168, 85, 247, 0.3)", bg: "rgba(168, 85, 247, 0.12)" };
       case "ATM Cash Withdrawals":
-        return { icon: Banknote, color: "text-rose-400", border: "border-rose-500/30", bg: "bg-rose-500/10" };
+        return { icon: Banknote, color: "#fda4af", border: "rgba(244, 63, 94, 0.3)", bg: "rgba(244, 63, 94, 0.12)" };
       case "Internal Account Transfers":
-        return { icon: ArrowLeftRight, color: "text-cyan-400", border: "border-cyan-500/30", bg: "bg-cyan-500/10" };
+        return { icon: ArrowLeftRight, color: "#22d3ee", border: "rgba(6, 182, 212, 0.3)", bg: "rgba(6, 182, 212, 0.12)" };
       default:
-        return { icon: FileText, color: "text-slate-300", border: "border-white/10", bg: "bg-white/5" };
+        return { icon: FileText, color: "#cbd5e1", border: "rgba(255, 255, 255, 0.1)", bg: "rgba(255, 255, 255, 0.05)" };
     }
   };
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
       {/* ── 1. Hero Executive Telemetry Canvas ─────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-slate-900/90 via-slate-950/90 to-black/95 p-7 md:p-9 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6)]">
-        {/* Ambient Top Glow */}
-        <div className="pointer-events-none absolute -top-24 left-1/4 h-64 w-96 rounded-full bg-emerald-500/10 blur-[100px]" />
-        <div className="pointer-events-none absolute -top-24 right-1/4 h-64 w-96 rounded-full bg-amber-500/10 blur-[100px]" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-400 border border-emerald-500/30 shadow-xl shadow-emerald-500/10">
-              <Compass className="h-7 w-7" />
+      <div
+        style={{
+          background: "linear-gradient(135deg, rgba(13, 20, 36, 0.95) 0%, rgba(7, 11, 20, 0.98) 100%)",
+          border: "1px solid rgba(16, 185, 129, 0.35)",
+          borderRadius: "24px",
+          padding: "28px 32px",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 20px 50px rgba(0, 0, 0, 0.5)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "16px",
+                background: "rgba(16, 185, 129, 0.15)",
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#10b981",
+                flexShrink: 0,
+              }}
+            >
+              <Compass size={28} />
             </div>
             <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.01em", margin: 0 }}>
                   Geospatial Footprint &amp; In-Store Spend Audit
                 </h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
-                  <ShieldCheck className="h-3.5 w-3.5" /> 100% Statement Reconciled
+                <span
+                  style={{
+                    background: "rgba(16, 185, 129, 0.2)",
+                    color: "#34d399",
+                    padding: "3px 10px",
+                    borderRadius: "99px",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    border: "1px solid rgba(16, 185, 129, 0.35)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
+                >
+                  <ShieldCheck size={13} /> 100% Statement Reconciled
                 </span>
               </div>
-              <p className="mt-1 text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              <p style={{ fontSize: "13px", color: "#94a3b8", margin: "6px 0 0 0", maxWidth: "720px", lineHeight: "1.6" }}>
                 Forensic classification of all <strong>{totalFlowsCount.toLocaleString()} Money Flow transactions</strong>. Pinpoints 
                 <strong> {distinctPhysicalVenuesCount} Physical In-Store Venues</strong> ({totalInStoreCardSwipes} card swipes) and 
                 <strong> {distinctDigitalServicesCount} Digital Subscriptions</strong> vs centralized bank clearing mandates.
@@ -193,71 +241,112 @@ export function LocationFootprintReport({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-start lg:self-auto">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 backdrop-blur-xl">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Total In-Store Spend</span>
-              <span className="text-2xl font-black text-emerald-400 font-mono tracking-tight">
-                {formatZAR(totalPhysicalSpendZAR)}
-              </span>
-            </div>
+          {/* Right Spend Pill */}
+          <div
+            style={{
+              background: "rgba(16, 185, 129, 0.12)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              borderRadius: "16px",
+              padding: "14px 22px",
+              textAlign: "right",
+            }}
+          >
+            <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#6ee7b7", display: "block" }}>
+              Total In-Store Spend
+            </span>
+            <span style={{ fontSize: "24px", fontWeight: 900, color: "#10b981", fontFamily: "var(--font-mono, monospace)", letterSpacing: "-0.02em" }}>
+              {formatZAR(totalPhysicalSpendZAR)}
+            </span>
           </div>
         </div>
 
         {/* 4 Hero KPI Bento Tiles */}
-        <div className="relative z-10 mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3.5 border-t border-white/10 pt-6">
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 hover:border-white/10 transition-colors">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Statement Flows</div>
-            <div className="mt-1.5 text-2xl font-black text-white font-mono">{totalFlowsCount.toLocaleString()}</div>
-            <div className="mt-0.5 text-xs text-slate-400 flex items-center gap-1">
-              <Activity className="h-3 w-3 text-emerald-400" /> Full Statement Vault
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "14px",
+            marginTop: "24px",
+            paddingTop: "20px",
+            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          }}
+        >
+          <div style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "14px", padding: "14px 16px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#94a3b8", letterSpacing: "0.05em" }}>
+              Total Statement Flows
             </div>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", fontFamily: "var(--font-mono, monospace)", marginTop: "4px" }}>
+              {totalFlowsCount.toLocaleString()}
+            </div>
+            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>Full Statement Vault</div>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 hover:border-emerald-500/30 transition-colors">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Physical Venues (Pins)</div>
-            <div className="mt-1.5 text-2xl font-black text-emerald-400 font-mono">{distinctPhysicalVenuesCount}</div>
-            <div className="mt-0.5 text-xs text-slate-400 flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-emerald-400" /> {totalInStoreCardSwipes} In-Store Swipes
+          <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "14px", padding: "14px 16px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#34d399", letterSpacing: "0.05em" }}>
+              Physical Venues (Pins)
             </div>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "#10b981", fontFamily: "var(--font-mono, monospace)", marginTop: "4px" }}>
+              {distinctPhysicalVenuesCount}
+            </div>
+            <div style={{ fontSize: "11px", color: "#6ee7b7", marginTop: "2px" }}>{totalInStoreCardSwipes} In-Store Swipes</div>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 hover:border-sky-500/30 transition-colors">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-sky-400">Digital Subscriptions</div>
-            <div className="mt-1.5 text-2xl font-black text-sky-400 font-mono">{distinctDigitalServicesCount}</div>
-            <div className="mt-0.5 text-xs text-slate-400 flex items-center gap-1">
-              <Globe className="h-3 w-3 text-sky-400" /> {totalDigitalSubscriptionsTxs} Monthly Cycles
+          <div style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "14px", padding: "14px 16px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#38bdf8", letterSpacing: "0.05em" }}>
+              Digital Subscriptions
             </div>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "#38bdf8", fontFamily: "var(--font-mono, monospace)", marginTop: "4px" }}>
+              {distinctDigitalServicesCount}
+            </div>
+            <div style={{ fontSize: "11px", color: "#7dd3fc", marginTop: "2px" }}>{totalDigitalSubscriptionsTxs} Monthly Cycles</div>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 hover:border-amber-500/30 transition-colors">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400">Primary Spending Hub</div>
-            <div className="mt-1.5 text-lg font-black text-amber-300 truncate">{topHub}</div>
-            <div className="mt-0.5 text-xs text-slate-400 flex items-center gap-1">
-              <Zap className="h-3 w-3 text-amber-400" /> High-Velocity Node
+          <div style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "14px", padding: "14px 16px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#fbbf24", letterSpacing: "0.05em" }}>
+              Primary Spending Hub
             </div>
+            <div style={{ fontSize: "17px", fontWeight: 800, color: "#f59e0b", marginTop: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {topHub}
+            </div>
+            <div style={{ fontSize: "11px", color: "#fbbf24", opacity: 0.8, marginTop: "2px" }}>High-Velocity Node</div>
           </div>
         </div>
       </div>
 
       {/* ── 2. Full Database Classification Matrix (8 Forensic Categories) ─── */}
-      <div className="rounded-[28px] border border-white/10 bg-slate-950/70 p-6 md:p-8 backdrop-blur-2xl shadow-xl space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+      <div
+        style={{
+          background: "rgba(13, 20, 36, 0.85)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "22px",
+          padding: "24px 28px",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "16px", marginBottom: "20px" }}>
           <div>
-            <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
-              <Layers className="h-5 w-5 text-purple-400" />
+            <h3 style={{ fontSize: "17px", fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+              <Layers size={18} color="#c084fc" />
               Full Database Classification Matrix ({totalFlowsCount.toLocaleString()} Records)
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "4px 0 0 0" }}>
               Comprehensive telemetry explaining why each bank record is assigned to a physical GPS pin vs processed centrally.
             </p>
           </div>
-          <span className="self-start sm:self-auto text-xs font-mono text-slate-300 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+          <span style={{ fontSize: "11px", fontFamily: "var(--font-mono, monospace)", color: "#cbd5e1", background: "rgba(255, 255, 255, 0.05)", padding: "4px 12px", borderRadius: "99px", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
             {selectedMonth === "ALL" ? "Cumulative Ground Truth" : `Pay Cycle: ${selectedMonth}`}
           </span>
         </div>
 
         {/* Matrix Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "14px",
+          }}
+        >
           {breakdownMatrix.map((item, idx) => {
             const meta = getMatrixMeta(item.category);
             const Icon = meta.icon;
@@ -266,30 +355,51 @@ export function LocationFootprintReport({
             return (
               <div
                 key={idx}
-                className="group relative flex flex-col justify-between rounded-2xl border border-white/10 bg-slate-900/60 p-4.5 hover:border-white/20 hover:bg-slate-900/90 transition-all shadow-lg"
+                style={{
+                  background: "rgba(7, 11, 20, 0.7)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "16px",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold ${meta.bg} ${meta.border} ${meta.color}`}>
-                      <Icon className="h-3.5 w-3.5" />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        borderRadius: "8px",
+                        padding: "3px 8px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        background: meta.bg,
+                        color: meta.color,
+                        border: `1px solid ${meta.border}`,
+                      }}
+                    >
+                      <Icon size={13} />
                       {item.category}
                     </span>
-                    <span className="text-[11px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-bold">
+                    <span style={{ fontSize: "11px", fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: "#94a3b8", background: "rgba(255, 255, 255, 0.05)", padding: "2px 6px", borderRadius: "6px" }}>
                       {percentage}%
                     </span>
                   </div>
 
-                  <div className="mt-3.5">
-                    <div className="text-2xl font-black text-white font-mono tracking-tight">
-                      {item.count.toLocaleString()} <span className="text-xs text-slate-400 font-sans font-medium">txs</span>
+                  <div style={{ marginTop: "14px" }}>
+                    <div style={{ fontSize: "20px", fontWeight: 900, color: "#ffffff", fontFamily: "var(--font-mono, monospace)" }}>
+                      {item.count.toLocaleString()} <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "var(--font-sans, sans-serif)", fontWeight: 600 }}>txs</span>
                     </div>
-                    <div className="text-xs font-mono font-semibold text-emerald-400 mt-0.5">
+                    <div style={{ fontSize: "13px", fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: "#34d399", marginTop: "2px" }}>
                       {formatZAR(item.amount)}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-3 border-t border-white/5 text-[11px] text-slate-300 leading-snug">
+                <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid rgba(255, 255, 255, 0.05)", fontSize: "11px", color: "#94a3b8", lineHeight: "1.5" }}>
                   {item.note}
                 </div>
               </div>
@@ -299,77 +409,80 @@ export function LocationFootprintReport({
       </div>
 
       {/* ── 3. Physical In-Store Venues Directory (All 33 Venues Ranked) ────── */}
-      <div className="rounded-[28px] border border-white/10 bg-slate-950/70 p-6 md:p-8 backdrop-blur-2xl shadow-xl space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <div
+        style={{
+          background: "rgba(13, 20, 36, 0.85)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "22px",
+          padding: "24px 28px",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "16px", marginBottom: "20px" }}>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
-                <Store className="h-5 w-5 text-emerald-400" />
-                Physical In-Store Merchant Directory ({filteredVenues.length} of {distinctPhysicalVenuesCount} Venues)
-              </h3>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h3 style={{ fontSize: "17px", fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+              <Store size={18} color="#10b981" />
+              Physical In-Store Merchant Directory ({filteredVenues.length} of {distinctPhysicalVenuesCount} Venues)
+            </h3>
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "4px 0 0 0" }}>
               Ranked by card swipe frequency. Multiple in-store purchases are aggregated into individual venue pins.
             </p>
           </div>
 
           {/* Interactive Search & Quick Filters */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "10px", padding: "6px 12px" }}>
+              <Search size={14} color="#94a3b8" />
               <input
                 type="text"
                 placeholder="Search venue or address…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="rounded-xl border border-white/10 bg-slate-900/90 pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none w-44 sm:w-56"
+                style={{ background: "transparent", border: "none", outline: "none", color: "#ffffff", fontSize: "12px", width: "160px" }}
               />
             </div>
 
             <select
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
-              className="rounded-xl border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
+              style={{ background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "10px", padding: "6px 12px", color: "#ffffff", fontSize: "12px", outline: "none", cursor: "pointer" }}
             >
               <option value="ALL">All Regions ({physicalLocations.length})</option>
               {availableRegions.map((reg) => (
-                <option key={reg} value={reg}>
-                  {reg}
-                </option>
+                <option key={reg} value={reg}>{reg}</option>
               ))}
             </select>
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="rounded-xl border border-white/10 bg-slate-900/90 px-3 py-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
+              style={{ background: "rgba(0, 0, 0, 0.4)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "10px", padding: "6px 12px", color: "#ffffff", fontSize: "12px", outline: "none", cursor: "pointer" }}
             >
               <option value="ALL">All Categories</option>
               {availableCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
+                <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
           </div>
         </div>
 
         {/* Venues Clean Table */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/40">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 bg-white/[0.02]">
-              <tr>
-                <th className="py-3.5 px-4 text-center w-14">Rank</th>
-                <th className="py-3.5 px-4">Physical Venue / Billboard Name</th>
-                <th className="py-3.5 px-4">Location &amp; Region</th>
-                <th className="py-3.5 px-4 text-center">Card Swipes</th>
-                <th className="py-3.5 px-4 text-right">Consolidated Spend</th>
-                <th className="py-3.5 px-4">Category</th>
-                <th className="py-3.5 px-4 text-center">GPS Precision</th>
-                <th className="py-3.5 px-4 text-center w-12">View</th>
+        <div style={{ overflowX: "auto", borderRadius: "14px", border: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(7, 11, 20, 0.6)" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(255, 255, 255, 0.02)" }}>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "50px", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Rank</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Physical Venue / Billboard Name</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Location &amp; Region</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Card Swipes</th>
+                <th style={{ padding: "12px 16px", textAlign: "right", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Consolidated Spend</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Category</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>GPS Precision</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", width: "50px", color: "#94a3b8", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>View</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {filteredVenues.map((loc, idx) => {
                 const isExpanded = expandedVenueId === loc.id;
                 const spend = loc.amount || loc.totalAmount || 0;
@@ -378,100 +491,129 @@ export function LocationFootprintReport({
                 return (
                   <React.Fragment key={loc.id}>
                     <tr
-                      className={`transition-colors cursor-pointer ${isExpanded ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}
+                      style={{
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+                        background: isExpanded ? "rgba(255, 255, 255, 0.06)" : "transparent",
+                        cursor: "pointer",
+                        transition: "background 0.15s ease",
+                      }}
                       onClick={() => setExpandedVenueId(isExpanded ? null : loc.id)}
                     >
-                      <td className="py-3.5 px-4 text-center">
+                      <td style={{ padding: "14px 16px", textAlign: "center" }}>
                         {isTop3 ? (
                           <span
-                            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${
-                              idx === 0
-                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                                : idx === 1
-                                ? "bg-slate-300/20 text-slate-200 border border-slate-300/40"
-                                : "bg-amber-700/20 text-amber-500 border border-amber-700/40"
-                            }`}
+                            style={{
+                              display: "inline-flex",
+                              width: "24px",
+                              height: "24px",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "50%",
+                              fontSize: "11px",
+                              fontWeight: 900,
+                              background: idx === 0 ? "rgba(245, 158, 11, 0.25)" : idx === 1 ? "rgba(203, 213, 225, 0.25)" : "rgba(180, 83, 9, 0.25)",
+                              color: idx === 0 ? "#fbbf24" : idx === 1 ? "#f1f5f9" : "#d97706",
+                              border: `1px solid ${idx === 0 ? "rgba(245, 158, 11, 0.4)" : idx === 1 ? "rgba(203, 213, 225, 0.4)" : "rgba(180, 83, 9, 0.4)"}`,
+                            }}
                           >
                             {idx + 1}
                           </span>
                         ) : (
-                          <span className="font-mono text-slate-500 font-semibold">{idx + 1}</span>
+                          <span style={{ fontFamily: "var(--font-mono, monospace)", color: "#64748b", fontWeight: 700 }}>
+                            {idx + 1}
+                          </span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-white text-sm tracking-tight">{loc.merchant}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-xs">{loc.locationName}</div>
+                      <td style={{ padding: "14px 16px" }}>
+                        <div style={{ fontWeight: 800, color: "#ffffff", fontSize: "14px" }}>{loc.merchant}</div>
+                        <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px", maxWidth: "260px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {loc.locationName}
+                        </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <div className="text-slate-200 font-medium">{loc.suburb || loc.city}</div>
-                        <div className="text-[10px] text-slate-400">{loc.region}</div>
+                      <td style={{ padding: "14px 16px" }}>
+                        <div style={{ color: "#e2e8f0", fontWeight: 600 }}>{loc.suburb || loc.city}</div>
+                        <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>{loc.region}</div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-mono font-bold text-emerald-400 border border-emerald-500/30 text-[11px]">
+                      <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            borderRadius: "99px",
+                            background: "rgba(16, 185, 129, 0.15)",
+                            padding: "3px 10px",
+                            fontFamily: "var(--font-mono, monospace)",
+                            fontWeight: 800,
+                            color: "#34d399",
+                            border: "1px solid rgba(16, 185, 129, 0.35)",
+                            fontSize: "11px",
+                          }}
+                        >
                           {loc.transactionCount} {loc.transactionCount === 1 ? "swipe" : "swipes"}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right font-mono font-black text-white text-sm tracking-tight">
+                      <td style={{ padding: "14px 16px", textAlign: "right", fontFamily: "var(--font-mono, monospace)", fontWeight: 900, color: "#ffffff", fontSize: "14px" }}>
                         {formatZAR(spend)}
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className="inline-block rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-white/5">
+                      <td style={{ padding: "14px 16px" }}>
+                        <span style={{ display: "inline-block", borderRadius: "6px", background: "rgba(255, 255, 255, 0.05)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#cbd5e1", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
                           {loc.category}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                      <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", fontSize: "10px", fontFamily: "var(--font-mono, monospace)", color: "#94a3b8", background: "rgba(0, 0, 0, 0.4)", padding: "2px 8px", borderRadius: "6px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
                           {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-center">
+                      <td style={{ padding: "14px 16px", textAlign: "center" }}>
                         <button
-                          className="rounded-lg p-1 text-slate-400 hover:text-white transition-colors"
+                          style={{ background: "transparent", border: "none", color: isExpanded ? "#10b981" : "#64748b", cursor: "pointer", padding: "4px" }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setExpandedVenueId(isExpanded ? null : loc.id);
                           }}
                         >
-                          {isExpanded ? <ChevronUp className="h-4 w-4 text-emerald-400" /> : <ChevronDown className="h-4 w-4" />}
+                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </td>
                     </tr>
 
                     {/* Expandable Individual Swipes Drawer */}
                     {isExpanded && loc.recentTransactions && loc.recentTransactions.length > 0 && (
-                      <tr className="border-b border-white/10 bg-slate-950/90">
-                        <td colSpan={8} className="p-5">
-                          <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-4 space-y-3">
-                            <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                                <Sparkles className="h-4 w-4 text-emerald-400" />
+                      <tr style={{ background: "rgba(7, 11, 20, 0.95)", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                        <td colSpan={8} style={{ padding: "18px 24px" }}>
+                          <div style={{ background: "rgba(13, 20, 36, 0.9)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "16px", padding: "16px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "10px", marginBottom: "12px" }}>
+                              <span style={{ fontSize: "12px", fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <Sparkles size={14} color="#10b981" />
                                 All {loc.recentTransactions.length} Recorded Swipes for {loc.merchant}
                               </span>
-                              <span className="text-xs font-mono text-emerald-400 font-bold">
+                              <span style={{ fontSize: "12px", fontFamily: "var(--font-mono, monospace)", color: "#10b981", fontWeight: 800 }}>
                                 Total: {formatZAR(spend)}
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px", maxHeight: "240px", overflowY: "auto" }}>
                               {loc.recentTransactions.map((tx) => (
                                 <div
                                   key={tx.id}
-                                  className="rounded-xl border border-white/5 bg-white/[0.02] p-3 flex items-center justify-between gap-3 hover:border-white/10 transition-colors"
+                                  style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}
                                 >
-                                  <div className="min-w-0">
-                                    <div className="text-[10px] font-mono text-slate-400 font-semibold">{tx.date}</div>
-                                    <div className="text-xs text-slate-200 truncate mt-0.5" title={tx.description}>
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: "10px", fontFamily: "var(--font-mono, monospace)", color: "#94a3b8", fontWeight: 700 }}>{tx.date}</div>
+                                    <div style={{ fontSize: "12px", color: "#f8fafc", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={tx.description}>
                                       {tx.description}
                                     </div>
                                   </div>
-                                  <div className="text-xs font-mono font-bold text-emerald-400 shrink-0">
+                                  <div style={{ fontSize: "12px", fontFamily: "var(--font-mono, monospace)", fontWeight: 800, color: "#34d399", flexShrink: 0 }}>
                                     {formatZAR(tx.amount)}
                                   </div>
                                 </div>
@@ -490,42 +632,63 @@ export function LocationFootprintReport({
       </div>
 
       {/* ── 4. Digital & Cloud Subscriptions Directory ─────────────────────── */}
-      <div className="rounded-[28px] border border-white/10 bg-slate-950/70 p-6 md:p-8 backdrop-blur-2xl shadow-xl space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+      <div
+        style={{
+          background: "rgba(13, 20, 36, 0.85)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "22px",
+          padding: "24px 28px",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "14px", marginBottom: "18px" }}>
           <div>
-            <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
-              <Globe className="h-5 w-5 text-sky-400" />
+            <h3 style={{ fontSize: "17px", fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+              <Globe size={18} color="#38bdf8" />
               Digital &amp; Cloud Subscriptions ({digitalServices.length} Services · {totalDigitalSubscriptionsTxs} Cycles)
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "4px 0 0 0" }}>
               Online recurring subscriptions and web transactions with no physical storefront.
             </p>
           </div>
-          <span className="text-sm font-mono font-bold text-sky-400 bg-sky-500/10 px-3 py-1 rounded-full border border-sky-500/20">
+          <span style={{ fontSize: "13px", fontFamily: "var(--font-mono, monospace)", fontWeight: 800, color: "#38bdf8", background: "rgba(56, 189, 248, 0.12)", padding: "4px 12px", borderRadius: "99px", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
             Total Billed: {formatZAR(totalDigitalSpendZAR)}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
           {digitalServices.map((dig) => (
             <div
               key={dig.id}
-              className="rounded-2xl border border-white/10 bg-slate-900/60 p-4.5 flex flex-col justify-between hover:border-sky-500/30 transition-all shadow-md"
+              style={{
+                background: "rgba(7, 11, 20, 0.7)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "16px",
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
             >
               <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-sky-400 bg-sky-500/15 px-2.5 py-0.5 rounded-md border border-sky-500/30">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8", background: "rgba(56, 189, 248, 0.15)", padding: "3px 8px", borderRadius: "6px", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
                     {dig.category}
                   </span>
-                  <span className="text-[11px] font-mono text-slate-400 font-semibold">
+                  <span style={{ fontSize: "11px", fontFamily: "var(--font-mono, monospace)", color: "#94a3b8", fontWeight: 600 }}>
                     {dig.transactionCount} {dig.transactionCount === 1 ? "cycle" : "cycles"}
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-white mt-2.5 tracking-tight">{dig.serviceName}</h4>
+                <h4 style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff", marginTop: "10px", margin: "10px 0 0 0" }}>
+                  {dig.serviceName}
+                </h4>
               </div>
-              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">Total Billed:</span>
-                <span className="text-sm font-mono font-black text-white">{formatZAR(dig.totalAmount)}</span>
+              <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid rgba(255, 255, 255, 0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "11px", color: "#94a3b8" }}>Total Billed:</span>
+                <span style={{ fontSize: "14px", fontFamily: "var(--font-mono, monospace)", fontWeight: 900, color: "#ffffff" }}>
+                  {formatZAR(dig.totalAmount)}
+                </span>
               </div>
             </div>
           ))}

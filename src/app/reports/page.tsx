@@ -331,110 +331,82 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* ─── Apple-Caliber Segmented Navigation Suite ─── */}
-      <div className="mb-8 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/80 p-2 backdrop-blur-2xl shadow-xl">
-          {/* Primary Forensic & Audit Suite */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setActiveTab("FORENSIC_AUDIT")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "FORENSIC_AUDIT"
-                  ? "bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-teal-500/10 text-emerald-300 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <Sparkles size={14} className={activeTab === "FORENSIC_AUDIT" ? "text-emerald-400" : "text-slate-400"} />
-              <span>Forensic Ground Truth</span>
-              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/30">
-                100% Certified
-              </span>
-            </button>
+      {/* ─── Apple Reports Segmented Tabs Suite ─── */}
+      <div className="reports-nav-container">
+        {/* Primary Forensic & Audit Suite */}
+        <div className="reports-nav-group">
+          <button
+            onClick={() => setActiveTab("FORENSIC_AUDIT")}
+            className={`reports-tab-btn ${activeTab === "FORENSIC_AUDIT" ? "active-emerald" : ""}`}
+          >
+            <Sparkles size={15} color={activeTab === "FORENSIC_AUDIT" ? "#10b981" : "#94a3b8"} />
+            <span>Forensic Ground Truth</span>
+            <span className="reports-pill-badge emerald">
+              100% Certified
+            </span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("LOCATION_FOOTPRINT")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "LOCATION_FOOTPRINT"
-                  ? "bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-teal-500/10 text-emerald-300 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <Compass size={14} className={activeTab === "LOCATION_FOOTPRINT" ? "text-emerald-400" : "text-slate-400"} />
-              <span>Geospatial Footprint</span>
-              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/30">
-                {data?.locationAuditData?.distinctPhysicalVenuesCount || 33} Venues
-              </span>
-            </button>
+          <button
+            onClick={() => setActiveTab("LOCATION_FOOTPRINT")}
+            className={`reports-tab-btn ${activeTab === "LOCATION_FOOTPRINT" ? "active-emerald" : ""}`}
+          >
+            <Compass size={15} color={activeTab === "LOCATION_FOOTPRINT" ? "#10b981" : "#94a3b8"} />
+            <span>Geospatial Footprint</span>
+            <span className="reports-pill-badge emerald">
+              {data?.locationAuditData?.distinctPhysicalVenuesCount || 33} Venues
+            </span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("AUDIT_REPORT")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "AUDIT_REPORT"
-                  ? "bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-teal-500/10 text-emerald-300 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <ShieldCheck size={14} className={activeTab === "AUDIT_REPORT" ? "text-emerald-400" : "text-slate-400"} />
-              <span>Statement Accounts</span>
-              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/30">
-                {auditAccounts.length > 0 ? "14 Accounts" : "Reconciled"}
-              </span>
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab("AUDIT_REPORT")}
+            className={`reports-tab-btn ${activeTab === "AUDIT_REPORT" ? "active-emerald" : ""}`}
+          >
+            <ShieldCheck size={15} color={activeTab === "AUDIT_REPORT" ? "#10b981" : "#94a3b8"} />
+            <span>Statement Accounts</span>
+            <span className="reports-pill-badge emerald">
+              {auditAccounts.length > 0 ? "14 Accounts" : "Reconciled"}
+            </span>
+          </button>
+        </div>
 
-          {/* Secondary Analytics Suite */}
-          <div className="flex flex-wrap items-center gap-2 border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0 md:pl-3">
-            <button
-              onClick={() => setActiveTab("OVERVIEW")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "OVERVIEW"
-                  ? "bg-gradient-to-r from-amber-500/25 to-yellow-500/15 text-amber-300 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <PieChart size={14} className={activeTab === "OVERVIEW" ? "text-amber-400" : "text-slate-400"} />
-              <span>Cash Flow</span>
-            </button>
+        <div className="reports-nav-divider" />
 
-            <button
-              onClick={() => setActiveTab("VARIANCE")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "VARIANCE"
-                  ? "bg-gradient-to-r from-amber-500/25 to-yellow-500/15 text-amber-300 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <Sliders size={14} className={activeTab === "VARIANCE" ? "text-amber-400" : "text-slate-400"} />
-              <span>Budget Variance</span>
-            </button>
+        {/* Secondary Analytics Suite */}
+        <div className="reports-nav-group">
+          <button
+            onClick={() => setActiveTab("OVERVIEW")}
+            className={`reports-tab-btn ${activeTab === "OVERVIEW" ? "active-amber" : ""}`}
+          >
+            <PieChart size={15} color={activeTab === "OVERVIEW" ? "#f59e0b" : "#94a3b8"} />
+            <span>Cash Flow</span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("LEAKAGE")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "LEAKAGE"
-                  ? "bg-gradient-to-r from-rose-500/25 to-red-500/15 text-rose-300 border border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <ShieldAlert size={14} className={activeTab === "LEAKAGE" ? "text-rose-400" : "text-slate-400"} />
-              <span>Leakages</span>
-              <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-black text-rose-300 border border-rose-500/30">
-                {leakageItems.length}
-              </span>
-            </button>
+          <button
+            onClick={() => setActiveTab("VARIANCE")}
+            className={`reports-tab-btn ${activeTab === "VARIANCE" ? "active-amber" : ""}`}
+          >
+            <Sliders size={15} color={activeTab === "VARIANCE" ? "#f59e0b" : "#94a3b8"} />
+            <span>Budget Variance</span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("HABITS")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all ${
-                activeTab === "HABITS"
-                  ? "bg-gradient-to-r from-sky-500/25 to-cyan-500/15 text-sky-300 border border-sky-500/50 shadow-[0_0_20px_rgba(56,189,248,0.15)]"
-                  : "bg-slate-900/50 text-slate-400 hover:bg-slate-900 hover:text-slate-200 border border-white/5"
-              }`}
-            >
-              <Flame size={14} className={activeTab === "HABITS" ? "text-sky-400" : "text-slate-400"} />
-              <span>Habits &amp; Velocity</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab("LEAKAGE")}
+            className={`reports-tab-btn ${activeTab === "LEAKAGE" ? "active-rose" : ""}`}
+          >
+            <ShieldAlert size={15} color={activeTab === "LEAKAGE" ? "#f43f5e" : "#94a3b8"} />
+            <span>Leakages</span>
+            <span className="reports-pill-badge rose">
+              {leakageItems.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("HABITS")}
+            className={`reports-tab-btn ${activeTab === "HABITS" ? "active-sky" : ""}`}
+          >
+            <Flame size={15} color={activeTab === "HABITS" ? "#38bdf8" : "#94a3b8"} />
+            <span>Habits &amp; Velocity</span>
+          </button>
         </div>
       </div>
 
