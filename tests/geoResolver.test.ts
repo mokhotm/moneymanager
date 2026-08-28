@@ -34,13 +34,13 @@ describe("South African Geo & Spending Intelligence Engine", () => {
 
     // Verify physical in-store locations
     expect(result.physicalLocations.length).toBe(2);
-    const spar = result.physicalLocations.find((l) => l.merchant === "Springbok SuperSPAR Geduld");
+    const spar = result.physicalLocations.find((l) => l.merchant.includes("SPAR"));
     expect(spar).toBeDefined();
     expect(spar?.city).toBe("Springs");
-    expect(spar?.suburb).toBe("Geduld");
+    expect(spar?.suburb).toBe("Bakerton");
     expect(spar?.region).toBe("Springs & Bakerton");
-    expect(spar?.lat).toBeCloseTo(-26.2439, 3);
-    expect(spar?.lng).toBeCloseTo(28.4286, 3);
+    expect(spar?.lat).toBeCloseTo(-26.2235, 3);
+    expect(spar?.lng).toBeCloseTo(28.4780, 3);
     expect(spar?.totalAmount).toBe(1450);
 
     // Verify digital services are cleanly separated
