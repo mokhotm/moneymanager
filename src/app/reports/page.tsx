@@ -331,252 +331,102 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* ─── Apple Segmented Pill Tabs ─── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          background: "rgba(13, 20, 36, 0.8)",
-          padding: "6px",
-          borderRadius: "16px",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          marginBottom: "28px",
-          flexWrap: "wrap",
-        }}
-      >
+      {/* ─── Apple-Caliber Segmented Pill Tabs ─── */}
+      <div className="flex items-center gap-1.5 bg-slate-950/80 p-1.5 rounded-2xl border border-white/10 mb-8 backdrop-blur-2xl overflow-x-auto shadow-xl">
+        <button
+          onClick={() => setActiveTab("LOCATION_FOOTPRINT")}
+          className={`flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "LOCATION_FOOTPRINT"
+              ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
+        >
+          <Compass size={15} className={activeTab === "LOCATION_FOOTPRINT" ? "text-emerald-400" : "text-slate-400"} />
+          <span>Geospatial Footprint Audit</span>
+          <span className="bg-emerald-500/20 text-emerald-400 py-0.5 px-2 rounded-full text-[10px] font-black border border-emerald-500/30">
+            {data?.locationAuditData?.distinctPhysicalVenuesCount || 33} Venues
+          </span>
+        </button>
+
         <button
           onClick={() => setActiveTab("FORENSIC_AUDIT")}
-          style={{
-            flex: 1,
-            minWidth: "210px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "FORENSIC_AUDIT" ? "1px solid rgba(16, 185, 129, 0.5)" : "1px solid transparent",
-            background:
-              activeTab === "FORENSIC_AUDIT"
-                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%)"
-                : "transparent",
-            color: activeTab === "FORENSIC_AUDIT" ? "#6ee7b7" : "#94a3b8",
-            transition: "all 0.2s ease",
-          }}
+          className={`flex-1 min-w-[190px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "FORENSIC_AUDIT"
+              ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
         >
-          <Sparkles size={16} color={activeTab === "FORENSIC_AUDIT" ? "#10b981" : "#94a3b8"} />
-          <span>Forensic Debit &amp; Cash Audit</span>
-          <span
-            style={{
-              background: "rgba(16, 185, 129, 0.2)",
-              color: "#10b981",
-              padding: "1px 7px",
-              borderRadius: "99px",
-              fontSize: "10px",
-              fontWeight: 800,
-            }}
-          >
-            Ground Truth
+          <Sparkles size={15} className={activeTab === "FORENSIC_AUDIT" ? "text-emerald-400" : "text-slate-400"} />
+          <span>Forensic Ground Truth</span>
+          <span className="bg-emerald-500/20 text-emerald-400 py-0.5 px-2 rounded-full text-[10px] font-black border border-emerald-500/30">
+            100% Certified
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("AUDIT_REPORT")}
-          style={{
-            flex: 1,
-            minWidth: "180px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "AUDIT_REPORT" ? "1px solid rgba(16, 185, 129, 0.5)" : "1px solid transparent",
-            background:
-              activeTab === "AUDIT_REPORT"
-                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%)"
-                : "transparent",
-            color: activeTab === "AUDIT_REPORT" ? "#6ee7b7" : "#94a3b8",
-            transition: "all 0.2s ease",
-          }}
+          className={`flex-1 min-w-[170px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "AUDIT_REPORT"
+              ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
         >
-          <ShieldCheck size={16} />
-          <span>Monthly Statement Audit</span>
-          <span
-            style={{
-              background: "rgba(16, 185, 129, 0.2)",
-              color: "#10b981",
-              padding: "1px 7px",
-              borderRadius: "99px",
-              fontSize: "10px",
-              fontWeight: 800,
-            }}
-          >
-            {auditAccounts.length > 0 ? "100% Match" : "0 Accounts"}
+          <ShieldCheck size={15} />
+          <span>Statement Audit</span>
+          <span className="bg-emerald-500/20 text-emerald-400 py-0.5 px-2 rounded-full text-[10px] font-black border border-emerald-500/30">
+            {auditAccounts.length > 0 ? "14 Accs" : "Reconciled"}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("OVERVIEW")}
-          style={{
-            flex: 1,
-            minWidth: "160px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "OVERVIEW" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
-            background:
-              activeTab === "OVERVIEW"
-                ? "linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.1) 100%)"
-                : "transparent",
-            color: activeTab === "OVERVIEW" ? "#fbbf24" : "#94a3b8",
-            transition: "all 0.2s ease",
-          }}
+          className={`flex-1 min-w-[150px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "OVERVIEW"
+              ? "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
         >
-          <PieChart size={16} /> Cash Flow Dynamics
+          <PieChart size={15} />
+          <span>Cash Flow</span>
         </button>
 
         <button
           onClick={() => setActiveTab("VARIANCE")}
-          style={{
-            flex: 1,
-            minWidth: "160px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "VARIANCE" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
-            background:
-              activeTab === "VARIANCE"
-                ? "linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.1) 100%)"
-                : "transparent",
-            color: activeTab === "VARIANCE" ? "#fbbf24" : "#94a3b8",
-            transition: "all 0.2s ease",
-          }}
+          className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "VARIANCE"
+              ? "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
         >
-          <Sliders size={16} /> Budget vs. Actual
+          <Sliders size={15} />
+          <span>Budget Variance</span>
         </button>
 
         <button
           onClick={() => setActiveTab("LEAKAGE")}
-          style={{
-            flex: 1,
-            minWidth: "160px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "LEAKAGE" ? "1px solid rgba(244, 63, 94, 0.5)" : "1px solid transparent",
-            background:
-              activeTab === "LEAKAGE"
-                ? "linear-gradient(135deg, rgba(244, 63, 94, 0.25) 0%, rgba(244, 63, 94, 0.1) 100%)"
-                : "transparent",
-            color: activeTab === "LEAKAGE" ? "#fda4af" : "#f43f5e",
-            transition: "all 0.2s ease",
-          }}
+          className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "LEAKAGE"
+              ? "bg-gradient-to-r from-rose-500/20 to-red-500/20 text-rose-300 border border-rose-500/40 shadow-lg shadow-rose-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
         >
-          <ShieldAlert size={16} />
-          <span>Friction &amp; Leakage</span>
-          <span
-            style={{
-              background: "rgba(244, 63, 94, 0.25)",
-              color: "#fda4af",
-              padding: "1px 7px",
-              borderRadius: "99px",
-              fontSize: "10px",
-              fontWeight: 800,
-            }}
-          >
+          <ShieldAlert size={15} />
+          <span>Leakages</span>
+          <span className="bg-rose-500/20 text-rose-300 py-0.5 px-2 rounded-full text-[10px] font-black border border-rose-500/30">
             {leakageItems.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("HABITS")}
-          style={{
-            flex: 1,
-            minWidth: "160px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "HABITS" ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
-            background:
-              activeTab === "HABITS"
-                ? "linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0.05) 100%)"
-                : "transparent",
-            color: activeTab === "HABITS" ? "#7dd3fc" : "#94a3b8",
-            transition: "all 0.2s ease",
-          }}
+          className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "HABITS"
+              ? "bg-gradient-to-r from-sky-500/20 to-cyan-500/20 text-sky-300 border border-sky-500/40 shadow-lg shadow-sky-500/10"
+              : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03] border border-transparent"
+          }`}
         >
-          <Flame size={16} /> Spend Velocity &amp; Habits
-        </button>
-
-        <button
-          onClick={() => setActiveTab("LOCATION_FOOTPRINT")}
-          style={{
-            flex: 1,
-            minWidth: "190px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-            border: activeTab === "LOCATION_FOOTPRINT" ? "1px solid rgba(16, 185, 129, 0.5)" : "1px solid transparent",
-            background:
-              activeTab === "LOCATION_FOOTPRINT"
-                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%)"
-                : "transparent",
-            color: activeTab === "LOCATION_FOOTPRINT" ? "#6ee7b7" : "#94a3b8",
-            transition: "all 0.2s ease",
-          }}
-        >
-          <Compass size={16} color={activeTab === "LOCATION_FOOTPRINT" ? "#10b981" : "#94a3b8"} />
-          <span>Geospatial Footprint Audit</span>
-          <span
-            style={{
-              background: "rgba(16, 185, 129, 0.2)",
-              color: "#10b981",
-              padding: "1px 7px",
-              borderRadius: "99px",
-              fontSize: "10px",
-              fontWeight: 800,
-            }}
-          >
-            {data?.locationAuditData?.distinctPhysicalVenuesCount || 33} Venues
-          </span>
+          <Flame size={15} />
+          <span>Habits &amp; Velocity</span>
         </button>
       </div>
 
