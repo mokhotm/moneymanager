@@ -697,6 +697,8 @@ export function resolveSpendingLocations(
           region: matchedRule.region,
           lat: matchedRule.lat,
           lng: matchedRule.lng,
+          amount: 0,
+          date: dateStr,
           totalAmount: 0,
           grossDebits: 0,
           grossReversals: 0,
@@ -710,21 +712,28 @@ export function resolveSpendingLocations(
         physicalLocationMap.set(locKey, existing);
       }
 
-      if (isReversal) {
-        existing.grossReversals += absAmount;
-        existing.totalAmount = Math.max(0, existing.totalAmount - absAmount);
-      } else {
-        existing.grossDebits += absAmount;
-        existing.totalAmount += absAmount;
-        existing.transactionCount += 1;
-        if (dateStr > existing.lastDate) existing.lastDate = dateStr;
-        if (dateStr < existing.firstDate) existing.firstDate = dateStr;
-        existing.recentTransactions.unshift({
-          id: f.id || `txn-${Math.random()}`,
-          date: dateStr,
-          amount: absAmount,
-          description: rawDest || matchedRule.cleanMerchant,
-        });
+      if (existing) {
+        if (isReversal) {
+          existing.grossReversals += absAmount;
+          existing.totalAmount = Math.max(0, existing.totalAmount - absAmount);
+          existing.amount = existing.totalAmount;
+        } else {
+          existing.grossDebits += absAmount;
+          existing.totalAmount += absAmount;
+          existing.amount = existing.totalAmount;
+          existing.transactionCount += 1;
+          if (dateStr > existing.lastDate) {
+            existing.lastDate = dateStr;
+            existing.date = dateStr;
+          }
+          if (dateStr < existing.firstDate) existing.firstDate = dateStr;
+          existing.recentTransactions.unshift({
+            id: f.id || `txn-${Math.random()}`,
+            date: dateStr,
+            amount: absAmount,
+            description: rawDest || matchedRule.cleanMerchant,
+          });
+        }
       }
       continue;
     }
