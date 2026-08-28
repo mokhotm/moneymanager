@@ -469,11 +469,11 @@ export function SpendingLocationMap({
                     borderRadius: "99px",
                   }}
                 >
-                  Live Geotagged ({cycleFilteredLocations.length} Active Venues)
+                  Live Geotagged ({cycleFilteredLocations.length} Venues · {cycleFilteredLocations.reduce((s, l) => s + (l.transactionCount || 1), 0)} Card Swipes)
                 </span>
               </div>
               <p style={{ fontSize: "12px", color: "#94a3b8", margin: "3px 0 0 0" }}>
-                Geospatial purchase radar across South African hubs with Pay Cycle &amp; Monthly filtering
+                Aggregating in-store card swipes into {cycleFilteredLocations.length} physical venue pins across South Africa with Pay Cycle filtering
               </p>
             </div>
           </div>
@@ -510,7 +510,7 @@ export function SpendingLocationMap({
               }}
             >
               <Store size={13} />
-              In-Store ({cycleFilteredLocations.length})
+              In-Store ({cycleFilteredLocations.length} Venues)
             </button>
             <button
               onClick={() => setActiveTab("DIGITAL")}
@@ -530,7 +530,7 @@ export function SpendingLocationMap({
               }}
             >
               <Globe size={13} />
-              Digital &amp; Online ({cycleFilteredDigital.length})
+              Digital &amp; Online ({cycleFilteredDigital.length} Services)
             </button>
           </div>
 
