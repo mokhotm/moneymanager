@@ -150,7 +150,7 @@ import { ForensicAuditReport } from "@/components/ForensicAuditReport";
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<"FORENSIC_AUDIT" | "AUDIT_REPORT" | "OVERVIEW" | "VARIANCE" | "LEAKAGE" | "HABITS" | "LOCATION_FOOTPRINT">("FORENSIC_AUDIT");
   const [timeframe, setTimeframe] = useState<string>("MONTHLY_CYCLE");
-  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [selectedMonth, setSelectedMonth] = useState<string>("2026-08");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);

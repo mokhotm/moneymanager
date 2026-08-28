@@ -91,7 +91,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [selectedMonth, setSelectedMonth] = useState<string>("2026-08");
   const [cycleMode, setCycleMode] = useState<"PAY_CYCLE" | "CALENDAR_MONTH">("PAY_CYCLE");
 
   // User's own documents

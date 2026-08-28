@@ -89,7 +89,7 @@ interface LocationFootprintReportProps {
 
 export function LocationFootprintReport({
   data,
-  selectedMonth = "ALL",
+  selectedMonth = "2026-08",
 }: LocationFootprintReportProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("ALL");

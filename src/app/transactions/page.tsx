@@ -27,7 +27,7 @@ export default function TransactionsPage() {
     unbudgetedOutflow?: number;
     budgetAdherenceRate?: number;
   } | null>(null);
-  const [activePeriod, setActivePeriod] = useState<string>("2026-07");
+  const [activePeriod, setActivePeriod] = useState<string>("2026-08");
   const [activePeriodType, setActivePeriodType] = useState<string>("SALARY");
 
   const inflow = summaryData?.totalInflow ?? 0;

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const flowId = searchParams.get("flowId");
     const accountRef = searchParams.get("accountRef");
-    const payPeriod = searchParams.get("payPeriod");
+    const payPeriod = searchParams.get("payPeriod") ?? "2026-08";
     const periodTypeParam = searchParams.get("periodType");
     const periodType = periodTypeParam === "CALENDAR" ? "CALENDAR" : "SALARY";
 

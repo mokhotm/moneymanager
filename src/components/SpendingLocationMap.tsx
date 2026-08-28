@@ -89,7 +89,7 @@ export function SpendingLocationMap({
 }: SpendingLocationMapProps) {
   const [localLocations, setLocalLocations] = useState<SpendingLocation[]>(locations);
   const [activeTab, setActiveTab] = useState<"PHYSICAL" | "DIGITAL">("PHYSICAL");
-  const [selectedCycleMonth, setSelectedCycleMonth] = useState<string>("ALL");
+  const [selectedCycleMonth, setSelectedCycleMonth] = useState<string>("2026-08");
   const [cycleMode, setCycleMode] = useState<"PAY_CYCLE" | "CALENDAR_MONTH">("PAY_CYCLE");
   const [selectedRegion, setSelectedRegion] = useState<string>("ALL");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");

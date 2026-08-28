@@ -71,11 +71,13 @@ export default function MoneyJourneyPage() {
   // Visual Controls State
   const [viewMode, setViewMode] = useState<"NEURAL" | "BUBBLE" | "LIST">("NEURAL");
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [activePayPeriod, setActivePayPeriod] = useState<string>("ALL");
+  const [activePayPeriod, setActivePayPeriod] = useState<string>("2026-08");
   const [periodType, setPeriodType] = useState<"SALARY" | "CALENDAR">("SALARY");
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [isCanvasExpanded, setIsCanvasExpanded] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(24);
 
   useEffect(() => {
     let url = "/api/money-flow";
@@ -95,6 +97,10 @@ export default function MoneyJourneyPage() {
       })
       .catch(() => setLoading(false));
   }, [activePayPeriod, periodType]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchQuery, activePayPeriod, periodType]);
 
   useEffect(() => {
     if (!selectedFlowId) return;
@@ -127,6 +133,17 @@ export default function MoneyJourneyPage() {
       return matchCat && matchSearch;
     });
   }, [flows, activeFilter, searchQuery]);
+
+  const totalPages = useMemo(() => {
+    if (pageSize === 0) return 1;
+    return Math.ceil(filteredFlowCards.length / pageSize) || 1;
+  }, [filteredFlowCards.length, pageSize]);
+
+  const paginatedFlowCards = useMemo(() => {
+    if (pageSize === 0) return filteredFlowCards;
+    const start = (currentPage - 1) * pageSize;
+    return filteredFlowCards.slice(start, start + pageSize);
+  }, [filteredFlowCards, currentPage, pageSize]);
 
   const maxFlowAmount = useMemo(() => {
     return Math.max(...flows.map((f) => f.amount), 1000);
@@ -506,7 +523,7 @@ export default function MoneyJourneyPage() {
 
               {/* 2-Column Grid of Flow Cards */}
               <div className="flow-cards-grid">
-                {filteredFlowCards.map((f) => {
+                {paginatedFlowCards.map((f) => {
                   const isSelected = selectedFlowId === f.id;
                   const color = FLOW_COLORS[f.flowType] || "#64748b";
 
@@ -580,6 +597,54 @@ export default function MoneyJourneyPage() {
                   );
                 })}
               </div>
+
+              {/* Pagination Controls */}
+              {filteredFlowCards.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                    padding: "16px 20px",
+                    borderTop: "1px solid var(--border-light)",
+                    marginTop: "16px",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    Showing <strong style={{ color: "var(--text-primary)" }}>{(currentPage - 1) * pageSize + 1}</strong>–
+                    <strong style={{ color: "var(--text-primary)" }}>{Math.min(currentPage * pageSize, filteredFlowCards.length)}</strong> of{" "}
+                    <strong style={{ color: "var(--gold)" }}>{filteredFlowCards.length}</strong> flows
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="apple-pill-btn"
+                      style={{ opacity: currentPage <= 1 ? 0.4 : 1, cursor: currentPage <= 1 ? "not-allowed" : "pointer" }}
+                    >
+                      ← Previous
+                    </button>
+
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", padding: "0 6px" }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="apple-pill-btn"
+                      style={{ opacity: currentPage >= totalPages ? 0.4 : 1, cursor: currentPage >= totalPages ? "not-allowed" : "pointer" }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

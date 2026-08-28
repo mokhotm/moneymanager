@@ -403,11 +403,21 @@ export function MoneyFlowNetworkCanvas({
     setIsPanningCanvas(false);
   }, []);
 
-  // Mouse wheel zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-    setInternalScale((prev) => Math.min(1.8, Math.max(0.4, prev * zoomFactor)));
+  // Mouse wheel zoom attached via non-passive listener to prevent browser warnings
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+
+    const onWheelHandler = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      setInternalScale((prev) => Math.min(1.8, Math.max(0.4, prev * zoomFactor)));
+    };
+
+    el.addEventListener("wheel", onWheelHandler, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheelHandler);
+    };
   }, []);
 
   const resetView = useCallback(() => {
@@ -440,7 +450,6 @@ export function MoneyFlowNetworkCanvas({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
       style={{
         position: "relative",
         width: "100%",
