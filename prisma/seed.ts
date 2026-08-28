@@ -175,7 +175,7 @@ async function main() {
     data: {
       username: "mokhotm",
       passwordHash,
-      email: "Ezrom.Mokhotla@sars.gov.za",
+      email: "mokhotm@gmail.com",
       role: "user",
     },
   });

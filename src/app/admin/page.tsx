@@ -926,7 +926,7 @@ export default function AdminPortalPage() {
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder="e.g. Ezrom.Mokhotla@sars.gov.za"
+                  placeholder="e.g. mokhotm@gmail.com"
                   style={{
                     width: "100%",
                     padding: "10px 14px",
