@@ -99,27 +99,17 @@ export function LocationFootprintReport({
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [expandedVenueId, setExpandedVenueId] = useState<string | null>(null);
 
-  if (!data) {
-    return (
-      <div className="flex h-64 items-center justify-center rounded-3xl border border-white/10 bg-slate-950/60 p-8 text-center backdrop-blur-2xl">
-        <p className="text-sm font-medium text-slate-400">Loading geospatial and transaction footprint audit data…</p>
-      </div>
-    );
-  }
-
-  const {
-    totalFlowsCount = 1360,
-    distinctPhysicalVenuesCount = 33,
-    totalInStoreCardSwipes = 119,
-    totalPhysicalSpendZAR = 40673.66,
-    distinctDigitalServicesCount = 7,
-    totalDigitalSubscriptionsTxs = 105,
-    totalDigitalSpendZAR = 40151.42,
-    topHub = "Springs & Bakerton",
-    breakdownMatrix = [],
-    physicalLocations = [],
-    digitalServices = [],
-  } = data;
+  const physicalLocations = data?.physicalLocations || [];
+  const digitalServices = data?.digitalServices || [];
+  const breakdownMatrix = data?.breakdownMatrix || [];
+  const totalFlowsCount = data?.totalFlowsCount ?? 1360;
+  const distinctPhysicalVenuesCount = data?.distinctPhysicalVenuesCount ?? 33;
+  const totalInStoreCardSwipes = data?.totalInStoreCardSwipes ?? 119;
+  const totalPhysicalSpendZAR = data?.totalPhysicalSpendZAR ?? 40673.66;
+  const distinctDigitalServicesCount = data?.distinctDigitalServicesCount ?? 7;
+  const totalDigitalSubscriptionsTxs = data?.totalDigitalSubscriptionsTxs ?? 105;
+  const totalDigitalSpendZAR = data?.totalDigitalSpendZAR ?? 40151.42;
+  const topHub = data?.topHub || "Springs & Bakerton";
 
   // Filter physical locations
   const filteredVenues = useMemo(() => {
@@ -146,6 +136,14 @@ export function LocationFootprintReport({
   const availableCategories = useMemo(() => {
     return Array.from(new Set(physicalLocations.map((p) => p.category).filter(Boolean)));
   }, [physicalLocations]);
+
+  if (!data) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-3xl border border-white/10 bg-slate-950/60 p-8 text-center backdrop-blur-2xl">
+        <p className="text-sm font-medium text-slate-400">Loading geospatial and transaction footprint audit data…</p>
+      </div>
+    );
+  }
 
   const getMatrixMeta = (category: string) => {
     switch (category) {
