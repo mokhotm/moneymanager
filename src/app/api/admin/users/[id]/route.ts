@@ -51,18 +51,44 @@ export async function PUT(
 
     // Update or assign subscription tier if provided
     if (subscriptionTierCode) {
-      const tier = await prisma.subscriptionTier.findFirst({
-        where: { code: subscriptionTierCode },
+      let tierNamePattern = "Enterprise";
+      if (subscriptionTierCode === "PRO" || subscriptionTierCode.includes("PRO")) {
+        tierNamePattern = "Pro";
+      } else if (
+        subscriptionTierCode === "STARTER" ||
+        subscriptionTierCode.includes("STARTER") ||
+        subscriptionTierCode.includes("FREE")
+      ) {
+        tierNamePattern = "Starter";
+      } else if (
+        subscriptionTierCode === "EXECUTIVE_ENTERPRISE" ||
+        subscriptionTierCode.includes("ENTERPRISE")
+      ) {
+        tierNamePattern = "Enterprise";
+      }
+
+      let tier = await prisma.subscriptionTier.findFirst({
+        where: {
+          OR: [
+            { id: subscriptionTierCode },
+            { name: { contains: tierNamePattern, mode: "insensitive" } },
+            { name: { contains: subscriptionTierCode, mode: "insensitive" } },
+          ],
+        },
       });
+
+      if (!tier) {
+        tier = await prisma.subscriptionTier.findFirst();
+      }
 
       if (tier && user.profile) {
         await prisma.userSubscription.upsert({
-          where: { profileId: user.profile.id },
+          where: { userProfileId: user.profile.id },
           create: {
-            profileId: user.profile.id,
+            userProfileId: user.profile.id,
             tierId: tier.id,
             status: "ACTIVE",
-            billingCycle: "ANNUAL",
+            billingPeriod: "ANNUAL",
             currentPeriodStart: new Date(),
             currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           },

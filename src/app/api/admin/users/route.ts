@@ -50,9 +50,13 @@ export async function GET(req: NextRequest) {
         ? {
             id: u.profile.userSubscription.id,
             status: u.profile.userSubscription.status,
-            tierCode: u.profile.userSubscription.tier?.code || "EXECUTIVE_ENTERPRISE",
+            tierCode: u.profile.userSubscription.tier?.name.toLowerCase().includes("pro")
+              ? "PRO"
+              : u.profile.userSubscription.tier?.name.toLowerCase().includes("starter")
+              ? "STARTER"
+              : "EXECUTIVE_ENTERPRISE",
             tierName: u.profile.userSubscription.tier?.name || "Executive Enterprise",
-            billingCycle: u.profile.userSubscription.billingCycle,
+            billingPeriod: u.profile.userSubscription.billingPeriod,
           }
         : null,
       counts: {
