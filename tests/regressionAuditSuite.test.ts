@@ -130,4 +130,75 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(inn?.city).toBe("Pretoria");
     expect(inn?.region).toBe("Pretoria & Centurion");
   });
+
+  // ── FIX-005: Inbound Email Statement Parsing & Institution Recognition ──
+  it("FIX-005: Email Ingestion Classifier must accurately identify top South African financial institutions", async () => {
+    const { classifyEmailContent } = await import("../src/services/emailIngestionService");
+
+    const sb = classifyEmailContent("statements@standardbank.co.za", "Standard Bank Statement - Prestige Current");
+    expect(sb.institution).toBe("Standard Bank");
+    expect(sb.isFinancial).toBe(true);
+
+    const ned = classifyEmailContent("donotreply@nedbank.co.za", "Your Nedbank e-Statement is ready");
+    expect(ned.institution).toBe("Nedbank");
+    expect(ned.isFinancial).toBe(true);
+
+    const fnb = classifyEmailContent("noreply@fnb.co.za", "FNB eWallet & Account Statement");
+    expect(fnb.institution).toContain("FNB");
+    expect(fnb.isFinancial).toBe(true);
+
+    const capitec = classifyEmailContent("clientcare@capitecbank.co.za", "Capitec Bank Live Statement");
+    expect(capitec.institution).toBe("Capitec");
+    expect(capitec.isFinancial).toBe(true);
+
+    const disc = classifyEmailContent("statements@discovery.co.za", "Discovery Card Statement");
+    expect(disc.institution).toBe("Discovery Bank");
+    expect(disc.isFinancial).toBe(true);
+
+    const ekur = classifyEmailContent("billing@ekurhuleni.gov.za", "Monthly Municipal Assessment Rates");
+    expect(ekur.institution).toBe("City of Ekurhuleni");
+    expect(ekur.docType).toBe("MUNICIPAL_BILL");
+  });
+
+  // ── FIX-006: Open Banking Stitch Token & Password Security Layer ──────────
+  it("FIX-006: Open Banking and Email Ingestion encryption must round-trip tokens safely", async () => {
+    const { encryptToken } = await import("../src/services/stitchOpenBankingService");
+    const { encryptPassword, decryptPassword, maskPassword } = await import("../src/services/emailIngestionService");
+
+    const sampleToken = "stitch_live_token_sec_99481239857";
+    const encToken = encryptToken(sampleToken);
+    expect(encToken).toBeDefined();
+    expect(encToken).not.toBe(sampleToken);
+
+    const samplePass = "GoogleAppPassword_16Chars";
+    const encPass = encryptPassword(samplePass);
+    expect(encPass).not.toBe(samplePass);
+    const decPass = decryptPassword(encPass);
+    expect(decPass).toBe(samplePass);
+
+    const masked = maskPassword(encPass);
+    expect(masked).toBe("••••••••••••");
+  });
+
+  // ── FIX-007: Composite Municipal & Utility Matching Invariants ──────────
+  it("FIX-007: Ekurhuleni municipal debit orders must classify as Municipal Utilities in Springs & Bakerton", () => {
+    const mockTxs = [
+      {
+        id: "tx-muni",
+        destinationRef: "EKURHULENI 3505137295 DEBICHECK DEBIT ORDER",
+        amount: 650.00,
+        createdAt: new Date("2026-08-15T08:00:00Z"),
+      },
+    ];
+
+    const resolved = resolveSpendingLocations(mockTxs);
+    expect(resolved.physicalLocations.length).toBe(1);
+
+    const muni = resolved.physicalLocations[0];
+    expect(muni.merchant).toBe("City of Ekurhuleni Municipality");
+    expect(muni.city).toBe("Springs");
+    expect(muni.region).toBe("Springs & Bakerton");
+    expect(muni.category).toBe("Municipal Utilities");
+    expect(muni.locationType).toBe("MUNICIPAL_OR_CAMPUS");
+  });
 });
