@@ -25,7 +25,7 @@ Whenever modifications are made to financial models, statement parsers, geocodin
    ```bash
    npx tsx scripts/run_all_audits.ts
    ```
-2. **Execute Full Vitest Suite**:
+2. **Execute Full Vitest Suite & Regression Engine**:
    ```bash
    npx vitest run
    ```
@@ -36,5 +36,9 @@ Whenever modifications are made to financial models, statement parsers, geocodin
    - Pillar 4: Pay Cycle & Budget Reconciliation Engine
    - Pillar 5: Debt Waterfall & Liability Schedules
    - Pillar 6: Remote AWS EC2 Production & API Health
-4. **Zero-Regression Policy**: Never push or deploy code if any audit pillar fails or reports unclassified high-volume merchants.
+4. **Zero-Regression Policy & Issues Register**:
+   - All bug fixes, data corrections, and geocoding adjustments **must** be logged into [`CORRECTED_ISSUES_REGISTER.md`](file:///c:/Ezzy/Projects/Money/CORRECTED_ISSUES_REGISTER.md).
+   - Every fix **must** have an associated automated regression test in [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts) to guarantee previous bugs are never re-introduced.
+   - Never push or deploy code if any audit pillar or regression test fails.
+
 

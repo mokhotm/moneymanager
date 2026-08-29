@@ -43,12 +43,13 @@ print("============================================================\n")
 
 # STEP 1: MANDATORY LOCAL PRE-DEPLOYMENT AUDIT GATE
 run_local("npx.cmd tsx scripts/run_all_audits.ts", "Master 6-Pillar Data & Geocoding Audit")
+run_local("npx.cmd vitest run tests/regressionAuditSuite.test.ts", "Corrected Issues Regression Suite")
 run_local("npx.cmd vitest run tests/spendingLocationRadar.test.ts", "Spending Location Radar Unit Suite")
 
 # STEP 2: GIT PUSH
 print("\n[Step 2] Staging, committing and pushing latest changes to GitHub...")
 subprocess.run("git add .", shell=True)
-subprocess.run('git commit -m "feat(radar): expand SA merchant recognition to 86 locations and add mandatory audit governance"', shell=True)
+subprocess.run('git commit -m "fix(geo): correct Shell Middel Street to Pretoria and enforce zero-regression audit governance"', shell=True)
 run_local("git push origin main", "Push to GitHub mokhotm/moneymanager")
 
 # STEP 3: REMOTE CODE UPDATE
