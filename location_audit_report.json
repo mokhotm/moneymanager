@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-08-27T15:04:45.710Z",
+  "timestamp": "2026-08-29T22:31:06.169Z",
   "totalFlows": 1360,
-  "physicalCount": 33,
-  "digitalCount": 7,
-  "totalPhysicalSpend": 40673.659999999996,
-  "totalDigitalSpend": 40151.42,
+  "physicalCount": 86,
+  "digitalCount": 10,
+  "totalPhysicalSpend": 53933.18999999999,
+  "totalDigitalSpend": 67981.65000000001,
   "merchants": [
     {
-      "id": "loc-15",
+      "id": "loc-17",
       "merchant": "Giant Panelbeaters & Spraypainters",
       "category": "Auto & Repairs",
       "currentLocationName": "Commercial Rd, Boksburg Industrial",
@@ -29,7 +29,7 @@
       ]
     },
     {
-      "id": "loc-10",
+      "id": "loc-12",
       "merchant": "Seasons Sport and Spa Resort",
       "category": "Entertainment",
       "currentLocationName": "Seasons Eco Golf Estate, Old Rustenburg Rd, Hartbeespoort",
@@ -51,7 +51,7 @@
       ]
     },
     {
-      "id": "loc-27",
+      "id": "loc-29",
       "merchant": "University of the Free State",
       "category": "Education & Tuition",
       "currentLocationName": "Nelson Mandela Dr, Park West, Bloemfontein",
@@ -73,7 +73,7 @@
       ]
     },
     {
-      "id": "loc-4",
+      "id": "loc-6",
       "merchant": "Al-Aswad Supermarket & Butchery",
       "category": "Groceries & Household",
       "currentLocationName": "Cnr Honeysuckle Drive & Pampas Road, Bakerton, Springs",
@@ -323,7 +323,7 @@
       ]
     },
     {
-      "id": "loc-31",
+      "id": "loc-33",
       "merchant": "Car Service City Springs",
       "category": "Auto & Repairs",
       "currentLocationName": "9 5th Avenue / 5th St, Springs CBD",
@@ -345,45 +345,17 @@
       ]
     },
     {
-      "id": "loc-22",
-      "merchant": "Harissa Grill & Takeaway",
-      "category": "Dining & Social",
-      "currentLocationName": "Springs Central Food Quarter",
-      "currentSuburb": "Springs Central",
-      "currentCity": "Springs",
-      "currentRegion": "Springs & Bakerton",
-      "currentLat": -26.2535,
-      "currentLng": 28.4375,
-      "totalSpend": 2509,
-      "txCount": 2,
-      "sampleRawTx": "HARISSA GRILL AND SHI Melvi harissa grill and shi melvi",
-      "allTransactions": [
-        {
-          "id": "cmtb5y68v00n1riargo98ck1e",
-          "date": "2026-05-15",
-          "amount": 1409,
-          "description": "HARISSA GRILL AND SHI Melvi harissa grill and shi melvi"
-        },
-        {
-          "id": "cmtb5y61r0051riar6myuncs9",
-          "date": "2026-07-28",
-          "amount": 1100,
-          "description": "HARISSA GRILL 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
-        }
-      ]
-    },
-    {
-      "id": "loc-19",
-      "merchant": "Pick n Pay Family Springs",
+      "id": "loc-21",
+      "merchant": "Pick n Pay Springs Mall",
       "category": "Groceries & Household",
-      "currentLocationName": "The Avenues Shopping Centre, 6th St, Springs Central",
-      "currentSuburb": "Springs Central",
+      "currentLocationName": "Springs Mall, Casseldale, Springs",
+      "currentSuburb": "Casseldale",
       "currentCity": "Springs",
       "currentRegion": "Springs & Bakerton",
-      "currentLat": -26.252,
-      "currentLng": 28.438,
-      "totalSpend": 2350.25,
-      "txCount": 8,
+      "currentLat": -26.2625,
+      "currentLng": 28.455,
+      "totalSpend": 2710.25,
+      "txCount": 9,
       "sampleRawTx": "PnP Fam Sprin 5196*8010 17 JAN DEBIT CARD PURCHASE FROM",
       "allTransactions": [
         {
@@ -417,6 +389,12 @@
           "description": "PnP Fam Sprin 5196*8010 05 FEB DEBIT CARD PURCHASE FROM"
         },
         {
+          "id": "cmtb5y6c700vsriaroaqotnsy",
+          "date": "2026-03-05",
+          "amount": 360,
+          "description": "PnP Crp Sprin 5196*8010 03 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
           "id": "cmtb5y69t00opriarixjb48nr",
           "date": "2026-04-29",
           "amount": 102.12,
@@ -437,7 +415,35 @@
       ]
     },
     {
-      "id": "loc-7",
+      "id": "loc-24",
+      "merchant": "Harissa Grill & Takeaway",
+      "category": "Dining & Social",
+      "currentLocationName": "Springs Central Food Quarter",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2535,
+      "currentLng": 28.4375,
+      "totalSpend": 2509,
+      "txCount": 2,
+      "sampleRawTx": "HARISSA GRILL AND SHI Melvi harissa grill and shi melvi",
+      "allTransactions": [
+        {
+          "id": "cmtb5y68v00n1riargo98ck1e",
+          "date": "2026-05-15",
+          "amount": 1409,
+          "description": "HARISSA GRILL AND SHI Melvi harissa grill and shi melvi"
+        },
+        {
+          "id": "cmtb5y61r0051riar6myuncs9",
+          "date": "2026-07-28",
+          "amount": 1100,
+          "description": "HARISSA GRILL 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-9",
       "merchant": "Astron Energy Welgedacht Rd",
       "category": "Fuel & Transport",
       "currentLocationName": "Welgedacht Road & 3rd Ave, Welgedacht / Bakerton",
@@ -537,7 +543,7 @@
       ]
     },
     {
-      "id": "loc-13",
+      "id": "loc-15",
       "merchant": "Castle Gate Shopping Centre",
       "category": "Dining & Retail",
       "currentLocationName": "Castle Gate Mall, Erasmuskloof, Pretoria East",
@@ -599,7 +605,135 @@
       ]
     },
     {
-      "id": "loc-28",
+      "id": "loc-4",
+      "merchant": "Memo Petroleum East Geduld",
+      "category": "Fuel & Transport",
+      "currentLocationName": "East Geduld Road, Springs",
+      "currentSuburb": "East Geduld",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.25,
+      "currentLng": 28.44,
+      "totalSpend": 1420,
+      "txCount": 10,
+      "sampleRawTx": "iK *Memo Petr 5196*8010 18 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c300u0riarj3c4pqd1",
+          "date": "2026-03-20",
+          "amount": 100,
+          "description": "iK *Memo Petr 5196*8010 18 MAR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y68v00mxriarmwkw50d1",
+          "date": "2026-05-15",
+          "amount": 100,
+          "description": "Yoco *Memo Petroleu Meyer yoco *memo petroleu meyer"
+        },
+        {
+          "id": "cmtb5y68t00lqriarg5ionrq5",
+          "date": "2026-05-16",
+          "amount": 100,
+          "description": "Yoco *Memo Petroleu Meyer yoco *memo petroleu meyer"
+        },
+        {
+          "id": "cmtb5y67r00kjriaruamt1wwh",
+          "date": "2026-05-20",
+          "amount": 200,
+          "description": "Yoco *Memo 5196*8010 18 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y67q00k1riarhgp7pg5t",
+          "date": "2026-05-23",
+          "amount": 100,
+          "description": "Yoco *Memo 5196*8010 21 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y64300ahriarpj9c621v",
+          "date": "2026-07-04",
+          "amount": 200,
+          "description": "Yoco *Memo 5196*8010 02 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61t006iriar3s8td8bu",
+          "date": "2026-07-20",
+          "amount": 300,
+          "description": "Yoco *Memo Petroleu Meyer yoco *memo petroleu meyer"
+        },
+        {
+          "id": "cmtb5y61r0057riaroblkmuss",
+          "date": "2026-07-27",
+          "amount": 100,
+          "description": "iK *Memo Petr 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y60p002priarnc2jo2u9",
+          "date": "2026-08-05",
+          "amount": 120,
+          "description": "iK *Memo Petroleum Pt SPRIN ik *memo petroleum pt sprin"
+        },
+        {
+          "id": "cmtb5y60p002oriarz3jtjv4d",
+          "date": "2026-08-06",
+          "amount": 100,
+          "description": "Yoco *Memo 5196*8010 04 AUG DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-8",
+      "merchant": "Best Price Superette Ekurhuleni",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Ekurhuleni Commercial Node",
+      "currentSuburb": "Apex / Benoni",
+      "currentCity": "Benoni",
+      "currentRegion": "East Rand",
+      "currentLat": -26.23,
+      "currentLng": 28.35,
+      "totalSpend": 1410,
+      "txCount": 6,
+      "sampleRawTx": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6au00sariar8ni672z9",
+          "date": "2026-04-15",
+          "amount": 320,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y67s00kuriar4rlqnopf",
+          "date": "2026-05-19",
+          "amount": 220,
+          "description": "S2S*Bestprice 5196*8010 17 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y65j00fjriarmn2yznyf",
+          "date": "2026-06-16",
+          "amount": 210,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y64300alriarblg4xmr4",
+          "date": "2026-07-04",
+          "amount": 210,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y61s005priarivsesdve",
+          "date": "2026-07-22",
+          "amount": 240,
+          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
+        },
+        {
+          "id": "cmtb5y60r0037riarp38ddwzt",
+          "date": "2026-08-03",
+          "amount": 210,
+          "description": "S2S*Bestprice 5196*8010 31 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-30",
       "merchant": "Ackermans Springs The Avenues",
       "category": "Retail & Shopping",
       "currentLocationName": "The Avenues Centre, Springs",
@@ -627,47 +761,7 @@
       ]
     },
     {
-      "id": "loc-30",
-      "merchant": "Best Price Superette Ekurhuleni",
-      "category": "Retail & Shopping",
-      "currentLocationName": "Ekurhuleni Commercial Node",
-      "currentSuburb": "Apex / Benoni",
-      "currentCity": "Benoni",
-      "currentRegion": "East Rand",
-      "currentLat": -26.23,
-      "currentLng": 28.35,
-      "totalSpend": 980,
-      "txCount": 4,
-      "sampleRawTx": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh",
-      "allTransactions": [
-        {
-          "id": "cmtb5y6au00sariar8ni672z9",
-          "date": "2026-04-15",
-          "amount": 320,
-          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
-        },
-        {
-          "id": "cmtb5y65j00fjriarmn2yznyf",
-          "date": "2026-06-16",
-          "amount": 210,
-          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
-        },
-        {
-          "id": "cmtb5y64300alriarblg4xmr4",
-          "date": "2026-07-04",
-          "amount": 210,
-          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
-        },
-        {
-          "id": "cmtb5y61s005priarivsesdve",
-          "date": "2026-07-22",
-          "amount": 240,
-          "description": "S2S*Bestprice123 Ekurh s2s*bestprice123 ekurh"
-        }
-      ]
-    },
-    {
-      "id": "loc-14",
+      "id": "loc-16",
       "merchant": "Chicken Licken Springs",
       "category": "Dining & Social",
       "currentLocationName": "4th Avenue, Springs CBD",
@@ -735,7 +829,7 @@
       ]
     },
     {
-      "id": "loc-26",
+      "id": "loc-28",
       "merchant": "Ocean Basket Springs Mall",
       "category": "Dining & Social",
       "currentLocationName": "Springs Mall, Casseldale, Springs",
@@ -779,7 +873,35 @@
       ]
     },
     {
-      "id": "loc-9",
+      "id": "loc-38",
+      "merchant": "Spur Phoenix Waterkloof",
+      "category": "Dining & Social",
+      "currentLocationName": "Waterkloof Heights Shopping Centre, Pretoria",
+      "currentSuburb": "Waterkloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.798,
+      "currentLng": 28.252,
+      "totalSpend": 644.5,
+      "txCount": 2,
+      "sampleRawTx": "SPUR PHOENIX 5196*8010 16 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61t006sriarcg9yy38j",
+          "date": "2026-07-18",
+          "amount": 62.9,
+          "description": "SPUR PHOENIX 5196*8010 16 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61t006kriarh6lpozqj",
+          "date": "2026-07-20",
+          "amount": 581.6,
+          "description": "SPUR PHOENIX Water spur phoenix water"
+        }
+      ]
+    },
+    {
+      "id": "loc-11",
       "merchant": "Engen Garstfontein Convenience",
       "category": "Fuel & Transport",
       "currentLocationName": "Garsfontein Rd, Pretoria East",
@@ -813,7 +935,7 @@
       ]
     },
     {
-      "id": "loc-32",
+      "id": "loc-51",
       "merchant": "SuperSPAR Elardus Park",
       "category": "Groceries & Household",
       "currentLocationName": "Cnr Barnard St & Delphinus St, Elardus Park, Pretoria",
@@ -835,7 +957,63 @@
       ]
     },
     {
-      "id": "loc-11",
+      "id": "loc-47",
+      "merchant": "Maxis Butchery Springs",
+      "category": "Groceries & Household",
+      "currentLocationName": "5th Avenue, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2512,
+      "currentLng": 28.4415,
+      "totalSpend": 573.3,
+      "txCount": 2,
+      "sampleRawTx": "MAXIS BUTCHER 5196*8010 15 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6e600xgriarwzuq10ea",
+          "date": "2026-02-18",
+          "amount": 426,
+          "description": "MAXIS BUTCHER 5196*8010 15 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62y0093riardcq5uz6j",
+          "date": "2026-07-13",
+          "amount": 147.3,
+          "description": "MAXIS BUTCHER 5196*8010 10 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-36",
+      "merchant": "Clicks The Avenues Springs",
+      "category": "Health & Pharmacy",
+      "currentLocationName": "The Avenues Centre, 6th St, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.252,
+      "currentLng": 28.438,
+      "totalSpend": 520.39,
+      "txCount": 2,
+      "sampleRawTx": "CLICKS SPRING 5196*8010 10 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y62x0091riarx4wkhwxj",
+          "date": "2026-07-13",
+          "amount": 348.18,
+          "description": "CLICKS SPRING 5196*8010 10 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61s0068riar84y6uh7p",
+          "date": "2026-07-21",
+          "amount": 172.21,
+          "description": "CLICKS SPRING 5196*8010 18 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-13",
       "merchant": "Astron Energy Bapsfontein",
       "category": "Fuel & Transport",
       "currentLocationName": "Cnr Delmas Rd (R50) & R25, Bapsfontein",
@@ -869,7 +1047,203 @@
       ]
     },
     {
-      "id": "loc-12",
+      "id": "loc-67",
+      "merchant": "Eastern Delite Bakery & Restaurant",
+      "category": "Dining & Social",
+      "currentLocationName": "11 4th Avenue, Geduld / Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2518,
+      "currentLng": 28.4395,
+      "totalSpend": 475,
+      "txCount": 2,
+      "sampleRawTx": "EASTERNDELITE 5196*8010 15 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69x00qmriarvu1jzr5g",
+          "date": "2026-04-17",
+          "amount": 375,
+          "description": "EASTERNDELITE 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69w00qgriarekc7zk0i",
+          "date": "2026-04-17",
+          "amount": 100,
+          "description": "EASTERNDELITE 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-68",
+      "merchant": "Mr Price Springs Mall / The Avenues",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Springs Mall & The Avenues Centre",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2522,
+      "currentLng": 28.4385,
+      "totalSpend": 430.46,
+      "txCount": 1,
+      "sampleRawTx": "MrPriceK 1085 5196*8010 15 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69w00qiriard7eud215",
+          "date": "2026-04-17",
+          "amount": 430.46,
+          "description": "MrPriceK 1085 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-46",
+      "merchant": "Holiday Inn Express / Resort",
+      "category": "Dining & Social",
+      "currentLocationName": "Johannesburg / National Node",
+      "currentSuburb": "National Node",
+      "currentCity": "Johannesburg",
+      "currentRegion": "National / Other",
+      "currentLat": -26.145,
+      "currentLng": 28.21,
+      "totalSpend": 427.6,
+      "txCount": 2,
+      "sampleRawTx": "HOLIDAY INN R 5196*8010 25 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69t00orriarki06sdbt",
+          "date": "2026-04-29",
+          "amount": 130,
+          "description": "HOLIDAY INN R 5196*8010 25 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62y0092riar8buayo8c",
+          "date": "2026-07-13",
+          "amount": 297.6,
+          "description": "HOLIDAY INN R 5196*8010 10 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-48",
+      "merchant": "KFC Castle Gate",
+      "category": "Dining & Social",
+      "currentLocationName": "Castle Gate Shopping Centre, Erasmuskloof, Pretoria East",
+      "currentSuburb": "Erasmuskloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8085,
+      "currentLng": 28.2612,
+      "totalSpend": 419.3,
+      "txCount": 4,
+      "sampleRawTx": "KFC Castle Ga 5196*8010 27 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c800w7riarkkbzpxjw",
+          "date": "2026-03-02",
+          "amount": 129.8,
+          "description": "KFC Castle Ga 5196*8010 27 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y67s00kmriarvn1f2qbs",
+          "date": "2026-05-20",
+          "amount": 89.9,
+          "description": "KFC Castle Ga 5196*8010 18 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y66l00hkriar7y39ha76",
+          "date": "2026-06-06",
+          "amount": 139.8,
+          "description": "KFC Castle Ga 5196*8010 04 JUN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y630009wriarloy6m2nt",
+          "date": "2026-07-06",
+          "amount": 59.8,
+          "description": "KFC Castle Ga 5196*8010 03 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-5",
+      "merchant": "Engen Erasmuskloof",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Rubenstein Dr, Erasmuskloof, Pretoria East",
+      "currentSuburb": "Erasmuskloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.805,
+      "currentLng": 28.265,
+      "totalSpend": 400,
+      "txCount": 2,
+      "sampleRawTx": "ENGEN ERASMUSRAND CON Erasm engen erasmusrand con erasm",
+      "allTransactions": [
+        {
+          "id": "cmtb5y66i00glriarllxbz79b",
+          "date": "2026-06-15",
+          "amount": 300,
+          "description": "ENGEN ERASMUSRAND CON Erasm engen erasmusrand con erasm"
+        },
+        {
+          "id": "cmtb5y60p002nriarzbouyfbi",
+          "date": "2026-08-06",
+          "amount": 100,
+          "description": "ENGEN ERASMUS 5196*8010 04 AUG DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-49",
+      "merchant": "Shell J&G Service Station Springs",
+      "category": "Fuel & Transport",
+      "currentLocationName": "12 4th Avenue, Geduld, Springs",
+      "currentSuburb": "Geduld",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2445,
+      "currentLng": 28.429,
+      "totalSpend": 400,
+      "txCount": 2,
+      "sampleRawTx": "SHELL J and G 5196*8010 18 MAY DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y67s00klriartgpsxf7u",
+          "date": "2026-05-20",
+          "amount": 100,
+          "description": "SHELL J and G 5196*8010 18 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y630009xriarqfbwg6oj",
+          "date": "2026-07-06",
+          "amount": 300,
+          "description": "C*Shell JandG 5196*8010 03 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-69",
+      "merchant": "Pick n Pay Quagga Shopping Centre",
+      "category": "Groceries & Household",
+      "currentLocationName": "Quagga Rd & Church St, Pretoria West",
+      "currentSuburb": "Pretoria West",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.752,
+      "currentLng": 28.148,
+      "totalSpend": 358.28,
+      "txCount": 1,
+      "sampleRawTx": "PnP Clt Quagg 5196*8010 15 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69w00qjriarovk6e758",
+          "date": "2026-04-17",
+          "amount": 358.28,
+          "description": "PnP Clt Quagg 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-14",
       "merchant": "Shell Ultra City Middelburg",
       "category": "Fuel & Transport",
       "currentLocationName": "N4 Highway, Middelburg",
@@ -897,41 +1271,255 @@
       ]
     },
     {
-      "id": "loc-5",
-      "merchant": "Memo Petroleum Springs",
+      "id": "loc-42",
+      "merchant": "TotalEnergies Elardus Park",
       "category": "Fuel & Transport",
-      "currentLocationName": "East Geduld, Springs",
-      "currentSuburb": "East Geduld",
-      "currentCity": "Springs",
-      "currentRegion": "Springs & Bakerton",
-      "currentLat": -26.25,
-      "currentLng": 28.44,
-      "totalSpend": 320,
+      "currentLocationName": "Delphinus St, Elardus Park, Pretoria East",
+      "currentSuburb": "Elardus Park",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8235,
+      "currentLng": 28.2565,
+      "totalSpend": 321.6,
       "txCount": 3,
-      "sampleRawTx": "iK *Memo Petr 5196*8010 18 MAR DEBIT CARD PURCHASE FROM",
+      "sampleRawTx": "Total Elardus 5196*8010 16 MAY DEBIT CARD PURCHASE FROM",
       "allTransactions": [
         {
-          "id": "cmtb5y6c300u0riarj3c4pqd1",
-          "date": "2026-03-20",
-          "amount": 100,
-          "description": "iK *Memo Petr 5196*8010 18 MAR DEBIT CARD PURCHASE FROM"
+          "id": "cmtb5y67s00ktriarr0mi37tj",
+          "date": "2026-05-19",
+          "amount": 200,
+          "description": "Total Elardus 5196*8010 16 MAY DEBIT CARD PURCHASE FROM"
         },
         {
-          "id": "cmtb5y61r0057riaroblkmuss",
-          "date": "2026-07-27",
-          "amount": 100,
-          "description": "iK *Memo Petr 5196*8010 24 JUL DEBIT CARD PURCHASE FROM"
+          "id": "cmtb5y67r00k9riarpe0rndlz",
+          "date": "2026-05-21",
+          "amount": 59.8,
+          "description": "Total Elardus 5196*8010 19 MAY DEBIT CARD PURCHASE FROM"
         },
         {
-          "id": "cmtb5y60p002priarnc2jo2u9",
-          "date": "2026-08-05",
-          "amount": 120,
-          "description": "iK *Memo Petroleum Pt SPRIN ik *memo petroleum pt sprin"
+          "id": "cmtb5y62t007criarx20i7186",
+          "date": "2026-07-16",
+          "amount": 61.8,
+          "description": "Total Elardus 5196*8010 14 JUL DEBIT CARD PURCHASE FROM"
         }
       ]
     },
     {
-      "id": "loc-6",
+      "id": "loc-70",
+      "merchant": "Geduld Pharmacy Springs",
+      "category": "Health & Pharmacy",
+      "currentLocationName": "4th Avenue, Geduld, Springs",
+      "currentSuburb": "Geduld",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.244,
+      "currentLng": 28.4285,
+      "totalSpend": 311.36,
+      "txCount": 2,
+      "sampleRawTx": "GEDULD PHARMA 5196*8010 23 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fy011oriaroblnucxm",
+          "date": "2026-01-27",
+          "amount": 64,
+          "description": "GEDULD PHARMA 5196*8010 23 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69w00qkriarofnlgs43",
+          "date": "2026-04-17",
+          "amount": 247.36,
+          "description": "GEDULD PHARMA 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-74",
+      "merchant": "KFC Tsakane Mall",
+      "category": "Dining & Social",
+      "currentLocationName": "Modjadji St & Malandela St, Tsakane",
+      "currentSuburb": "Tsakane",
+      "currentCity": "Brakpan",
+      "currentRegion": "East Rand",
+      "currentLat": -26.345,
+      "currentLng": 28.375,
+      "totalSpend": 302.4,
+      "txCount": 1,
+      "sampleRawTx": "KFC KPML Tsak 5196*8010 21 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c200toriarjx65h168",
+          "date": "2026-03-24",
+          "amount": 302.4,
+          "description": "KFC KPML Tsak 5196*8010 21 MAR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-79",
+      "merchant": "Engen Dumor Motors",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Cnr 4th Ave & 12th St, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2515,
+      "currentLng": 28.443,
+      "totalSpend": 300,
+      "txCount": 2,
+      "sampleRawTx": "ENGEN DUMOR M 5196*8010 15 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6ha0135riar4544aozs",
+          "date": "2026-01-17",
+          "amount": 100,
+          "description": "ENGEN DUMOR M 5196*8010 15 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6e500x5riar9pwn1kd9",
+          "date": "2026-02-19",
+          "amount": 200,
+          "description": "ENGEN DUMOR M 5196*8010 17 FEB DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-72",
+      "merchant": "Go East Supermarket Springs",
+      "category": "Groceries & Household",
+      "currentLocationName": "3rd Street, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2528,
+      "currentLng": 28.4392,
+      "totalSpend": 290.5,
+      "txCount": 5,
+      "sampleRawTx": "HPY*Go eas Springs ZAF 18-01-2026 13H14:47 FEE- POS DECLINED INSUFF FUNDS",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6ha012zriaryp4sta5v",
+          "date": "2026-01-19",
+          "amount": 8.5,
+          "description": "HPY*Go eas Springs ZAF 18-01-2026 13H14:47 FEE- POS DECLINED INSUFF FUNDS"
+        },
+        {
+          "id": "cmtb5y6h9012lriarpiec73fy",
+          "date": "2026-01-21",
+          "amount": 103,
+          "description": "HPY*Go east s 5196*8010 18 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6e400wqriarbyqvddjj",
+          "date": "2026-02-27",
+          "amount": 20,
+          "description": "HPY*Go east s 5196*8010 25 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6au00sdriarsymvpmt9",
+          "date": "2026-04-15",
+          "amount": 85,
+          "description": "HPY*Go east supermark Sprin hpy*go east supermark sprin"
+        },
+        {
+          "id": "cmtb5y6au00scriarnr54oh64",
+          "date": "2026-04-15",
+          "amount": 74,
+          "description": "HPY*Go east supermark Sprin hpy*go east supermark sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-86",
+      "merchant": "McDonald's Springs CBD",
+      "category": "Dining & Social",
+      "currentLocationName": "Cnr 4th Avenue & 7th St, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2514,
+      "currentLng": 28.4405,
+      "totalSpend": 286.2,
+      "txCount": 1,
+      "sampleRawTx": "MCDONALDS SPR 5196*8010 15 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6ha0136riar6lf13n5i",
+          "date": "2026-01-17",
+          "amount": 286.2,
+          "description": "MCDONALDS SPR 5196*8010 15 JAN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-64",
+      "merchant": "USave Bakerton",
+      "category": "Groceries & Household",
+      "currentLocationName": "Pampas Road & 1st Ave, Bakerton, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2245,
+      "currentLng": 28.477,
+      "totalSpend": 284.21,
+      "txCount": 3,
+      "sampleRawTx": "USave Bakerto 5196*8010 18 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6h9012mriartq92n59h",
+          "date": "2026-01-21",
+          "amount": 89.98,
+          "description": "USave Bakerto 5196*8010 18 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6e400wpriar520vo5ru",
+          "date": "2026-02-27",
+          "amount": 106.27,
+          "description": "USave Bakerto 5196*8010 25 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y69t00oqriartr9e8qva",
+          "date": "2026-04-29",
+          "amount": 87.96,
+          "description": "USave Bakerto 5196*8010 25 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-37",
+      "merchant": "PEP Stores Springs Central",
+      "category": "Retail & Shopping",
+      "currentLocationName": "5th Avenue, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.251,
+      "currentLng": 28.44,
+      "totalSpend": 264.46,
+      "txCount": 3,
+      "sampleRawTx": "PEP 8712 Spri 5196*8010 28 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fw010zriar9lcxm1xh",
+          "date": "2026-01-30",
+          "amount": 89.99,
+          "description": "PEP 8712 Spri 5196*8010 28 JAN DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y6au00s2riar61dx9ljr",
+          "date": "2026-04-15",
+          "amount": 8.5,
+          "description": "PEP 6701 S GP ZAF 15-04-2026 17H39:52 FEE- POS DECLINED INSUFF FUNDS"
+        },
+        {
+          "id": "cmtb5y61s0069riaro31rwcsl",
+          "date": "2026-07-21",
+          "amount": 165.97,
+          "description": "PEP 6701 SPRI 5196*8010 18 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-7",
       "merchant": "Bolt Ride Hailing Trip",
       "category": "Fuel & Transport",
       "currentLocationName": "Johannesburg Metropolitan Transport",
@@ -965,7 +1553,75 @@
       ]
     },
     {
-      "id": "loc-18",
+      "id": "loc-45",
+      "merchant": "Mehim Trading Bakerton",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Pampas Rd, Bakerton, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2255,
+      "currentLng": 28.4768,
+      "totalSpend": 260,
+      "txCount": 4,
+      "sampleRawTx": "S2S*Mehimtrad 5196*8010 02 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fs00zvriar4v8xak4b",
+          "date": "2026-02-04",
+          "amount": 50,
+          "description": "S2S*Mehimtrad 5196*8010 02 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y64800c6riarztzaovaq",
+          "date": "2026-06-30",
+          "amount": 55,
+          "description": "S2S*Mehimtradingco Baker s2s*mehimtradingco baker"
+        },
+        {
+          "id": "cmtb5y64400azriarpbp0e6p4",
+          "date": "2026-07-03",
+          "amount": 45,
+          "description": "S2S*Mehimtrad 5196*8010 01 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62v007zriar5noihhra",
+          "date": "2026-07-15",
+          "amount": 110,
+          "description": "S2S*Mehimtrad 5196*8010 13 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-43",
+      "merchant": "Foodspot Restaurant Springs",
+      "category": "Dining & Social",
+      "currentLocationName": "4th Street, Springs CBD",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.252,
+      "currentLng": 28.441,
+      "totalSpend": 252,
+      "txCount": 2,
+      "sampleRawTx": "FOODSPOT 5196*8010 11 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6e900yoriarfvgtesvj",
+          "date": "2026-02-13",
+          "amount": 52,
+          "description": "FOODSPOT 5196*8010 11 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62t007ariarotbyol4u",
+          "date": "2026-07-16",
+          "amount": 200,
+          "description": "FOODSPOT 5196*8010 14 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-20",
       "merchant": "Kloofsig Quick Stop",
       "category": "Fuel & Transport",
       "currentLocationName": "Kloofsig, Centurion, Pretoria",
@@ -993,7 +1649,7 @@
       ]
     },
     {
-      "id": "loc-17",
+      "id": "loc-19",
       "merchant": "Brothers Convenience & Butchery",
       "category": "Groceries & Household",
       "currentLocationName": "Springs Local Market",
@@ -1039,7 +1695,35 @@
       ]
     },
     {
-      "id": "loc-16",
+      "id": "loc-55",
+      "merchant": "Nando's Castle Gate",
+      "category": "Dining & Social",
+      "currentLocationName": "Castle Gate Shopping Centre, Erasmuskloof, Pretoria East",
+      "currentSuburb": "Erasmuskloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8085,
+      "currentLng": 28.2612,
+      "totalSpend": 217,
+      "txCount": 2,
+      "sampleRawTx": "NANDOS CASTLE 5196*8010 15 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69w00qhriarmlhlh6z8",
+          "date": "2026-04-17",
+          "amount": 85,
+          "description": "NANDOS CASTLE 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y65g00e6riaryqvp4gkn",
+          "date": "2026-06-20",
+          "amount": 132,
+          "description": "NANDOS CASTLE 5196*8010 18 JUN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-18",
       "merchant": "Astron Energy Olympia Rd",
       "category": "Fuel & Transport",
       "currentLocationName": "Olympia Rd, Selection Park, Springs",
@@ -1067,7 +1751,173 @@
       ]
     },
     {
-      "id": "loc-33",
+      "id": "loc-31",
+      "merchant": "Shell Strubenvale",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Strubenvale Commercial Strip, Springs",
+      "currentSuburb": "Strubenvale",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.268,
+      "currentLng": 28.462,
+      "totalSpend": 200,
+      "txCount": 2,
+      "sampleRawTx": "SHELL STRUBEN 5196*8010 18 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61s006ariarmzfjf02o",
+          "date": "2026-07-21",
+          "amount": 100,
+          "description": "SHELL STRUBEN 5196*8010 18 JUL DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61s005xriarioft5o2u",
+          "date": "2026-07-22",
+          "amount": 100,
+          "description": "SHELL STRUBEN 5196*8010 20 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-61",
+      "merchant": "TotalEnergies Eldoraigne",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Mulders Mile, Eldoraigne, Centurion",
+      "currentSuburb": "Eldoraigne",
+      "currentCity": "Centurion",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.845,
+      "currentLng": 28.162,
+      "totalSpend": 200,
+      "txCount": 1,
+      "sampleRawTx": "Total Eldorai 5196*8010 19 MAY DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y67q00k5riar1u746j8e",
+          "date": "2026-05-22",
+          "amount": 200,
+          "description": "Total Eldorai 5196*8010 19 MAY DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-71",
+      "merchant": "Sasol Lyttelton",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Botha Ave, Lyttelton Manor, Centurion",
+      "currentSuburb": "Lyttelton",
+      "currentCity": "Centurion",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.834,
+      "currentLng": 28.201,
+      "totalSpend": 200,
+      "txCount": 1,
+      "sampleRawTx": "SASOL LYTTLET 5196*8010 15 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69x00qoriarsy0x2kil",
+          "date": "2026-04-17",
+          "amount": 200,
+          "description": "SASOL LYTTLET 5196*8010 15 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-73",
+      "merchant": "Engen Rowhill Service Station",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Cnr Wit Road & Ermelo Rd, Rowhill, Springs",
+      "currentSuburb": "Rowhill",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.265,
+      "currentLng": 28.445,
+      "totalSpend": 200,
+      "txCount": 1,
+      "sampleRawTx": "ENGEN ROWHILLL Sprin engen rowhilll sprin",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6au00seriar9jcd98hp",
+          "date": "2026-04-15",
+          "amount": 200,
+          "description": "ENGEN ROWHILLL Sprin engen rowhilll sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-35",
+      "merchant": "SZ Barbershop Springs",
+      "category": "Personal Care",
+      "currentLocationName": "Springs Central Retail Quarter",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2522,
+      "currentLng": 28.4402,
+      "totalSpend": 180,
+      "txCount": 1,
+      "sampleRawTx": "SZ BARBERS SP 5196*8010 18 JUL DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61s0067riar4i9pfe0o",
+          "date": "2026-07-21",
+          "amount": 180,
+          "description": "SZ BARBERS SP 5196*8010 18 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-62",
+      "merchant": "KFC Rynfield Benoni",
+      "category": "Dining & Social",
+      "currentLocationName": "Cnr Pretoria Rd & Vlei Rd, Rynfield, Benoni",
+      "currentSuburb": "Rynfield",
+      "currentCity": "Benoni",
+      "currentRegion": "East Rand",
+      "currentLat": -26.168,
+      "currentLng": 28.342,
+      "totalSpend": 179.8,
+      "txCount": 1,
+      "sampleRawTx": "KFC Rynfield 5196*8010 16 MAY DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y67s00ksriarjrht90t7",
+          "date": "2026-05-19",
+          "amount": 179.8,
+          "description": "KFC Rynfield 5196*8010 16 MAY DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-34",
+      "merchant": "Petersfield Convenience Centre",
+      "category": "Groceries & Household",
+      "currentLocationName": "Ermelo Road, Petersfield, Springs",
+      "currentSuburb": "Petersfield",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.239,
+      "currentLng": 28.448,
+      "totalSpend": 178,
+      "txCount": 2,
+      "sampleRawTx": "C*PETERSFIELD 5196*8010 03 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fs00zsriarfn6r1xe1",
+          "date": "2026-02-04",
+          "amount": 100,
+          "description": "C*PETERSFIELD 5196*8010 03 FEB DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y61s0066riarixpk4fob",
+          "date": "2026-07-21",
+          "amount": 78,
+          "description": "PETERSFIELD APTEEK Gaute petersfield apteek gaute"
+        }
+      ]
+    },
+    {
+      "id": "loc-54",
       "merchant": "Chicken Licken KwaThema Square",
       "category": "Dining & Social",
       "currentLocationName": "KwaThema Square, Springs",
@@ -1089,7 +1939,51 @@
       ]
     },
     {
-      "id": "loc-20",
+      "id": "loc-81",
+      "merchant": "Bakerton Liquors",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Honeysuckle Dr, Bakerton, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.224,
+      "currentLng": 28.4775,
+      "totalSpend": 170,
+      "txCount": 1,
+      "sampleRawTx": "BAKERTON LIQU 5196*8010 04 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fr00zfriarcgtsjpdx",
+          "date": "2026-02-07",
+          "amount": 170,
+          "description": "BAKERTON LIQU 5196*8010 04 FEB DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-59",
+      "merchant": "PEP Stores Pretoria Central",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Paul Kruger St, Pretoria Central",
+      "currentSuburb": "Pretoria CBD",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.748,
+      "currentLng": 28.188,
+      "totalSpend": 160,
+      "txCount": 1,
+      "sampleRawTx": "PEP 8489 Pret 5196*8010 03 JUN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y66l00hnriar8b5ax4ul",
+          "date": "2026-06-05",
+          "amount": 160,
+          "description": "PEP 8489 Pret 5196*8010 03 JUN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-22",
       "merchant": "BP Bapsfontein Oasis",
       "category": "Fuel & Transport",
       "currentLocationName": "Cnr Magic Ave & Delmas Rd (R50), Bapsfontein",
@@ -1117,7 +2011,293 @@
       ]
     },
     {
-      "id": "loc-25",
+      "id": "loc-75",
+      "merchant": "Burger King Castle Gate",
+      "category": "Dining & Social",
+      "currentLocationName": "Castle Gate Mall, Erasmuskloof, Pretoria East",
+      "currentSuburb": "Erasmuskloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8085,
+      "currentLng": 28.2612,
+      "totalSpend": 145,
+      "txCount": 1,
+      "sampleRawTx": "BK CASTLE GAT 5196*8010 18 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c300u3riar0y8pemaz",
+          "date": "2026-03-20",
+          "amount": 145,
+          "description": "BK CASTLE GAT 5196*8010 18 MAR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-65",
+      "merchant": "Mthethophele Meat & Store",
+      "category": "Groceries & Household",
+      "currentLocationName": "KwaThema / Springs Node",
+      "currentSuburb": "KwaThema",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.288,
+      "currentLng": 28.411,
+      "totalSpend": 142,
+      "txCount": 1,
+      "sampleRawTx": "MTHETHOPHELE 5196*8010 16 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69w00q5riar3aojqn2g",
+          "date": "2026-04-18",
+          "amount": 142,
+          "description": "MTHETHOPHELE 5196*8010 16 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-82",
+      "merchant": "TotalEnergies Travel Stop",
+      "category": "Fuel & Transport",
+      "currentLocationName": "National Transit Node",
+      "currentSuburb": "National Transit",
+      "currentCity": "Johannesburg",
+      "currentRegion": "National / Other",
+      "currentLat": -26.3,
+      "currentLng": 27.5,
+      "totalSpend": 139.8,
+      "txCount": 1,
+      "sampleRawTx": "Total Venters 5196*8010 24 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fx011nriarlw0w2u0o",
+          "date": "2026-01-27",
+          "amount": 139.8,
+          "description": "Total Venters 5196*8010 24 JAN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-83",
+      "merchant": "Audie Pharmacy Springs",
+      "category": "Health & Pharmacy",
+      "currentLocationName": "4th Avenue, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2516,
+      "currentLng": 28.4398,
+      "totalSpend": 137,
+      "txCount": 1,
+      "sampleRawTx": "AUDIE PHARMAC 5196*8010 23 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fx011lriarrhfeb81q",
+          "date": "2026-01-27",
+          "amount": 137,
+          "description": "AUDIE PHARMAC 5196*8010 23 JAN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-40",
+      "merchant": "Delhi Delicious Centurion Mall",
+      "category": "Dining & Social",
+      "currentLocationName": "Centurion Mall, Heuwel Rd, Centurion",
+      "currentSuburb": "Centurion CBD",
+      "currentCity": "Centurion",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.86,
+      "currentLng": 28.188,
+      "totalSpend": 119,
+      "txCount": 1,
+      "sampleRawTx": "DELHIDELICIOUSCENTUR CENTU delhideliciouscentur centu",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61t006yriarcbiymx44",
+          "date": "2026-07-17",
+          "amount": 119,
+          "description": "DELHIDELICIOUSCENTUR CENTU delhideliciouscentur centu"
+        }
+      ]
+    },
+    {
+      "id": "loc-63",
+      "merchant": "Meat World Springs",
+      "category": "Groceries & Household",
+      "currentLocationName": "Springs Gate Centre, Springs",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.252,
+      "currentLng": 28.4425,
+      "totalSpend": 118.99,
+      "txCount": 1,
+      "sampleRawTx": "Meat World Sp 5196*8010 27 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69t00onriarmdyt0jlt",
+          "date": "2026-04-29",
+          "amount": 118.99,
+          "description": "Meat World Sp 5196*8010 27 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-84",
+      "merchant": "Engen Bloemfontein Oasis",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Nelson Mandela Dr, Bloemfontein",
+      "currentSuburb": "Westdene",
+      "currentCity": "Bloemfontein",
+      "currentRegion": "Bloemfontein",
+      "currentLat": -29.112,
+      "currentLng": 26.21,
+      "totalSpend": 117.69,
+      "txCount": 1,
+      "sampleRawTx": "ENGEN BLOEM 1 5196*8010 24 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6fx011kriarn1gu0o15",
+          "date": "2026-01-27",
+          "amount": 117.69,
+          "description": "ENGEN BLOEM 1 5196*8010 24 JAN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-85",
+      "merchant": "EJ Supermarket Springs",
+      "category": "Groceries & Household",
+      "currentLocationName": "Bakerton / Welgedacht Node, Springs",
+      "currentSuburb": "Bakerton",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.226,
+      "currentLng": 28.476,
+      "totalSpend": 116.5,
+      "txCount": 1,
+      "sampleRawTx": "EJ SUPERMARKE 5196*8010 17 JAN DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6h9012nriarb4r1lcc3",
+          "date": "2026-01-21",
+          "amount": 116.5,
+          "description": "EJ SUPERMARKE 5196*8010 17 JAN DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-76",
+      "merchant": "L Jennett Physiotherapy",
+      "category": "Health & Pharmacy",
+      "currentLocationName": "Springs Medical Suites, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2508,
+      "currentLng": 28.439,
+      "totalSpend": 100.45,
+      "txCount": 1,
+      "sampleRawTx": "L JENNETT PHY 5196*8010 17 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c300u6riar1phli261",
+          "date": "2026-03-19",
+          "amount": 100.45,
+          "description": "L JENNETT PHY 5196*8010 17 MAR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-52",
+      "merchant": "Engen Sherwood Gardens",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Cnr Range View Rd & Hendrik Potgieter St, Sherwood Gardens, Brakpan",
+      "currentSuburb": "Sherwood Gardens",
+      "currentCity": "Brakpan",
+      "currentRegion": "East Rand",
+      "currentLat": -26.242,
+      "currentLng": 28.375,
+      "totalSpend": 100,
+      "txCount": 1,
+      "sampleRawTx": "ENGEN SHERWOOD GARDEN Brakp engen sherwood garden brakp",
+      "allTransactions": [
+        {
+          "id": "cmtb5y64300anriar6ts2epjh",
+          "date": "2026-07-04",
+          "amount": 100,
+          "description": "ENGEN SHERWOOD GARDEN Brakp engen sherwood garden brakp"
+        }
+      ]
+    },
+    {
+      "id": "loc-56",
+      "merchant": "Minnaar Motors Springs",
+      "category": "Auto & Repairs",
+      "currentLocationName": "4th Avenue & 8th Street, Springs CBD",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2518,
+      "currentLng": 28.442,
+      "totalSpend": 100,
+      "txCount": 1,
+      "sampleRawTx": "Minnaar Motors Sprin minnaar motors sprin",
+      "allTransactions": [
+        {
+          "id": "cmtb5y65g00ehriarb90bkwks",
+          "date": "2026-06-19",
+          "amount": 100,
+          "description": "Minnaar Motors Sprin minnaar motors sprin"
+        }
+      ]
+    },
+    {
+      "id": "loc-66",
+      "merchant": "Waltons Garage Springs",
+      "category": "Auto & Repairs",
+      "currentLocationName": "5th Avenue, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.2515,
+      "currentLng": 28.4412,
+      "totalSpend": 100,
+      "txCount": 1,
+      "sampleRawTx": "Waltons Garag 5196*8010 16 APR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y69v00q4riaro8keliza",
+          "date": "2026-04-18",
+          "amount": 100,
+          "description": "Waltons Garag 5196*8010 16 APR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-77",
+      "merchant": "BP Waterkloof Service Station",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Cnr Crown Ave & Waterkloof Rd, Waterkloof, Pretoria",
+      "currentSuburb": "Waterkloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.778,
+      "currentLng": 28.243,
+      "totalSpend": 100,
+      "txCount": 1,
+      "sampleRawTx": "C*BP WATERKLO 5196*8010 18 MAR DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c300u7riar9jctx3f4",
+          "date": "2026-03-19",
+          "amount": 100,
+          "description": "C*BP WATERKLO 5196*8010 18 MAR DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-27",
       "merchant": "BP Tom Jones Service Station",
       "category": "Fuel & Transport",
       "currentLocationName": "Tom Jones St, Benoni, East Rand",
@@ -1139,7 +2319,101 @@
       ]
     },
     {
-      "id": "loc-8",
+      "id": "loc-57",
+      "merchant": "Dis-Chem Brooklyn Mall",
+      "category": "Health & Pharmacy",
+      "currentLocationName": "Brooklyn Mall, Fehrsen St, Brooklyn, Pretoria",
+      "currentSuburb": "Brooklyn",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.7715,
+      "currentLng": 28.2345,
+      "totalSpend": 99.99,
+      "txCount": 1,
+      "sampleRawTx": "Dischem Brooklyn Mall PRETO dischem brooklyn mall preto",
+      "allTransactions": [
+        {
+          "id": "cmtb5y65i00f4riar9nrr9uep",
+          "date": "2026-06-17",
+          "amount": 99.99,
+          "description": "Dischem Brooklyn Mall PRETO dischem brooklyn mall preto"
+        }
+      ]
+    },
+    {
+      "id": "loc-44",
+      "merchant": "Checkers Brooklyn Mall",
+      "category": "Groceries & Household",
+      "currentLocationName": "Brooklyn Mall, Veale St, Nieuw Muckleneuk, Pretoria",
+      "currentSuburb": "Brooklyn",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.7715,
+      "currentLng": 28.2345,
+      "totalSpend": 92.77000000000001,
+      "txCount": 2,
+      "sampleRawTx": "Checkers Broo 5196*8010 18 MAY DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y67r00kkriarqvcyjotj",
+          "date": "2026-05-20",
+          "amount": 42.67,
+          "description": "Checkers Broo 5196*8010 18 MAY DEBIT CARD PURCHASE FROM"
+        },
+        {
+          "id": "cmtb5y62t007friar8f47953a",
+          "date": "2026-07-16",
+          "amount": 50.1,
+          "description": "Checkers Broo 5196*8010 14 JUL DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-50",
+      "merchant": "Checkers LiquorShop Castle Gate",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Castle Gate Mall, Erasmuskloof, Pretoria East",
+      "currentSuburb": "Erasmuskloof",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8085,
+      "currentLng": 28.2612,
+      "totalSpend": 71.38,
+      "txCount": 1,
+      "sampleRawTx": "LiquorShop Castle Gat SB094 liquorshop castle gat sb094",
+      "allTransactions": [
+        {
+          "id": "cmtb5y64200a8riargpljq8vw",
+          "date": "2026-07-05",
+          "amount": 71.38,
+          "description": "LiquorShop Castle Gat SB094 liquorshop castle gat sb094"
+        }
+      ]
+    },
+    {
+      "id": "loc-58",
+      "merchant": "Vodashop Brooklyn Mall",
+      "category": "Tech & Equipment",
+      "currentLocationName": "Brooklyn Mall, Fehrsen St, Brooklyn, Pretoria",
+      "currentSuburb": "Brooklyn",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.7715,
+      "currentLng": 28.2345,
+      "totalSpend": 63,
+      "txCount": 1,
+      "sampleRawTx": "VODASHOP BROOKLYN Preto vodashop brooklyn preto",
+      "allTransactions": [
+        {
+          "id": "cmtb5y66i00gmriaryu6in31i",
+          "date": "2026-06-15",
+          "amount": 63,
+          "description": "VODASHOP BROOKLYN Preto vodashop brooklyn preto"
+        }
+      ]
+    },
+    {
+      "id": "loc-10",
       "merchant": "RK Store Bakerton",
       "category": "Retail & Shopping",
       "currentLocationName": "Pampas Rd, Bakerton, Springs",
@@ -1161,7 +2435,7 @@
       ]
     },
     {
-      "id": "loc-29",
+      "id": "loc-32",
       "merchant": "God Bless Africa Store Johannesburg",
       "category": "Retail & Shopping",
       "currentLocationName": "Bree / Market Street Node, Johannesburg CBD",
@@ -1183,7 +2457,7 @@
       ]
     },
     {
-      "id": "loc-21",
+      "id": "loc-23",
       "merchant": "KFC Springs Gate",
       "category": "Dining & Social",
       "currentLocationName": "7th Street, Springs Central",
@@ -1205,7 +2479,29 @@
       ]
     },
     {
-      "id": "loc-23",
+      "id": "loc-78",
+      "merchant": "Sasol Lotus Gardens",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Lotus Gardens Convenience Centre, Pretoria West",
+      "currentSuburb": "Lotus Gardens",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.748,
+      "currentLng": 28.102,
+      "totalSpend": 39.5,
+      "txCount": 1,
+      "sampleRawTx": "SASOL LOTUS G 5196*8010 27 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c800vxriarsoodq7ei",
+          "date": "2026-03-03",
+          "amount": 39.5,
+          "description": "SASOL LOTUS G 5196*8010 27 FEB DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-25",
       "merchant": "Bakerton Veg & Fresh Market",
       "category": "Groceries & Household",
       "currentLocationName": "Blossom Rd & Honeysuckle Dr, Bakerton",
@@ -1227,7 +2523,7 @@
       ]
     },
     {
-      "id": "loc-24",
+      "id": "loc-26",
       "merchant": "Faro Superette Springs",
       "category": "Groceries & Household",
       "currentLocationName": "3rd Street, Springs",
@@ -1247,9 +2543,132 @@
           "description": "FARO SPRINGS 5196*8010 23 JUL DEBIT CARD PURCHASE FROM"
         }
       ]
+    },
+    {
+      "id": "loc-80",
+      "merchant": "Mica Hardware Springs",
+      "category": "Home & Hardware",
+      "currentLocationName": "12 4th Avenue, Springs Central",
+      "currentSuburb": "Springs Central",
+      "currentCity": "Springs",
+      "currentRegion": "Springs & Bakerton",
+      "currentLat": -26.251,
+      "currentLng": 28.439,
+      "totalSpend": 19.6,
+      "txCount": 1,
+      "sampleRawTx": "C*Mica Spring 5196*8010 17 FEB DEBIT CARD PURCHASE FROM",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6e600xfriarl3o9s0pc",
+          "date": "2026-02-18",
+          "amount": 19.6,
+          "description": "C*Mica Spring 5196*8010 17 FEB DEBIT CARD PURCHASE FROM"
+        }
+      ]
+    },
+    {
+      "id": "loc-60",
+      "merchant": "KFC Hercules",
+      "category": "Dining & Social",
+      "currentLocationName": "Van Der Hoff Rd, Hercules, Pretoria",
+      "currentSuburb": "Hercules",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.718,
+      "currentLng": 28.158,
+      "totalSpend": 17,
+      "txCount": 2,
+      "sampleRawTx": "KFC Castle Hercules ZAF 13-03-2026 07H17:30 FEE- POS DECLINED INSUFF FUNDS",
+      "allTransactions": [
+        {
+          "id": "cmtb5y6c700viriardwo1bpdb",
+          "date": "2026-03-13",
+          "amount": 8.5,
+          "description": "KFC Castle Hercules ZAF 13-03-2026 07H17:30 FEE- POS DECLINED INSUFF FUNDS"
+        },
+        {
+          "id": "cmtb5y66m00hsriark8oft0fy",
+          "date": "2026-06-04",
+          "amount": 8.5,
+          "description": "KFC Castle Hercules ZAF 04-06-2026 17H38:20 FEE- POS DECLINED INSUFF FUNDS"
+        }
+      ]
+    },
+    {
+      "id": "loc-39",
+      "merchant": "Karabo Parking Brooklyn & Muckleneuk",
+      "category": "Fuel & Transport",
+      "currentLocationName": "Brooklyn / Nieuw Muckleneuk Node, Pretoria",
+      "currentSuburb": "Brooklyn",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.77,
+      "currentLng": 28.232,
+      "totalSpend": 10,
+      "txCount": 1,
+      "sampleRawTx": "KARABO PARKING BROOKL MUCKL karabo parking brookl muckl",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61t006jriarkbb2gokp",
+          "date": "2026-07-20",
+          "amount": 10,
+          "description": "KARABO PARKING BROOKL MUCKL karabo parking brookl muckl"
+        }
+      ]
+    },
+    {
+      "id": "loc-53",
+      "merchant": "Steers Pretoria Central",
+      "category": "Dining & Social",
+      "currentLocationName": "Van der Walt / Lillian Ngoyi St, Pretoria CBD",
+      "currentSuburb": "Pretoria CBD",
+      "currentCity": "Pretoria",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.747,
+      "currentLng": 28.192,
+      "totalSpend": 8.5,
+      "txCount": 1,
+      "sampleRawTx": "STEERS VAN PRETORIA ZAF 02-07-2026 12H26:35",
+      "allTransactions": [
+        {
+          "id": "cmtb5y64500bfriar979r9fbq",
+          "date": "2026-07-02",
+          "amount": 8.5,
+          "description": "STEERS VAN PRETORIA ZAF 02-07-2026 12H26:35"
+        }
+      ]
+    },
+    {
+      "id": "loc-41",
+      "merchant": "Centurion Mall Commercial Precinct",
+      "category": "Retail & Shopping",
+      "currentLocationName": "Heuwel Ave, Centurion Central",
+      "currentSuburb": "Centurion Central",
+      "currentCity": "Centurion",
+      "currentRegion": "Pretoria & Centurion",
+      "currentLat": -25.8595,
+      "currentLng": 28.1885,
+      "totalSpend": 5,
+      "txCount": 1,
+      "sampleRawTx": "Centurion Mall Preto centurion mall preto",
+      "allTransactions": [
+        {
+          "id": "cmtb5y61t006zriaruq63f3cz",
+          "date": "2026-07-17",
+          "amount": 5,
+          "description": "Centurion Mall Preto centurion mall preto"
+        }
+      ]
     }
   ],
   "digitalServices": [
+    {
+      "name": "PayShap Instant P2P Transfers",
+      "category": "P2P Transfers",
+      "totalSpend": 25384,
+      "txCount": 39,
+      "sampleRawTx": "CONSTRUCTION PAYSHAP PAYMENT TO"
+    },
     {
       "name": "Telkom Broadband & Arrears",
       "category": "Telecommunications",
@@ -1267,8 +2686,8 @@
     {
       "name": "Prepaid Electricity Tokens (Eskom/Municipal)",
       "category": "Utilities",
-      "totalSpend": 6926.000000000002,
-      "txCount": 22,
+      "totalSpend": 5846,
+      "txCount": 20,
       "sampleRawTx": "FEE: ELECTRICITY PURCHASE FEE: ELECTRICITY PURCHASE"
     },
     {
@@ -1279,6 +2698,20 @@
       "sampleRawTx": "TRACKER   00G85989      OG7876 SERVICE AGREEMENT"
     },
     {
+      "name": "Standard Bank Account Fees & Charges",
+      "category": "Banking Fees",
+      "totalSpend": 2537.07,
+      "txCount": 135,
+      "sampleRawTx": "0733657553 14H01 307615917 FEE - INSTANT MONEY"
+    },
+    {
+      "name": "Prepaid Mobile Airtime & Data",
+      "category": "Telecommunications",
+      "totalSpend": 1181,
+      "txCount": 8,
+      "sampleRawTx": "VAS00231781858 ELECTRICITY PURCHASE"
+    },
+    {
       "name": "Netflix ZA Digital Subscription",
       "category": "Entertainment",
       "totalSpend": 916,
@@ -1286,18 +2719,18 @@
       "sampleRawTx": "NETFLIX.COM Amste netflix.com amste"
     },
     {
-      "name": "Standard Bank Account Fees & Charges",
-      "category": "Banking Fees",
-      "totalSpend": 231.84,
-      "txCount": 14,
-      "sampleRawTx": "UCOUNT MEMBERSHIP FEE"
-    },
-    {
       "name": "National Lottery Online Purchase",
       "category": "Discretionary",
-      "totalSpend": 182.59999999999997,
-      "txCount": 16,
+      "totalSpend": 122.60000000000001,
+      "txCount": 14,
       "sampleRawTx": "VAS00183415052 LOTTO LOTTERY PURCHASE"
+    },
+    {
+      "name": "Ozow Instant EFT & Payments",
+      "category": "Tech & Cloud",
+      "totalSpend": 100,
+      "txCount": 1,
+      "sampleRawTx": "OZOW PTY LTD ECOMM OZ-OZOW VAS IB PAYMENT TO"
     }
   ]
 }
