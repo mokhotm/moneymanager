@@ -23,6 +23,8 @@ model User {
   propertyDataConfig PropertyDataConfig?
   profile            UserProfile?
   agentMemories      UserAgentMemory[]
+  emailScannerConfig EmailScannerConfig?
+  inboundEmailLogs   InboundEmailLog[]
 }
 
 model UserProfile {
@@ -757,3 +759,44 @@ enum PaymentStatus {
   SUCCESS
   FAILED
 }
+
+model EmailScannerConfig {
+  id                String        @id @default(cuid())
+  userId            String        @unique
+  provider          String        @default("GMAIL")
+  emailAddress      String
+  imapHost          String        @default("imap.gmail.com")
+  imapPort          Int           @default(993)
+  useSsl            Boolean       @default(true)
+  passwordEncrypted String?
+  mailboxFolder     String        @default("INBOX")
+  syncFrequency     SyncFrequency @default(ON_DEMAND)
+  status            String        @default("DISCONNECTED")
+  lastScannedAt     DateTime?
+  lastScanResult    Json?
+  autoSyncEnabled   Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InboundEmailLog {
+  id                  String   @id @default(cuid())
+  userId              String
+  sender              String
+  subject             String
+  receivedAt          DateTime @default(now())
+  channel             String   @default("IMAP_SCAN")
+  detectedInstitution String   @default("Universal Bank")
+  documentId          String?
+  status              String   @default("SUCCESS")
+  summary             String?
+  createdAt           DateTime @default(now())
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([receivedAt])
+}
+

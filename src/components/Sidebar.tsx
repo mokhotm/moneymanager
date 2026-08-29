@@ -29,6 +29,8 @@ import {
   FileText,
   ShieldCheck,
   ShieldAlert,
+  Building2,
+  Mail,
 } from "lucide-react";
 
 interface NavGroup {
@@ -56,6 +58,7 @@ const navGroups: NavGroup[] = [
     sectionTitle: "Cashflow & Banking",
     items: [
       { href: "/accounts", icon: Landmark, label: "Accounts" },
+      { href: "/banking", icon: Building2, label: "Bank Sync Hub", badge: "API" },
       { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
       { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet", badge: "Split" },
       { href: "/budget", icon: Receipt, label: "Monthly Budget" },
@@ -70,11 +73,11 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    sectionTitle: "Intelligence & Vault",
+    sectionTitle: "Intelligence & Document Vault",
     items: [
+      { href: "/documents", icon: FolderOpen, label: "Document Vault & Ingestion" },
       { href: "/recommendations", icon: Inbox, label: "Agent Inbox" },
       { href: "/chatbot", icon: Bot, label: "ChatBot AI" },
-      { href: "/documents", icon: FolderOpen, label: "Document Vault" },
       { href: "/reports", icon: BarChart3, label: "Reports & Leakages" },
       { href: "/reports/tax", icon: FileText, label: "Tax HUD", badge: "100x" },
     ],

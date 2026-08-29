@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseInboundStatementEmail } from "@/services/emailStatementParser";
+import { processInboundWebhookPayload } from "@/services/emailStatementParser";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const result = parseInboundStatementEmail(body);
+    const result = await processInboundWebhookPayload(body);
 
     return NextResponse.json({
       success: result.success,

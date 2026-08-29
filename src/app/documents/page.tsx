@@ -26,8 +26,10 @@ import {
   Copy,
   Check,
   Calendar,
+  Mail,
 } from "lucide-react";
 import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
+import { EmailScannerHub } from "@/components/EmailScannerHub";
 
 interface DocumentRecord {
   id: string;
@@ -91,8 +93,9 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [selectedMonth, setSelectedMonth] = useState<string>("2026-08");
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [cycleMode, setCycleMode] = useState<"PAY_CYCLE" | "CALENDAR_MONTH">("PAY_CYCLE");
+  const [activeVaultTab, setActiveVaultTab] = useState<"DOCUMENTS" | "EMAIL_SCANNER" | "VECTOR_SEARCH">("DOCUMENTS");
 
   // User's own documents
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -197,6 +200,13 @@ export default function DocumentsPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "email" || tab === "email-scanner" || tab === "scanner") {
+        setActiveVaultTab("EMAIL_SCANNER");
+      }
+    }
     reloadDocuments();
     fetch("/api/accounts")
       .then((r) => r.json())
@@ -360,21 +370,23 @@ export default function DocumentsPage() {
       // 2. Filter by month / pay cycle
       if (selectedMonth === "ALL") return true;
 
-      const docDate = doc.periodStart
-        ? new Date(doc.periodStart)
-        : (doc.periodEnd ? new Date(doc.periodEnd) : new Date(doc.uploadedAt));
+      const fallbackDate = new Date(doc.uploadedAt).getTime();
+      const docStart = doc.periodStart ? new Date(doc.periodStart).getTime() : (doc.periodEnd ? new Date(doc.periodEnd).getTime() : fallbackDate);
+      const docEnd = doc.periodEnd ? new Date(doc.periodEnd).getTime() : (doc.periodStart ? new Date(doc.periodStart).getTime() : fallbackDate);
 
       if (cycleMode === "PAY_CYCLE") {
         const cycle = resolveSalaryCycleRange(selectedMonth);
         const start = new Date(cycle.startDate).getTime();
         const end = new Date(cycle.endDate).getTime();
-        const t = docDate.getTime();
-        return t >= start && t <= end;
+        // Range overlap: statement is relevant if it spans across or touches the cycle
+        return docStart <= end && docEnd >= start;
       } else {
         const [yStr, mStr] = selectedMonth.split("-");
         const y = parseInt(yStr, 10);
         const m = parseInt(mStr, 10) - 1;
-        return docDate.getFullYear() === y && docDate.getMonth() === m;
+        const calStart = new Date(Date.UTC(y, m, 1)).getTime();
+        const calEnd = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59)).getTime();
+        return docStart <= calEnd && docEnd >= calStart;
       }
     });
   }, [documents, activeFilter, selectedMonth, cycleMode]);
@@ -515,7 +527,120 @@ export default function DocumentsPage() {
           </div>
         </div>
 
+        {/* Navigation Tabs */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            background: "rgba(10, 16, 30, 0.85)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "16px",
+            padding: "6px",
+            marginBottom: "24px",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setActiveVaultTab("DOCUMENTS")}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "12px",
+              fontSize: "12.5px",
+              fontWeight: "700",
+              border: activeVaultTab === "DOCUMENTS" ? "1px solid rgba(245, 158, 11, 0.5)" : "1px solid transparent",
+              background: activeVaultTab === "DOCUMENTS" ? "linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.15))" : "transparent",
+              color: activeVaultTab === "DOCUMENTS" ? "#fcd34d" : "#94a3b8",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <FolderOpen size={14} style={{ color: activeVaultTab === "DOCUMENTS" ? "#f59e0b" : "#64748b" }} />
+            <span>Document Vault &amp; Upload</span>
+            <span
+              style={{
+                padding: "2px 7px",
+                borderRadius: "999px",
+                fontSize: "10.5px",
+                fontFamily: "var(--font-mono)",
+                background: "rgba(245, 158, 11, 0.2)",
+                color: "#fcd34d",
+              }}
+            >
+              {documents.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveVaultTab("EMAIL_SCANNER")}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "12px",
+              fontSize: "12.5px",
+              fontWeight: "700",
+              border: activeVaultTab === "EMAIL_SCANNER" ? "1px solid rgba(59, 130, 246, 0.5)" : "1px solid transparent",
+              background: activeVaultTab === "EMAIL_SCANNER" ? "linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15))" : "transparent",
+              color: activeVaultTab === "EMAIL_SCANNER" ? "#93c5fd" : "#94a3b8",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <Mail size={14} style={{ color: activeVaultTab === "EMAIL_SCANNER" ? "#60a5fa" : "#64748b" }} />
+            <span>Email Statement Scanner</span>
+            <span
+              style={{
+                padding: "2px 7px",
+                borderRadius: "999px",
+                fontSize: "10.5px",
+                fontFamily: "var(--font-mono)",
+                background: "rgba(59, 130, 246, 0.2)",
+                color: "#93c5fd",
+              }}
+            >
+              Live Sync
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveVaultTab("VECTOR_SEARCH")}
+            style={{
+              padding: "8px 18px",
+              borderRadius: "12px",
+              fontSize: "12.5px",
+              fontWeight: "700",
+              border: activeVaultTab === "VECTOR_SEARCH" ? "1px solid rgba(168, 85, 247, 0.5)" : "1px solid transparent",
+              background: activeVaultTab === "VECTOR_SEARCH" ? "linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(147, 51, 234, 0.15))" : "transparent",
+              color: activeVaultTab === "VECTOR_SEARCH" ? "#d8b4fe" : "#94a3b8",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <Search size={14} style={{ color: activeVaultTab === "VECTOR_SEARCH" ? "#c084fc" : "#64748b" }} />
+            <span>Vector RAG Search</span>
+          </button>
+        </div>
+
+        {/* Email Scanner Tab */}
+        {activeVaultTab === "EMAIL_SCANNER" && (
+          <div className="mb-8 animate-fadeIn">
+            <EmailScannerHub />
+          </div>
+        )}
+
         {/* 1. Semantic Vector Search Box */}
+        {(activeVaultTab === "VECTOR_SEARCH" || activeVaultTab === "DOCUMENTS") && (
         <div
           className="card mb-6"
           style={{
@@ -580,8 +705,12 @@ export default function DocumentsPage() {
             </div>
           )}
         </div>
+        )}
 
-        {/* 2. Persistent Upload Dropzone Box */}
+        {/* 2. Documents & Vault Tab Content */}
+        {activeVaultTab === "DOCUMENTS" && (
+        <>
+        {/* Persistent Upload Dropzone Box */}
         <div
           className="card mb-6"
           style={{
@@ -1128,6 +1257,8 @@ export default function DocumentsPage() {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Interactive Document Review & Inspection Modal */}

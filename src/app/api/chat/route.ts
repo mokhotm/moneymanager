@@ -204,7 +204,13 @@ export async function POST(req: NextRequest) {
     if (!userMessage) return NextResponse.json({ error: "message is required" }, { status: 400 });
 
     // Find active LLM config (checks DB assignments -> active DB configs -> environment variables)
-    const config = await resolveAgentLLMConfig("BUDGET_AGENT");
+    let config = await resolveAgentLLMConfig("BUDGET_AGENT");
+    if (!config || !config.apiKey) {
+      config = await resolveAgentLLMConfig("DOCUMENT_AGENT");
+    }
+    if (!config || !config.apiKey) {
+      config = await resolveAgentLLMConfig();
+    }
 
     if (!config || !config.apiKey) {
       return NextResponse.json(

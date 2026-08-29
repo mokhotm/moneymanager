@@ -20,7 +20,10 @@ export default function EntitySwitcher() {
 
   useEffect(() => {
     fetch("/api/entities")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) return null;
+        return r.json();
+      })
       .then((data) => {
         if (data && data.entities) {
           setEntities(data.entities);

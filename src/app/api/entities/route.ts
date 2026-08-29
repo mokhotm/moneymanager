@@ -6,7 +6,11 @@ export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({
+        success: true,
+        activeEntityId: null,
+        entities: [],
+      });
     }
 
     const entities = await getEntitiesForUser(userId);

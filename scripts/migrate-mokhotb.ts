@@ -25,18 +25,18 @@ async function main() {
         username: "mokhotb",
         email: "mokhotb@gmail.com",
         passwordHash,
-        role: "admin",
+        role: "user",
       },
       include: { profile: { include: { userSubscription: true } } },
     });
     console.log(`✅ User created: ${userB.username} (ID: ${userB.id})`);
   } else {
-    console.log(`ℹ️ User 'mokhotb' already exists (ID: ${userB.id}). Ensuring password and role...`);
+    console.log(`ℹ️ Updating user 'mokhotb' (ID: ${userB.id}) role to 'user'...`);
     userB = await prisma.user.update({
       where: { id: userB.id },
       data: {
         passwordHash,
-        role: "admin",
+        role: "user",
       },
       include: { profile: { include: { userSubscription: true } } },
     });
