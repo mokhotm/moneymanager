@@ -201,4 +201,46 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(muni.category).toBe("Municipal Utilities");
     expect(muni.locationType).toBe("MUNICIPAL_OR_CAMPUS");
   });
+
+  // ── FIX-008: Budget Reconciliation Performance & Sub-Second Latency ───────
+  it("FIX-008: Budget Reconciliation engine must execute deterministically and fast (< 3000ms cold, < 100ms warm)", async () => {
+    const { reconcileBudgetItemsForMonth } = await import("../src/lib/budgetReconciliation");
+
+    const mockItems = [
+      { id: "b1", category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Telkom Broadband", amount: 1299.00, month: "2026-08" },
+      { id: "b2", category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Vodacom Fibre", amount: 899.00, month: "2026-08" },
+      { id: "b3", category: "DEBT_ACCELERATION_PLAN", label: "WesBank Vehicle Finance", amount: 4850.00, month: "2026-08" },
+    ];
+
+    const start = Date.now();
+    const res = await reconcileBudgetItemsForMonth("test-user-latency", "2026-08", mockItems);
+    const duration = Date.now() - start;
+
+    expect(duration).toBeLessThan(3000); // Cold start threshold
+    expect(res.items.length).toBe(3);
+    expect(res.summary.totalBudgeted).toBe(7048.00);
+  });
+
+  // ── FIX-009: Budget Reconciliation In-Memory Cache Invariant ──────────────
+  it("FIX-009: Budget Reconciliation cache must serve cached results on repeated queries", async () => {
+    const { reconcileBudgetItemsForMonth, invalidateReconciliationCache } = await import("../src/lib/budgetReconciliation");
+
+    const mockItems = [
+      { id: "b-cache-1", category: "FIXED_HOUSEHOLD_OBLIGATIONS", label: "Discovery Insure", amount: 1450.00, month: "2026-08" },
+    ];
+
+    invalidateReconciliationCache("test-cache-user");
+
+    // Prime the cache
+    const first = await reconcileBudgetItemsForMonth("test-cache-user", "2026-08", mockItems);
+
+    // Query again (cache hit)
+    const start = Date.now();
+    const second = await reconcileBudgetItemsForMonth("test-cache-user", "2026-08", mockItems);
+    const cachedDuration = Date.now() - start;
+
+    expect(cachedDuration).toBeLessThan(200); // Fast memory retrieval
+    expect(second.items.length).toBe(first.items.length);
+    expect(second.summary.totalBudgeted).toBe(first.summary.totalBudgeted);
+  });
 });

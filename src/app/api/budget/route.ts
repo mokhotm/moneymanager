@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { currentMonthKey } from "@/lib/formatters";
 import { getEffectiveUserId } from "@/lib/session";
 import { getActiveCycleMonthKey } from "@/lib/budgetCycle";
-import { reconcileBudgetItemsForMonth } from "@/lib/budgetReconciliation";
+import { reconcileBudgetItemsForMonth, invalidateReconciliationCache } from "@/lib/budgetReconciliation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
         month: body.month ?? await getActiveCycleMonthKey(),
       },
     });
+    invalidateReconciliationCache(userId);
     return NextResponse.json(item, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create budget item" }, { status: 500 });
@@ -133,6 +134,7 @@ export async function PUT(req: NextRequest) {
         note: body.note,
       },
     });
+    invalidateReconciliationCache(userId);
     return NextResponse.json(item);
   } catch (error) {
     console.error("Failed to update budget item:", error);
@@ -163,6 +165,7 @@ export async function DELETE(req: NextRequest) {
     await prisma.budgetLineItem.delete({
       where: { id },
     });
+    invalidateReconciliationCache(userId);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to delete budget item" }, { status: 500 });

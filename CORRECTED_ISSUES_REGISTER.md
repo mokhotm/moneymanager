@@ -83,3 +83,19 @@ This document records all software, data parsing, geocoding, and deployment issu
 * **Exact Resolution**:
   * Replaced Unicode emojis with safe ASCII prefixes (`[PASS]`, `[FAIL]`, `[Step N]`) in deployment automation.
 * **Automated Regression Test**: `scripts/deploy_full_to_ec2.py`.
+
+---
+
+### FIX-009: Budget Page Latency & Synchronous Blocking in Reconciliation Engine
+* **Date Identified**: 2026-08-30
+* **Symptom**: Budget page took 30+ seconds to load (`/api/budget` stalled).
+* **Root Cause**:
+  1. `fetchAllStatementTransactions` was synchronously reading and parsing multi-megabyte PDF binaries from disk with CPU-heavy byte loops on every GET request.
+  2. Sequential synchronous calls to external LLM provider were invoked during ambiguous match resolution in the budget loop.
+  3. `MoneyFlow` already held all 1,360 structured statement transactions.
+* **Exact Resolution**:
+  * Streamlined `fetchAllStatementTransactions` in [`src/lib/budgetReconciliation.ts`](file:///c:/Ezzy/Projects/Money/src/lib/budgetReconciliation.ts) to query structured `MoneyFlow` records and pre-parsed document transaction arrays.
+  * Replaced blocking LLM loop with ultra-fast deterministic composite multi-factor fuzzy ranking.
+  * Added in-memory reconciliation cache with 60-second TTL and automatic invalidation on budget mutations (`POST`, `PUT`, `DELETE`).
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-008` & `FIX-009`).
+
