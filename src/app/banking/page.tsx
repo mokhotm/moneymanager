@@ -2,36 +2,38 @@
 
 import React from "react";
 import Link from "next/link";
-import { Settings, ArrowLeft } from "lucide-react";
+import { Settings, Landmark } from "lucide-react";
 import { BankingTab } from "@/components/BankingTab";
 
 export default function BankingHubPage() {
   return (
-    <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "28px 24px 80px" }}>
-      {/* Quick Breadcrumb to Settings */}
-      <div style={{ marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link
-          href="/settings?tab=banking"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            fontSize: "13px",
-            color: "#60a5fa",
-            textDecoration: "none",
-            fontWeight: "700",
-            background: "rgba(59, 130, 246, 0.1)",
-            border: "1px solid rgba(59, 130, 246, 0.3)",
-            padding: "6px 12px",
-            borderRadius: "8px",
-          }}
-        >
-          <Settings size={14} />
-          <span>Open in Settings Tab</span>
-        </Link>
+    <>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            Bank Feeds &amp; Open Banking
+            <span className="badge blue font-mono">Stitch API</span>
+          </h1>
+          <p className="page-subtitle">
+            Automated real-time bank statement feeds for South African banks paired with multi-agent document ingestion.
+          </p>
+        </div>
+
+        <div>
+          <Link
+            href="/settings?tab=banking"
+            className="btn btn-secondary btn-sm"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <Settings size={14} />
+            <span>Manage in Settings</span>
+          </Link>
+        </div>
       </div>
 
-      <BankingTab />
-    </div>
+      <div className="page-body">
+        <BankingTab />
+      </div>
+    </>
   );
 }
