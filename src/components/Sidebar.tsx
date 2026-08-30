@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import EntitySwitcher from "@/components/EntitySwitcher";
 import {
   LayoutDashboard,
@@ -58,7 +58,6 @@ const navGroups: NavGroup[] = [
     sectionTitle: "Cashflow & Banking",
     items: [
       { href: "/accounts", icon: Landmark, label: "Accounts" },
-      { href: "/banking", icon: Building2, label: "Bank Sync Hub", badge: "API" },
       { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
       { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet", badge: "Split" },
       { href: "/budget", icon: Receipt, label: "Monthly Budget" },
@@ -85,7 +84,8 @@ const navGroups: NavGroup[] = [
   {
     sectionTitle: "System & Settings",
     items: [
-      { href: "/settings", icon: Settings, label: "Settings & BYOK" },
+      { href: "/settings?tab=banking", icon: Building2, label: "Bank Feeds & Sync", badge: "API" },
+      { href: "/settings?tab=ai-models", icon: Settings, label: "Settings & BYOK" },
       { href: "/system/readiness", icon: ShieldCheck, label: "System Readiness" },
       { href: "/billing", icon: Sparkles, label: "Billing & Plans" },
       { href: "/profile", icon: User, label: "Profile" },
@@ -106,6 +106,8 @@ interface UserSession {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? searchParams.get("tab") : null;
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const widthRef = useRef(SIDEBAR_DEFAULT_W);
 
@@ -216,7 +218,11 @@ export default function Sidebar() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   {group.items.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href;
+                    const [itemBase, itemQuery] = item.href.split("?");
+                    const targetTab = itemQuery ? new URLSearchParams(itemQuery).get("tab") : null;
+                    const isActive = targetTab
+                      ? pathname === itemBase && currentTab === targetTab
+                      : pathname === item.href || (pathname === itemBase && !currentTab);
                     return (
                       <Link
                         key={item.href}

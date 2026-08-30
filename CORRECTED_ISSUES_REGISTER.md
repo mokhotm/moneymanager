@@ -125,5 +125,19 @@ This document records all software, data parsing, geocoding, and deployment issu
   * Added `projected12MonthNetSurplus` computation to `generate365DayCashflowForecast`.
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-011`) & `tests/cashflowForecast.test.ts`.
 
+---
+
+### FIX-012: Unified Bank Feeds and Open Banking Tab in Settings Hub
+* **Date Identified**: 2026-08-30
+* **Symptom**: Bank sync configuration was isolated in an unlinked top-level page, cluttering the primary sidebar and disconnected from system integration settings.
+* **Root Cause**:
+  * Open Banking connectors and email ingestion configuration were housed solely under `/banking` instead of being an integrated tab inside the unified Settings & System Hub (`/settings`).
+* **Exact Resolution**:
+  * Extracted and modularized South African Open Banking connectors and synchronization controls into `src/components/BankingTab.tsx`.
+  * Designed an Apple-grade multi-tab HUD in `src/app/settings/page.tsx` supporting `?tab=banking`, `?tab=ai-models`, `?tab=agent-memory`, and `?tab=property-data`.
+  * Updated `src/components/Sidebar.tsx` to group Bank Feeds under System & Settings while keeping `/banking` as a seamless redirect/embed for zero breaking changes.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-012`) & `tests/stitchOpenBanking.test.ts`.
+
+
 
 

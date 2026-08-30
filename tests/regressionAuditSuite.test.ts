@@ -313,6 +313,17 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(result.projected12MonthNetSurplus).toBeGreaterThan(100000); // > R100k positive annual surplus
     expect(result.dailyPoints[364].baselineBalance).toBeGreaterThan(150000); // Year-end liquid balance > R150k
   });
+
+  // ── FIX-012: Bank Feeds & Open Banking Settings Tab Architecture ──────────
+  it("FIX-012: Bank Feeds component & Stitch Open Banking services must be modular and exportable for Settings Tab", async () => {
+    const { SA_BANK_CONNECTORS } = await import("../src/services/stitchOpenBankingService");
+    expect(SA_BANK_CONNECTORS).toBeDefined();
+    expect(SA_BANK_CONNECTORS.length).toBe(8);
+
+    const bankingTabModule = await import("../src/components/BankingTab");
+    expect(bankingTabModule.BankingTab).toBeDefined();
+  });
 });
+
 
 

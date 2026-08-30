@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Key,
   ShieldCheck,
@@ -31,8 +32,13 @@ import {
   Flame,
   Edit2,
   X,
+  Landmark,
+  Building2,
+  FileText,
+  Activity,
 } from "lucide-react";
 import { AgentMemoryManager } from "@/components/AgentMemoryManager";
+import { BankingTab } from "@/components/BankingTab";
 
 interface ProviderConfig {
   id: string;
@@ -98,103 +104,91 @@ const LLM_PRESETS: LLMPreset[] = [
     models: [
       { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Sub-Second Speed & Multimodal)", badge: "LATEST", badgeColor: "#f59e0b" },
       { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Fast & Efficient)", badge: "FAST", badgeColor: "#10b981" },
-      { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Deep Reasoning)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Free Tier)", badge: "FREE", badgeColor: "#34d399" },
-      { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro (2M Context)", badge: "FLAGSHIP", badgeColor: "#64748b" },
-      { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Ultra Fast)", badge: "FAST", badgeColor: "#10b981" },
+      { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Deep Financial Context)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
+      { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash", badge: "FAST", badgeColor: "#64748b" },
+      { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro (2M Long Context)", badge: "FLAGSHIP", badgeColor: "#a855f7" },
     ],
   },
   {
     id: "ANTHROPIC",
     dbProvider: "ANTHROPIC",
-    label: "Anthropic (Opus 4.8 / Claude 3.7)",
-    color: "#a855f7",
+    label: "Anthropic (Claude Opus 4.8 / 3.7)",
+    color: "#d97706",
     pricingCategory: "PAID_API",
     pricingLabel: "Paid API Credits",
     pricingBadgeColor: "#f59e0b",
-    pricingDetails: "Requires prepaid Anthropic Console credit balance ($5+ top-up).",
-    defaultModel: "claude-opus-4-8",
-    defaultBaseUrl: "https://api.anthropic.com/v1",
-    placeholderKey: "sk-ant-api03-…",
-    desc: "Anthropic frontier models (Claude Opus 4.8, Opus 4.6, Claude Fable 5, Sonnet 4.5, Claude 3.7 Sonnet). Hybrid thinking and long-form financial analysis.",
+    pricingDetails: "Anthropic Commercial API with tiered pay-as-you-go pricing.",
+    defaultModel: "claude-3-7-sonnet-20250219",
+    defaultBaseUrl: "",
+    placeholderKey: "sk-ant-…",
+    desc: "Claude frontier models (Claude Opus 4.8 / 4.6, Claude 3.7 Sonnet with extended thinking, Claude 3.5 Haiku). Exceptional coding and financial extraction.",
     models: [
-      { id: "claude-opus-4-8", label: "Claude Opus 4.8 (Frontier Flagship)", badge: "LATEST", badgeColor: "#a855f7" },
-      { id: "claude-opus-4-6", label: "Claude Opus 4.6 (Deep Reasoning)", badge: "FLAGSHIP", badgeColor: "#a855f7" },
-      { id: "claude-fable-5", label: "Claude Fable 5 (Creative & Synthesis)", badge: "LATEST", badgeColor: "#ec4899" },
-      { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5 (Advanced Agentic)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
-      { id: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet (Hybrid Thinking)", badge: "REASONING", badgeColor: "#8b5cf6" },
+      { id: "claude-opus-4-8", label: "Claude Opus 4.8 (Flagship Frontier)", badge: "LATEST", badgeColor: "#d97706" },
+      { id: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet (Hybrid Reasoning)", badge: "REASONING", badgeColor: "#a855f7" },
+      { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Lightning Fast)", badge: "FAST", badgeColor: "#10b981" },
       { id: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet v2", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
-      { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (Ultra Fast)", badge: "FAST", badgeColor: "#10b981" },
-      { id: "claude-3-opus-20240229", label: "Claude 3 Opus", badge: "FLAGSHIP", badgeColor: "#64748b" },
     ],
   },
   {
     id: "OPENAI",
     dbProvider: "OPENAI",
-    label: "OpenAI (GPT-5.6 / GPT-5 / o3)",
+    label: "OpenAI (GPT-5.6 / GPT-4o)",
     color: "#10b981",
     pricingCategory: "PAID_API",
     pricingLabel: "Paid API Credits",
     pricingBadgeColor: "#f59e0b",
-    pricingDetails: "Requires prepurchased OpenAI API platform balance ($5+ credit top-up).",
-    defaultModel: "gpt-5.6-omni",
-    defaultBaseUrl: "https://api.openai.com/v1",
-    placeholderKey: "sk-proj-…",
-    desc: "OpenAI frontier models (GPT-5.6 Omni, GPT-5.0, GPT-5 Mini, o4 Reasoner, GPT-4.5 Preview, o3-mini, o1). Omnichannel reasoning and execution.",
+    pricingDetails: "OpenAI Platform pay-as-you-go API.",
+    defaultModel: "gpt-4o",
+    defaultBaseUrl: "",
+    placeholderKey: "sk-…",
+    desc: "OpenAI multimodal models (GPT-5.6 Omni, GPT-4o, GPT-4o mini, o3-mini reasoning, o1 preview).",
     models: [
-      { id: "gpt-5.6-omni", label: "GPT-5.6 Omni (Frontier Multimodal)", badge: "LATEST", badgeColor: "#10b981" },
-      { id: "gpt-5-o", label: "GPT-5.0 (Flagship Intelligence)", badge: "LATEST", badgeColor: "#10b981" },
-      { id: "gpt-5-mini", label: "GPT-5 Mini (High Speed Lightweight)", badge: "FAST", badgeColor: "#34d399" },
-      { id: "o4-reasoner", label: "o4 Reasoner (Next-Gen STEM & Math)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "gpt-4.5-preview", label: "GPT-4.5 Preview (Research Flagship)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
+      { id: "gpt-5.6-omni", label: "GPT-5.6 Omni (Next-Gen Intelligence)", badge: "LATEST", badgeColor: "#10b981" },
+      { id: "gpt-4o", label: "GPT-4o (Multimodal Audio & Vision)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
+      { id: "gpt-4o-mini", label: "GPT-4o mini (Fast & Low Cost)", badge: "FAST", badgeColor: "#10b981" },
       { id: "o3-mini", label: "o3-mini (High Speed Reasoning)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "o1", label: "o1 (Flagship Deep Reasoning)", badge: "REASONING", badgeColor: "#3b82f6" },
-      { id: "gpt-4o", label: "GPT-4o (Multimodal Vision Flagship)", badge: "FLAGSHIP", badgeColor: "#38bdf8" },
-      { id: "gpt-4o-mini", label: "GPT-4o-mini (Cost Efficient)", badge: "FAST", badgeColor: "#64748b" },
+      { id: "o1", label: "o1 (Deep Reasoning Engine)", badge: "REASONING", badgeColor: "#a855f7" },
     ],
   },
   {
     id: "QWEN",
     dbProvider: "CUSTOM",
-    label: "Alibaba Cloud (Qwen 3 / QwQ)",
+    label: "Alibaba Qwen (Qwen 3 / 2.5)",
     color: "#ff6a00",
     pricingCategory: "ULTRA_LOW_COST",
     pricingLabel: "Ultra Low Cost",
     pricingBadgeColor: "#ff6a00",
-    pricingDetails: "Alibaba Cloud DashScope API with industry-leading multilingual, vision OCR, and QwQ deep reasoning.",
+    pricingDetails: "Alibaba DashScope provides ultra low-cost token pricing (~$0.12 / 1M tokens) and fast multi-token speculative decoding.",
     defaultModel: "qwen-3-max",
     defaultBaseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     placeholderKey: "sk-…",
-    desc: "Alibaba Qwen frontier models (Qwen 3 Max, QwQ 32B Reasoning, Qwen 2.5 Max, Qwen 2.5 Coder 32B, Qwen 2.5 VL Vision).",
+    desc: "Alibaba Qwen models (Qwen 3 Max, Qwen 2.5 Coder 32B/72B, Qwen 2.5 72B, Qwen-VL 72B Vision). Excellent benchmark scores.",
     models: [
-      { id: "qwen-3-max", label: "Qwen 3 Max (Frontier Flagship)", badge: "LATEST", badgeColor: "#ff6a00" },
-      { id: "qwen-3-plus", label: "Qwen 3 Plus (Balanced Frontier)", badge: "FAST", badgeColor: "#10b981" },
-      { id: "qwen-qwq-32b-preview", label: "QwQ 32B (Deep Reasoning)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "qwen-2.5-max", label: "Qwen 2.5 Max (Top Benchmark)", badge: "FLAGSHIP", badgeColor: "#f59e0b" },
-      { id: "qwen-2.5-coder-32b", label: "Qwen 2.5 Coder 32B (Formulas & Math)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "qwen-2.5-vl-72b-instruct", label: "Qwen 2.5 VL 72B (Document Vision OCR)", badge: "VISION", badgeColor: "#38bdf8" },
+      { id: "qwen-3-max", label: "Qwen 3 Max (Flagship Frontier)", badge: "LATEST", badgeColor: "#ff6a00" },
+      { id: "qwen-2.5-coder-32b-instruct", label: "Qwen 2.5 Coder 32B (Financial Logic)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
+      { id: "qwen-2.5-72b-instruct", label: "Qwen 2.5 72B Instruct", badge: "FLAGSHIP", badgeColor: "#ff6a00" },
+      { id: "qwen-2.5-vl-72b-instruct", label: "Qwen 2.5 VL 72B (Vision OCR)", badge: "VISION", badgeColor: "#10b981" },
+      { id: "qwen-plus", label: "Qwen Plus (Fast & Balanced)", badge: "FAST", badgeColor: "#64748b" },
     ],
   },
   {
     id: "GLM",
     dbProvider: "CUSTOM",
-    label: "Zhipu AI (GLM-4 / CodeGeeX)",
-    color: "#3b82f6",
+    label: "Zhipu AI (GLM-4 Flash / Plus)",
+    color: "#6366f1",
     pricingCategory: "FREE_TIER",
-    pricingLabel: "Free Tier & Paid",
+    pricingLabel: "100% Free Flash API",
     pricingBadgeColor: "#10b981",
-    pricingDetails: "Zhipu AI BigModel platform featuring GLM-4 Plus, GLM-4V Plus multimodal vision, and GLM-4 Flash free tier.",
-    defaultModel: "glm-4-plus",
+    pricingDetails: "Zhipu AI BigModel platform offers glm-4-flash completely free of charge with zero token cost.",
+    defaultModel: "glm-4-flash",
     defaultBaseUrl: "https://open.bigmodel.cn/api/paas/v4",
     placeholderKey: "…",
-    desc: "Zhipu AI GLM models (GLM-4 Plus, GLM-4V Plus Vision, GLM-4 Flash free tier, CodeGeeX-4).",
+    desc: "Zhipu AI GLM series (GLM-4 Flash [100% FREE], GLM-4 Plus, GLM-4V 9B Multimodal, GLM-4 Voice). High throughput.",
     models: [
-      { id: "glm-4-plus", label: "GLM-4 Plus (Flagship Intelligence)", badge: "LATEST", badgeColor: "#3b82f6" },
-      { id: "glm-4v-plus", label: "GLM-4V Plus (Multimodal Vision OCR)", badge: "VISION", badgeColor: "#38bdf8" },
-      { id: "glm-4-voice", label: "GLM-4 Voice (Omnimodal Real-Time)", badge: "LATEST", badgeColor: "#a855f7" },
-      { id: "glm-4-air", label: "GLM-4 Air (High Speed)", badge: "FAST", badgeColor: "#10b981" },
-      { id: "glm-4-flash", label: "GLM-4 Flash (100% Free Tier)", badge: "FREE", badgeColor: "#34d399" },
-      { id: "codegeex-4", label: "CodeGeeX-4 (Code & Formulas)", badge: "FLAGSHIP", badgeColor: "#64748b" },
+      { id: "glm-4-flash", label: "GLM-4 Flash (100% Free Forever)", badge: "FREE", badgeColor: "#10b981" },
+      { id: "glm-4-plus", label: "GLM-4 Plus (Flagship Reasoning)", badge: "FLAGSHIP", badgeColor: "#6366f1" },
+      { id: "glm-4v-plus", label: "GLM-4V Plus (Multimodal Vision OCR)", badge: "VISION", badgeColor: "#3b82f6" },
+      { id: "glm-4-air", label: "GLM-4 Air (Ultra Fast)", badge: "FAST", badgeColor: "#10b981" },
     ],
   },
   {
@@ -240,48 +234,6 @@ const LLM_PRESETS: LLMPreset[] = [
     ],
   },
   {
-    id: "XAI",
-    dbProvider: "CUSTOM",
-    label: "xAI (Grok-3 / Grok-2)",
-    color: "#e2e8f0",
-    pricingCategory: "PAID_API",
-    pricingLabel: "Paid ($25 Credit / Trial)",
-    pricingBadgeColor: "#f59e0b",
-    pricingDetails: "New accounts receive $25 trial credit on xAI console, then pay-as-you-go.",
-    defaultModel: "grok-3-ultra",
-    defaultBaseUrl: "https://api.x.ai/v1",
-    placeholderKey: "xai-…",
-    desc: "xAI platform API for Grok-3 Ultra, Grok-3, Grok-2 and Grok-2 Vision with real-time financial reasoning.",
-    models: [
-      { id: "grok-3-ultra", label: "Grok-3 Ultra (Colossus Cluster Flagship)", badge: "LATEST", badgeColor: "#e2e8f0" },
-      { id: "grok-3", label: "Grok-3 (Real-Time Reasoning)", badge: "LATEST", badgeColor: "#38bdf8" },
-      { id: "grok-2-1212", label: "Grok-2 (Text Flagship)", badge: "FLAGSHIP", badgeColor: "#94a3b8" },
-      { id: "grok-2-vision-1212", label: "Grok-2 Vision (Document Understanding)", badge: "VISION", badgeColor: "#38bdf8" },
-      { id: "grok-beta", label: "Grok Beta (Fast)", badge: "FAST", badgeColor: "#64748b" },
-    ],
-  },
-  {
-    id: "MISTRAL",
-    dbProvider: "CUSTOM",
-    label: "Mistral AI (Large 3 / Pixtral)",
-    color: "#f97316",
-    pricingCategory: "FREE_TIER",
-    pricingLabel: "Free Tier & Paid",
-    pricingBadgeColor: "#10b981",
-    pricingDetails: "Mistral La Plateforme offers free trial credits and pay-as-you-go for commercial tiers.",
-    defaultModel: "mistral-large-3",
-    defaultBaseUrl: "https://api.mistral.ai/v1",
-    placeholderKey: "…",
-    desc: "European AI frontier models (Mistral Large 3, Pixtral 3 Large 124B Vision, Codestral v2).",
-    models: [
-      { id: "mistral-large-3", label: "Mistral Large 3 (Frontier Flagship)", badge: "LATEST", badgeColor: "#f97316" },
-      { id: "pixtral-3-large", label: "Pixtral 3 Large (Multimodal OCR & Vision)", badge: "VISION", badgeColor: "#38bdf8" },
-      { id: "codestral-v2", label: "Codestral v2 (Financial Formulas & Code)", badge: "FLAGSHIP", badgeColor: "#a855f7" },
-      { id: "mistral-large-latest", label: "Mistral Large 2", badge: "FLAGSHIP", badgeColor: "#f97316" },
-      { id: "mistral-small-latest", label: "Mistral Small (Fast)", badge: "FAST", badgeColor: "#10b981" },
-    ],
-  },
-  {
     id: "GROQ",
     dbProvider: "CUSTOM",
     label: "Groq Cloud (LPU Hardware)",
@@ -310,7 +262,7 @@ const LLM_PRESETS: LLMPreset[] = [
     pricingCategory: "FREE_TIER",
     pricingLabel: "Free Models + Paid",
     pricingBadgeColor: "#10b981",
-    pricingDetails: "Provides both free tier community models (suffix ':free') and pay-as-you-go commercial routing for 200+ models.",
+    pricingDetails: "Provides both free tier community models and pay-as-you-go commercial routing for 200+ models.",
     defaultModel: "anthropic/claude-opus-4-8",
     defaultBaseUrl: "https://openrouter.ai/api/v1",
     placeholderKey: "sk-or-v1-…",
@@ -346,83 +298,27 @@ const LLM_PRESETS: LLMPreset[] = [
       { id: "qwen3:latest", label: "Qwen 3 (Latest Alibaba)", badge: "FLAGSHIP", badgeColor: "#ff6a00" },
       { id: "glm4:latest", label: "GLM-4 (Local)", badge: "FLAGSHIP", badgeColor: "#3b82f6" },
       { id: "kimi-k3:local", label: "Kimi-K3 (Local Quantized)", badge: "LATEST", badgeColor: "#ec4899" },
-      { id: "llama3.3:latest", label: "Llama 3.3 70B", badge: "FLAGSHIP", badgeColor: "#64748b" },
-      { id: "phi4:latest", label: "Microsoft Phi-4", badge: "FAST", badgeColor: "#10b981" },
-    ],
-  },
-  {
-    id: "LM_STUDIO",
-    dbProvider: "CUSTOM",
-    label: "LM Studio (Local Desktop)",
-    color: "#8b5cf6",
-    pricingCategory: "FREE_LOCAL",
-    pricingLabel: "100% Free (Local HW)",
-    pricingBadgeColor: "#34d399",
-    pricingDetails: "Desktop GUI local model runner. Zero API cost, uses your local GPU/CPU.",
-    defaultModel: "local-model",
-    defaultBaseUrl: "http://localhost:1234/v1",
-    placeholderKey: "lm-studio-key",
-    desc: "Local inference server running on your desktop via LM Studio.",
-    models: [
-      { id: "local-model", label: "Active Loaded Model (LM Studio)", badge: "LATEST", badgeColor: "#8b5cf6" },
-    ],
-  },
-  {
-    id: "AZURE_OPENAI",
-    dbProvider: "AZURE_OPENAI",
-    label: "Azure OpenAI (Enterprise)",
-    color: "#0284c7",
-    pricingCategory: "PAID_API",
-    pricingLabel: "Enterprise Paid",
-    pricingBadgeColor: "#64748b",
-    pricingDetails: "Billed directly through your enterprise Microsoft Azure subscription.",
-    defaultModel: "gpt-5.6-omni",
-    defaultBaseUrl: "https://your-resource.openai.azure.com/openai/deployments/gpt-5-6",
-    placeholderKey: "azure-key-…",
-    desc: "Private Microsoft Azure deployment endpoint with enterprise tenancy compliance.",
-    models: [
-      { id: "gpt-5.6-omni", label: "GPT-5.6 Omni (Azure Enterprise)", badge: "LATEST", badgeColor: "#0284c7" },
-      { id: "gpt-4o", label: "GPT-4o (Azure Enterprise)", badge: "FLAGSHIP", badgeColor: "#0284c7" },
-      { id: "o4-reasoner", label: "o4 Reasoner (Azure Enterprise)", badge: "REASONING", badgeColor: "#a855f7" },
-      { id: "gpt-4o-mini", label: "GPT-4o-mini (Azure Fast)", badge: "FAST", badgeColor: "#10b981" },
-    ],
-  },
-  {
-    id: "CUSTOM",
-    dbProvider: "CUSTOM",
-    label: "Custom Endpoint",
-    color: "#64748b",
-    pricingCategory: "FREE_LOCAL",
-    pricingLabel: "Self-Hosted / Varies",
-    pricingBadgeColor: "#64748b",
-    pricingDetails: "Dependent on your hosting infrastructure (vLLM, LiteLLM, Cloudflare AI, local server).",
-    defaultModel: "custom-model",
-    defaultBaseUrl: "https://api.your-server.com/v1",
-    placeholderKey: "sk-…",
-    desc: "Any custom OpenAI-compatible server (vLLM, TGI, LiteLLM, Cloudflare AI).",
-    models: [
-      { id: "custom-model", label: "Custom Model ID", badge: "LATEST", badgeColor: "#64748b" },
     ],
   },
 ];
 
 const PROVIDER_METADATA: Record<string, { label: string; color: string }> = {
-  ANTHROPIC: { label: "Anthropic (Opus 4.8 / Claude 3.7)", color: "#a855f7" },
-  OPENAI: { label: "OpenAI (GPT-5.6 / o3 / o1)", color: "#10b981" },
-  GOOGLE: { label: "Google (Gemini 3.7 / 2.5)", color: "#f59e0b" },
-  AZURE_OPENAI: { label: "Azure OpenAI", color: "#0284c7" },
-  CUSTOM: { label: "Custom / Multi-Provider", color: "#38bdf8" },
+  GOOGLE: { label: "Google", color: "#f59e0b" },
+  OPENAI: { label: "OpenAI", color: "#10b981" },
+  ANTHROPIC: { label: "Anthropic", color: "#d97706" },
+  AZURE_OPENAI: { label: "Azure OpenAI", color: "#38bdf8" },
+  CUSTOM: { label: "Custom / Open Model", color: "#a855f7" },
 };
 
-const AGENT_LABELS: Record<string, { label: string; desc: string; iconColor: string }> = {
+const AGENT_LABELS = {
   DOCUMENT_AGENT: {
     label: "DOCUMENT_AGENT",
-    desc: "Scans statement & payslip PDFs with Multi-Agent OCR and extracts line items. (Vision model recommended)",
-    iconColor: "#3b82f6",
+    desc: "Parses PDF statements, payslips, municipal invoices, and tax schedules via OCR Vision & JSON structuring.",
+    iconColor: "#38bdf8",
   },
   BUDGET_AGENT: {
     label: "BUDGET_AGENT",
-    desc: "Arbitrates surplus cashflow allocations between debt payoff waterfalls and fixed household expenses.",
+    desc: "Performs deterministic multi-factor statement reconciliation and tracks live salary cycle budget burn.",
     iconColor: "#10b981",
   },
   DEBT_AGENT: {
@@ -437,7 +333,31 @@ const AGENT_LABELS: Record<string, { label: string; desc: string; iconColor: str
   },
 };
 
-export default function SettingsPage() {
+type SettingsTab = "banking" | "ai-models" | "agent-memory" | "property-data";
+
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab") as SettingsTab | null;
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
+    if (tabParam && ["banking", "ai-models", "agent-memory", "property-data"].includes(tabParam)) {
+      return tabParam;
+    }
+    return "banking";
+  });
+
+  useEffect(() => {
+    if (tabParam && ["banking", "ai-models", "agent-memory", "property-data"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    router.replace(`/settings?tab=${tab}`, { scroll: false });
+  };
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [configs, setConfigs] = useState<ProviderConfig[]>([]);
   const [assignments, setAssignments] = useState<AgentAssignment[]>([]);
@@ -575,7 +495,6 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      // 1. Check Auth Status
       const authRes = await fetch("/api/auth/me").then((r) => r.json());
       const authed = authRes.authenticated === true;
       setIsAuthenticated(authed);
@@ -637,7 +556,6 @@ export default function SettingsPage() {
       const data = await res.json();
       const isValid = data?.validation?.valid === true || data?.status === "ACTIVE";
 
-      // Optimistic in-place update of specific key with zero layout flicker
       setConfigs((prev) =>
         prev.map((c) =>
           c.id === id
@@ -744,7 +662,6 @@ export default function SettingsPage() {
     const selectedConfig = configs.find((c) => c.id === llmProviderConfigId);
     if (!selectedConfig) return;
 
-    // 1. Instant optimistic state update
     setAssignments((prev) => {
       const idx = prev.findIndex((a) => a.agent === agent);
       const newEntry = {
@@ -764,7 +681,6 @@ export default function SettingsPage() {
       return [...prev, newEntry];
     });
 
-    // 2. Persist to API
     try {
       const res = await fetch("/api/settings/agent-models", {
         method: "POST",
@@ -821,7 +737,7 @@ export default function SettingsPage() {
     return (
       <div className="page-body" style={{ textAlign: "center", padding: "80px 0" }}>
         <div style={{ fontSize: "14px", color: "#94a3b8", fontFamily: "var(--font-mono, monospace)" }} className="animate-pulse">
-          Loading BYOK credentials &amp; multi-agent assignments…
+          Loading system settings, bank feeds &amp; BYOK vault…
         </div>
       </div>
     );
@@ -831,19 +747,19 @@ export default function SettingsPage() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="page-header">
+      {/* Top Page Header */}
+      <div className="page-header" style={{ marginBottom: "20px" }}>
         <div>
           <h1 className="page-title flex items-center gap-2">
-            Settings &amp; Multi-LLM Vault
+            Settings &amp; Financial System Hub
             <span className="badge badge-gold text-xs font-mono">v4.0 Obsidian</span>
           </h1>
           <p className="page-subtitle">
-            Configure Gemini 3.7, Claude Opus 4.8/4.6, GPT-5.6, Qwen 3, GLM-4, Kimi-K3, DeepSeek V4, and Grok-3 via clean dropdown selectors.
+            Manage live South African Open Banking feeds, multi-agent LLM credentials, cognitive memories, and property valuation APIs.
           </p>
         </div>
 
-        {isAuthenticated && (
+        {isAuthenticated && activeTab === "ai-models" && (
           <div className="flex gap-3 items-center flex-wrap">
             <button
               onClick={handleSyncEnvKeys}
@@ -870,391 +786,666 @@ export default function SettingsPage() {
       </div>
 
       <div className="page-body">
-
-      {syncMsg && (
+        {/* Apple-grade Settings Tab HUD */}
         <div
           style={{
-            padding: "12px 16px",
-            borderRadius: "12px",
-            marginBottom: "20px",
-            fontSize: "13px",
-            fontWeight: "600",
             display: "flex",
-            alignItems: "center",
             gap: "8px",
-            background: syncMsg.ok ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
-            border: `1px solid ${syncMsg.ok ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)"}`,
-            color: syncMsg.ok ? "#34d399" : "#f87171",
+            background: "rgba(15, 23, 42, 0.7)",
+            padding: "6px",
+            borderRadius: "14px",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            marginBottom: "28px",
+            overflowX: "auto",
+            backdropFilter: "blur(16px)",
           }}
         >
-          {syncMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {syncMsg.text}
-        </div>
-      )}
-
-      {!isAuthenticated ? (
-        <div
-          style={{
-            background: "rgba(15, 23, 42, 0.75)",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-            borderRadius: "20px",
-            padding: "48px 32px",
-            textAlign: "center",
-            maxWidth: "600px",
-            margin: "40px auto",
-            backdropFilter: "blur(20px)",
-          }}
-        >
-          <div style={{ color: "#fbbf24", marginBottom: "16px" }}>
-            <Lock size={44} style={{ margin: "0 auto" }} />
-          </div>
-          <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#f8fafc", marginBottom: "8px" }}>
-            Authentication Required
-          </h2>
-          <p style={{ fontSize: "14px", color: "#94a3b8", marginBottom: "24px", lineHeight: 1.6 }}>
-            API keys and agent routing are secured per user session. Please sign in to access your private LLM vault.
-          </p>
-          <a
-            href="/login"
+          <button
+            onClick={() => handleTabChange("banking")}
             style={{
-              display: "inline-flex",
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: activeTab === "banking" ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
+              background: activeTab === "banking" ? "rgba(56, 189, 248, 0.15)" : "transparent",
+              color: activeTab === "banking" ? "#38bdf8" : "#94a3b8",
+              fontSize: "13px",
+              fontWeight: "700",
+              cursor: "pointer",
+              display: "flex",
               alignItems: "center",
               gap: "8px",
-              background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-              color: "#ffffff",
-              padding: "12px 24px",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Landmark size={16} />
+            <span>Bank Feeds &amp; Open Banking</span>
+            <span
+              style={{
+                fontSize: "10px",
+                padding: "2px 6px",
+                borderRadius: "8px",
+                background: "rgba(56, 189, 248, 0.2)",
+                color: "#38bdf8",
+                fontWeight: "800",
+              }}
+            >
+              Stitch API
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange("ai-models")}
+            style={{
+              padding: "10px 18px",
               borderRadius: "10px",
+              border: activeTab === "ai-models" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
+              background: activeTab === "ai-models" ? "rgba(245, 158, 11, 0.15)" : "transparent",
+              color: activeTab === "ai-models" ? "#fbbf24" : "#94a3b8",
+              fontSize: "13px",
               fontWeight: "700",
-              fontSize: "14px",
-              textDecoration: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease",
             }}
           >
-            <LogIn size={16} /> Sign In
-          </a>
+            <Cpu size={16} />
+            <span>AI Models &amp; BYOK Keys</span>
+            <span
+              style={{
+                fontSize: "10px",
+                padding: "2px 6px",
+                borderRadius: "8px",
+                background: "rgba(245, 158, 11, 0.2)",
+                color: "#fbbf24",
+                fontWeight: "800",
+              }}
+            >
+              {configs.length} Active
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange("agent-memory")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: activeTab === "agent-memory" ? "1px solid rgba(168, 85, 247, 0.4)" : "1px solid transparent",
+              background: activeTab === "agent-memory" ? "rgba(168, 85, 247, 0.15)" : "transparent",
+              color: activeTab === "agent-memory" ? "#c084fc" : "#94a3b8",
+              fontSize: "13px",
+              fontWeight: "700",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <BrainCircuit size={16} />
+            <span>Continuous Agent Learning</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange("property-data")}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: activeTab === "property-data" ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid transparent",
+              background: activeTab === "property-data" ? "rgba(16, 185, 129, 0.15)" : "transparent",
+              color: activeTab === "property-data" ? "#34d399" : "#94a3b8",
+              fontSize: "13px",
+              fontWeight: "700",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Building2 size={16} />
+            <span>Property &amp; Deeds Office</span>
+          </button>
         </div>
-      ) : (
-        <>
-          {/* Top Pricing Tier Legend Banner */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: "14px",
-              marginBottom: "24px",
-            }}
-          >
-            <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <Gift size={18} style={{ color: "#34d399" }} />
-              <div>
-                <div style={{ fontSize: "12px", fontWeight: "800", color: "#34d399" }}>Free Tier Available</div>
-                <div style={{ fontSize: "11px", color: "#94a3b8" }}>Google Gemini, GLM-4 Flash (100% Free), Groq Cloud, OpenRouter free</div>
-              </div>
-            </div>
 
-            <div style={{ background: "rgba(20, 184, 166, 0.08)", border: "1px solid rgba(20, 184, 166, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <HardDrive size={18} style={{ color: "#2dd4bf" }} />
-              <div>
-                <div style={{ fontSize: "12px", fontWeight: "800", color: "#2dd4bf" }}>100% Free (Local PC)</div>
-                <div style={{ fontSize: "11px", color: "#94a3b8" }}>Ollama &amp; LM Studio running locally on your machine</div>
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <BrainCircuit size={18} style={{ color: "#38bdf8" }} />
-              <div>
-                <div style={{ fontSize: "12px", fontWeight: "800", color: "#38bdf8" }}>Ultra Low Cost</div>
-                <div style={{ fontSize: "11px", color: "#94a3b8" }}>Qwen 3, GLM-4, DeepSeek V4/R2, Kimi K3 (~$0.14 - $0.28 / 1M)</div>
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <DollarSign size={18} style={{ color: "#fbbf24" }} />
-              <div>
-                <div style={{ fontSize: "12px", fontWeight: "800", color: "#fbbf24" }}>Paid API Credits</div>
-                <div style={{ fontSize: "11px", color: "#94a3b8" }}>Anthropic Opus 4.8 / Claude 3.7, OpenAI GPT-5.6, xAI Grok-3</div>
-              </div>
-            </div>
+        {/* TAB 1: BANK FEEDS & OPEN BANKING */}
+        {activeTab === "banking" && (
+          <div>
+            <BankingTab />
           </div>
+        )}
 
-          {/* Section 1: Configured Provider Keys */}
-          <div
-            style={{
-              background: "rgba(15, 23, 42, 0.7)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "20px",
-              padding: "24px",
-              backdropFilter: "blur(20px)",
-              marginBottom: "32px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <ShieldCheck size={20} style={{ color: "#34d399" }} />
-                <h2 style={{ fontSize: "17px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
-                  Active BYOK LLM Keys ({configs.length})
-                </h2>
-              </div>
-              <span style={{ fontSize: "12px", color: "#94a3b8", fontFamily: "var(--font-mono)" }}>
-                AES-256 Encrypted
-              </span>
-            </div>
-
-            {configs.length === 0 ? (
-              <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>
-                No LLM keys added yet. Click <strong>+ Add LLM Provider Key</strong> above to add your Gemini 3.7, Claude Opus 4.8, GPT-5.6, Qwen 3, GLM-4, or Kimi credentials.
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                      <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Provider / Label</th>
-                      <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Model Name &amp; Version</th>
-                      <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Cost / Pricing</th>
-                      <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Masked Key</th>
-                      <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Status</th>
-                      <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", textAlign: "right" }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {configs.map((c) => {
-                      const meta = PROVIDER_METADATA[c.provider] || { label: c.provider, color: "#94a3b8" };
-                      const isTesting = testingId === c.id;
-                      const matchedPreset = LLM_PRESETS.find((p) => p.models.some((m) => m.id === c.modelName) || p.dbProvider === c.provider);
-
-                      return (
-                        <tr key={c.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                          <td style={{ padding: "14px" }}>
-                            <div style={{ fontWeight: "700", color: "#f8fafc", fontSize: "14px" }}>{c.displayName}</div>
-                            <div style={{ fontSize: "11px", color: meta.color, fontWeight: "700" }}>{meta.label}</div>
-                          </td>
-                          <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: "13px", color: "#cbd5e1" }}>
-                            <span style={{ fontWeight: "700", color: "#f8fafc" }}>{c.modelName}</span>
-                          </td>
-                          <td style={{ padding: "14px" }}>
-                            <span
-                              style={{
-                                fontSize: "11px",
-                                fontWeight: "800",
-                                padding: "3px 8px",
-                                borderRadius: "8px",
-                                background: matchedPreset?.pricingCategory === "FREE_TIER" || matchedPreset?.pricingCategory === "FREE_LOCAL" ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                                color: matchedPreset?.pricingBadgeColor || "#fbbf24",
-                                border: `1px solid ${matchedPreset?.pricingBadgeColor || "#fbbf24"}40`,
-                              }}
-                            >
-                              {matchedPreset?.pricingLabel || "BYOK Tier"}
-                            </span>
-                          </td>
-                          <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: "12px", color: "#94a3b8" }}>
-                            {c.apiKeyMasked}
-                          </td>
-                          <td style={{ padding: "14px" }}>
-                            <span
-                              style={{
-                                fontSize: "11px",
-                                fontWeight: "800",
-                                padding: "3px 10px",
-                                borderRadius: "12px",
-                                background: c.status === "ACTIVE" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
-                                color: c.status === "ACTIVE" ? "#34d399" : "#f87171",
-                              }}
-                            >
-                              {c.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: "14px", textAlign: "right" }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-                              <button
-                                onClick={() => handleOpenEditModal(c)}
-                                style={{
-                                  padding: "6px 12px",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(59, 130, 246, 0.35)",
-                                  background: "rgba(59, 130, 246, 0.12)",
-                                  color: "#60a5fa",
-                                  fontSize: "12px",
-                                  fontWeight: "700",
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "5px",
-                                  transition: "all 0.15s",
-                                }}
-                                title="Edit API Key, Model & Settings"
-                              >
-                                <Edit2 size={12} /> Edit
-                              </button>
-                              <button
-                                onClick={() => handleTestKey(c.id, c.displayName)}
-                                disabled={isTesting}
-                                style={{
-                                  padding: "6px 12px",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                                  background: "rgba(255, 255, 255, 0.05)",
-                                  color: "#cbd5e1",
-                                  fontSize: "12px",
-                                  fontWeight: "700",
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
-                                }}
-                              >
-                                <RefreshCw size={12} className={isTesting ? "animate-spin" : ""} />
-                                {isTesting ? "Testing…" : "Test Key"}
-                              </button>
-                              <button
-                                onClick={() => handleDeleteKey(c.id, c.displayName)}
-                                style={{
-                                  padding: "6px 10px",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                                  background: "rgba(239, 68, 68, 0.1)",
-                                  color: "#f87171",
-                                  fontSize: "12px",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+        {/* TAB 2: AI MODELS & BYOK KEYS */}
+        {activeTab === "ai-models" && (
+          <div>
+            {syncMsg && (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  marginBottom: "20px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: syncMsg.ok ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                  border: `1px solid ${syncMsg.ok ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)"}`,
+                  color: syncMsg.ok ? "#34d399" : "#f87171",
+                }}
+              >
+                {syncMsg.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {syncMsg.text}
               </div>
             )}
-          </div>
 
-          {/* Section 2: Agent Model Assignments */}
-          <div
-            style={{
-              background: "rgba(15, 23, 42, 0.7)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "20px",
-              padding: "24px",
-              backdropFilter: "blur(20px)",
-              marginBottom: "32px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "12px" }}>
-              <Cpu size={20} style={{ color: "#60a5fa" }} />
-              <div>
-                <h2 style={{ fontSize: "17px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
-                  Multi-Agent Model Routing &amp; Assignments
+            {!isAuthenticated ? (
+              <div
+                style={{
+                  background: "rgba(15, 23, 42, 0.75)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  borderRadius: "20px",
+                  padding: "48px 32px",
+                  textAlign: "center",
+                  maxWidth: "600px",
+                  margin: "40px auto",
+                  backdropFilter: "blur(20px)",
+                }}
+              >
+                <div style={{ color: "#fbbf24", marginBottom: "16px" }}>
+                  <Lock size={44} style={{ margin: "0 auto" }} />
+                </div>
+                <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#f8fafc", marginBottom: "8px" }}>
+                  Authentication Required
                 </h2>
-                <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0, marginTop: "2px" }}>
-                  Route each specialized AI agent to your preferred LLM provider model version.
+                <p style={{ fontSize: "14px", color: "#94a3b8", marginBottom: "24px", lineHeight: 1.6 }}>
+                  API keys and agent routing are secured per user session. Please sign in to access your private LLM vault.
                 </p>
+                <a
+                  href="/login"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+                    color: "#ffffff",
+                    padding: "12px 24px",
+                    borderRadius: "10px",
+                    fontWeight: "700",
+                    fontSize: "14px",
+                    textDecoration: "none",
+                  }}
+                >
+                  <LogIn size={16} /> Sign In
+                </a>
               </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "14px" }}>
-              {(["DOCUMENT_AGENT", "BUDGET_AGENT", "DEBT_AGENT", "GOALS_AGENT"] as const).map((agentKey) => {
-                const meta = AGENT_LABELS[agentKey];
-                const currentAssigned = assignments.find((a) => a.agent === agentKey);
-
-                return (
-                  <div
-                    key={agentKey}
-                    style={{
-                      background: "rgba(7, 11, 20, 0.6)",
-                      border: "1px solid rgba(255, 255, 255, 0.06)",
-                      borderRadius: "14px",
-                      padding: "16px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "20px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: "260px" }}>
-                      <div style={{ fontSize: "15px", fontWeight: "800", color: meta.iconColor, marginBottom: "2px" }}>
-                        {meta.label}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#94a3b8" }}>{meta.desc}</div>
-                    </div>
-
-                    <div style={{ width: "360px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <select
-                        value={currentAssigned?.configId || ""}
-                        onChange={(e) => handleAssignModel(agentKey, e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "10px 14px",
-                          borderRadius: "10px",
-                          background: "rgba(15, 23, 42, 0.9)",
-                          border: "1px solid rgba(255, 255, 255, 0.12)",
-                          color: "#f8fafc",
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          outline: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <option value="">Select LLM Provider model…</option>
-                        {configs.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.displayName} ({c.modelName}) — {c.status === "ACTIVE" ? "Active ✓" : c.status}
-                          </option>
-                        ))}
-                      </select>
-
-                      {currentAssigned && (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", padding: "2px 4px" }}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              fontWeight: "700",
-                              color: currentAssigned.status === "ACTIVE" ? "#34d399" : "#f87171",
-                            }}
-                          >
-                            <span
-                              style={{
-                                width: "6px",
-                                height: "6px",
-                                borderRadius: "50%",
-                                background: currentAssigned.status === "ACTIVE" ? "#10b981" : "#ef4444",
-                              }}
-                            />
-                            {currentAssigned.status === "ACTIVE" ? "Connected & Active" : currentAssigned.status}
-                          </span>
-
-                          {currentAssigned.supportsVision && (
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "3px",
-                                color: "#38bdf8",
-                                fontWeight: "700",
-                              }}
-                            >
-                              <VisionIcon size={11} /> Vision Multimodal
-                            </span>
-                          )}
-                        </div>
-                      )}
+            ) : (
+              <>
+                {/* Top Pricing Tier Legend Banner */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gap: "14px",
+                    marginBottom: "24px",
+                  }}
+                >
+                  <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Gift size={18} style={{ color: "#34d399" }} />
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#34d399" }}>Free Tier Available</div>
+                      <div style={{ fontSize: "11px", color: "#94a3b8" }}>Google Gemini, GLM-4 Flash (100% Free), Groq Cloud, OpenRouter free</div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Continuous Agent Learning & Memory Section */}
-          <div style={{ marginTop: "32px", marginBottom: "32px" }}>
+                  <div style={{ background: "rgba(20, 184, 166, 0.08)", border: "1px solid rgba(20, 184, 166, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <HardDrive size={18} style={{ color: "#2dd4bf" }} />
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#2dd4bf" }}>100% Free (Local PC)</div>
+                      <div style={{ fontSize: "11px", color: "#94a3b8" }}>Ollama &amp; LM Studio running locally on your machine</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <BrainCircuit size={18} style={{ color: "#38bdf8" }} />
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#38bdf8" }}>Ultra Low Cost</div>
+                      <div style={{ fontSize: "11px", color: "#94a3b8" }}>Qwen 3, GLM-4, DeepSeek V4/R2, Kimi K3 (~$0.14 - $0.28 / 1M)</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.25)", borderRadius: "14px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <DollarSign size={18} style={{ color: "#fbbf24" }} />
+                    <div>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#fbbf24" }}>Paid API Credits</div>
+                      <div style={{ fontSize: "11px", color: "#94a3b8" }}>Anthropic Opus 4.8 / Claude 3.7, OpenAI GPT-5.6, xAI Grok-3</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 1: Configured Provider Keys */}
+                <div
+                  style={{
+                    background: "rgba(15, 23, 42, 0.7)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderRadius: "20px",
+                    padding: "24px",
+                    backdropFilter: "blur(20px)",
+                    marginBottom: "32px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <ShieldCheck size={20} style={{ color: "#34d399" }} />
+                      <h2 style={{ fontSize: "17px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
+                        Active BYOK LLM Keys ({configs.length})
+                      </h2>
+                    </div>
+                    <span style={{ fontSize: "12px", color: "#94a3b8", fontFamily: "var(--font-mono)" }}>
+                      AES-256 Encrypted
+                    </span>
+                  </div>
+
+                  {configs.length === 0 ? (
+                    <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>
+                      No LLM keys added yet. Click <strong>+ Add LLM Provider Key</strong> above to add your Gemini 3.7, Claude Opus 4.8, GPT-5.6, Qwen 3, GLM-4, or Kimi credentials.
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                            <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Provider / Label</th>
+                            <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Model Name &amp; Version</th>
+                            <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Cost / Pricing</th>
+                            <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Masked Key</th>
+                            <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Status</th>
+                            <th style={{ padding: "10px 14px", color: "#64748b", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {configs.map((c) => {
+                            const meta = PROVIDER_METADATA[c.provider] || { label: c.provider, color: "#94a3b8" };
+                            const isTesting = testingId === c.id;
+                            const matchedPreset = LLM_PRESETS.find((p) => p.models.some((m) => m.id === c.modelName) || p.dbProvider === c.provider);
+
+                            return (
+                              <tr key={c.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+                                <td style={{ padding: "14px" }}>
+                                  <div style={{ fontWeight: "700", color: "#f8fafc", fontSize: "14px" }}>{c.displayName}</div>
+                                  <div style={{ fontSize: "11px", color: meta.color, fontWeight: "700" }}>{meta.label}</div>
+                                </td>
+                                <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: "13px", color: "#cbd5e1" }}>
+                                  <span style={{ fontWeight: "700", color: "#f8fafc" }}>{c.modelName}</span>
+                                </td>
+                                <td style={{ padding: "14px" }}>
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "800",
+                                      padding: "3px 8px",
+                                      borderRadius: "8px",
+                                      background: matchedPreset?.pricingCategory === "FREE_TIER" || matchedPreset?.pricingCategory === "FREE_LOCAL" ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                                      color: matchedPreset?.pricingBadgeColor || "#fbbf24",
+                                      border: `1px solid ${matchedPreset?.pricingBadgeColor || "#fbbf24"}40`,
+                                    }}
+                                  >
+                                    {matchedPreset?.pricingLabel || "BYOK Tier"}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: "12px", color: "#94a3b8" }}>
+                                  {c.apiKeyMasked}
+                                </td>
+                                <td style={{ padding: "14px" }}>
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "800",
+                                      padding: "3px 10px",
+                                      borderRadius: "12px",
+                                      background: c.status === "ACTIVE" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                                      color: c.status === "ACTIVE" ? "#34d399" : "#f87171",
+                                    }}
+                                  >
+                                    {c.status}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "14px", textAlign: "right" }}>
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                                    <button
+                                      onClick={() => handleOpenEditModal(c)}
+                                      style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "8px",
+                                        border: "1px solid rgba(59, 130, 246, 0.35)",
+                                        background: "rgba(59, 130, 246, 0.12)",
+                                        color: "#60a5fa",
+                                        fontSize: "12px",
+                                        fontWeight: "700",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "5px",
+                                        transition: "all 0.15s",
+                                      }}
+                                      title="Edit API Key, Model & Settings"
+                                    >
+                                      <Edit2 size={12} /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleTestKey(c.id, c.displayName)}
+                                      disabled={isTesting}
+                                      style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "8px",
+                                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                                        background: "rgba(255, 255, 255, 0.05)",
+                                        color: "#cbd5e1",
+                                        fontSize: "12px",
+                                        fontWeight: "700",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                      }}
+                                    >
+                                      <RefreshCw size={12} className={isTesting ? "animate-spin" : ""} />
+                                      {isTesting ? "Testing…" : "Test Key"}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteKey(c.id, c.displayName)}
+                                      style={{
+                                        padding: "6px 10px",
+                                        borderRadius: "8px",
+                                        border: "1px solid rgba(239, 68, 68, 0.3)",
+                                        background: "rgba(239, 68, 68, 0.1)",
+                                        color: "#f87171",
+                                        fontSize: "12px",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 2: Agent Model Assignments */}
+                <div
+                  style={{
+                    background: "rgba(15, 23, 42, 0.7)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderRadius: "20px",
+                    padding: "24px",
+                    backdropFilter: "blur(20px)",
+                    marginBottom: "32px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "12px" }}>
+                    <Cpu size={20} style={{ color: "#60a5fa" }} />
+                    <div>
+                      <h2 style={{ fontSize: "17px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
+                        Multi-Agent Model Routing &amp; Assignments
+                      </h2>
+                      <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0, marginTop: "2px" }}>
+                        Route each specialized AI agent to your preferred LLM provider model version.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "14px" }}>
+                    {(["DOCUMENT_AGENT", "BUDGET_AGENT", "DEBT_AGENT", "GOALS_AGENT"] as const).map((agentKey) => {
+                      const meta = AGENT_LABELS[agentKey];
+                      const currentAssigned = assignments.find((a) => a.agent === agentKey);
+
+                      return (
+                        <div
+                          key={agentKey}
+                          style={{
+                            background: "rgba(7, 11, 20, 0.6)",
+                            border: "1px solid rgba(255, 255, 255, 0.06)",
+                            borderRadius: "14px",
+                            padding: "16px 20px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "20px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: "260px" }}>
+                            <div style={{ fontSize: "15px", fontWeight: "800", color: meta.iconColor, marginBottom: "2px" }}>
+                              {meta.label}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#94a3b8" }}>{meta.desc}</div>
+                          </div>
+
+                          <div style={{ width: "360px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <select
+                              value={currentAssigned?.configId || ""}
+                              onChange={(e) => handleAssignModel(agentKey, e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "10px 14px",
+                                borderRadius: "10px",
+                                background: "rgba(15, 23, 42, 0.9)",
+                                border: "1px solid rgba(255, 255, 255, 0.12)",
+                                color: "#f8fafc",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                outline: "none",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <option value="">Select LLM Provider model…</option>
+                              {configs.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.displayName} ({c.modelName}) — {c.status === "ACTIVE" ? "Active ✓" : c.status}
+                                </option>
+                              ))}
+                            </select>
+
+                            {currentAssigned && (
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", padding: "2px 4px" }}>
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    fontWeight: "700",
+                                    color: currentAssigned.status === "ACTIVE" ? "#34d399" : "#f87171",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      width: "6px",
+                                      height: "6px",
+                                      borderRadius: "50%",
+                                      background: currentAssigned.status === "ACTIVE" ? "#10b981" : "#ef4444",
+                                    }}
+                                  />
+                                  {currentAssigned.status === "ACTIVE" ? "Connected & Active" : currentAssigned.status}
+                                </span>
+
+                                {currentAssigned.supportsVision && (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "3px",
+                                      color: "#38bdf8",
+                                      fontWeight: "700",
+                                    }}
+                                  >
+                                    <VisionIcon size={11} /> Vision Multimodal
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: AGENT LEARNING & MEMORY */}
+        {activeTab === "agent-memory" && (
+          <div>
             <AgentMemoryManager />
           </div>
-        </>
-      )}
+        )}
+
+        {/* TAB 4: PROPERTY & DEEDS OFFICE */}
+        {activeTab === "property-data" && (
+          <div>
+            <div
+              style={{
+                background: "rgba(15, 23, 42, 0.7)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "20px",
+                padding: "24px",
+                backdropFilter: "blur(20px)",
+                marginBottom: "32px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "12px" }}>
+                <Building2 size={20} style={{ color: "#38bdf8" }} />
+                <div>
+                  <h2 style={{ fontSize: "17px", fontWeight: "800", color: "#f8fafc", margin: 0 }}>
+                    South African Deeds Office &amp; Property Valuation APIs
+                  </h2>
+                  <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0, marginTop: "2px" }}>
+                    Connect Lexis WinDeed or Lightstone to automatically verify municipal property valuations and title deed records.
+                  </p>
+                </div>
+              </div>
+
+              {propMsg && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "10px",
+                    marginBottom: "16px",
+                    background: propMsg.ok ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                    border: `1px solid ${propMsg.ok ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)"}`,
+                    color: propMsg.ok ? "#34d399" : "#f87171",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                  }}
+                >
+                  {propMsg.text}
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
+                {/* WinDeed Integration Card */}
+                <div style={{ background: "rgba(7, 11, 20, 0.6)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "16px", padding: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: "800", color: "#f8fafc" }}>Lexis WinDeed</div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "3px 8px", borderRadius: "6px", background: propCfg?.windeedStatus === "ACTIVE" ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)", color: propCfg?.windeedStatus === "ACTIVE" ? "#34d399" : "#fbbf24" }}>
+                      {propCfg?.windeedStatus || "UNCONFIGURED"}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "16px" }}>
+                    Direct deeds office registry search by Erf and Scheme Number across SA Surveyor-General archives.
+                  </p>
+                  <form onSubmit={(e) => { e.preventDefault(); handleSavePropertyProvider("WINDEED"); }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <input
+                      type="text"
+                      placeholder="WinDeed Username"
+                      value={windeedForm.username}
+                      onChange={(e) => setWindeedForm({ ...windeedForm, username: e.target.value })}
+                      style={{ padding: "10px", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "8px", color: "#f8fafc", fontSize: "13px" }}
+                    />
+                    <input
+                      type="password"
+                      placeholder="WinDeed Password"
+                      value={windeedForm.password}
+                      onChange={(e) => setWindeedForm({ ...windeedForm, password: e.target.value })}
+                      style={{ padding: "10px", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "8px", color: "#f8fafc", fontSize: "13px" }}
+                    />
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
+                      {propCfg?.windeedStatus && (
+                        <button
+                          type="button"
+                          onClick={() => handleDisconnectPropertyProvider("WINDEED")}
+                          style={{ padding: "8px 12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "8px", color: "#f87171", fontSize: "12px", cursor: "pointer" }}
+                        >
+                          Disconnect
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={propSaving === "WINDEED"}
+                        style={{ padding: "8px 16px", background: "#3b82f6", border: "none", borderRadius: "8px", color: "#ffffff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
+                      >
+                        {propSaving === "WINDEED" ? "Saving..." : "Save WinDeed"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Lightstone Integration Card */}
+                <div style={{ background: "rgba(7, 11, 20, 0.6)", border: "1px solid rgba(255, 255, 255, 0.06)", borderRadius: "16px", padding: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: "800", color: "#f8fafc" }}>Lightstone Property</div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "3px 8px", borderRadius: "6px", background: propCfg?.lightstoneStatus === "ACTIVE" ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)", color: propCfg?.lightstoneStatus === "ACTIVE" ? "#34d399" : "#fbbf24" }}>
+                      {propCfg?.lightstoneStatus || "UNCONFIGURED"}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "16px" }}>
+                    Automated valuation models (AVM), suburb transfer histories, and recent sales comparables.
+                  </p>
+                  <form onSubmit={(e) => { e.preventDefault(); handleSavePropertyProvider("LIGHTSTONE"); }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <input
+                      type="password"
+                      placeholder="Lightstone API Key"
+                      value={lightstoneForm.apiKey}
+                      onChange={(e) => setLightstoneForm({ ...lightstoneForm, apiKey: e.target.value })}
+                      style={{ padding: "10px", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "8px", color: "#f8fafc", fontSize: "13px" }}
+                    />
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
+                      {propCfg?.lightstoneStatus && (
+                        <button
+                          type="button"
+                          onClick={() => handleDisconnectPropertyProvider("LIGHTSTONE")}
+                          style={{ padding: "8px 12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "8px", color: "#f87171", fontSize: "12px", cursor: "pointer" }}
+                        >
+                          Disconnect
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={propSaving === "LIGHTSTONE"}
+                        style={{ padding: "8px 16px", background: "#3b82f6", border: "none", borderRadius: "8px", color: "#ffffff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
+                      >
+                        {propSaving === "LIGHTSTONE" ? "Saving..." : "Save Lightstone"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Add AI Provider Modal with All Providers & Models Dropdown */}
       {showAddModal && isAuthenticated && (
@@ -1308,7 +1499,6 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            {/* Error Banner inside Modal if submission failed */}
             {modalError && (
               <div
                 style={{
@@ -1366,7 +1556,6 @@ export default function SettingsPage() {
                         <span style={{ fontWeight: "800", color: isSelected ? preset.color : "#f8fafc" }}>{preset.label}</span>
                       </div>
                       
-                      {/* Pricing Tag */}
                       <span
                         style={{
                           fontSize: "10px",
@@ -1389,7 +1578,6 @@ export default function SettingsPage() {
             </div>
 
             <form onSubmit={handleAddConfig} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Pricing & Provider details callout */}
               <div
                 style={{
                   padding: "12px 16px",
@@ -1410,7 +1598,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Step 2: Model Selection Dropdown with Full Version List */}
+              {/* Step 2: Model Selection Dropdown */}
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
                   <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1" }}>
@@ -1469,7 +1657,7 @@ export default function SettingsPage() {
                 ) : (
                   <input
                     type="text"
-                    placeholder="e.g. gemini-3.7-ultra, claude-opus-4-8, gpt-5.6-omni, qwen-3-max, glm-4-plus, kimi-k3"
+                    placeholder="e.g. gemini-3.7-ultra, claude-opus-4-8, gpt-5.6-omni, qwen-3-max"
                     value={form.modelName}
                     onChange={(e) => setForm({ ...form, modelName: e.target.value })}
                     style={{
@@ -1488,7 +1676,7 @@ export default function SettingsPage() {
                   />
                 )}
 
-                {/* 1-Click Quick Chips below dropdown */}
+                {/* 1-Click Quick Chips */}
                 {currentPreset.models.length > 0 && (
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                     <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>Popular:</span>
@@ -1591,7 +1779,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Base URL (if custom / proxy / azure / local) */}
+              {/* Base URL */}
               {(form.provider === "CUSTOM" || form.provider === "AZURE_OPENAI" || currentPreset.defaultBaseUrl) && (
                 <div>
                   <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
@@ -1753,7 +1941,6 @@ export default function SettingsPage() {
             )}
 
             <form onSubmit={handleUpdateConfig} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Provider Info Banner */}
               <div
                 style={{
                   padding: "12px 16px",
@@ -1798,7 +1985,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Key Label / Description */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
                   Key Label / Description
@@ -1822,7 +2008,6 @@ export default function SettingsPage() {
                 />
               </div>
 
-              {/* Model Selection Dropdown */}
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
                   <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1" }}>
@@ -1901,7 +2086,6 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              {/* API Key */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
                   API Key (Encrypted Vault)
@@ -1929,7 +2113,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Base URL (for custom/proxies/azure/ollama) */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "700", color: "#cbd5e1", display: "block", marginBottom: "6px" }}>
                   Base URL / API Endpoint (Optional)
@@ -1953,7 +2136,6 @@ export default function SettingsPage() {
                 />
               </div>
 
-              {/* Modal Buttons */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px", borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "16px" }}>
                 <button
                   type="button"
@@ -2040,7 +2222,22 @@ export default function SettingsPage() {
           </button>
         </div>
       )}
-      </div>
     </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="page-body" style={{ textAlign: "center", padding: "80px 0" }}>
+          <div style={{ fontSize: "14px", color: "#94a3b8", fontFamily: "var(--font-mono, monospace)" }} className="animate-pulse">
+            Loading settings…
+          </div>
+        </div>
+      }
+    >
+      <SettingsContent />
+    </Suspense>
   );
 }

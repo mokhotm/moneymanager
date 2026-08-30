@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import ChatWidget from "@/components/ChatWidget";
@@ -20,7 +21,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-layout">
-      <Sidebar />
+      <Suspense fallback={<aside className="sidebar" style={{ width: "260px" }} />}>
+        <Sidebar />
+      </Suspense>
       <main className="main-content">{children}</main>
       <ChatWidget />
     </div>
