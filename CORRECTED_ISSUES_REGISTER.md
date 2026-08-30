@@ -99,3 +99,17 @@ This document records all software, data parsing, geocoding, and deployment issu
   * Added in-memory reconciliation cache with 60-second TTL and automatic invalidation on budget mutations (`POST`, `PUT`, `DELETE`).
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-008` & `FIX-009`).
 
+---
+
+### FIX-010: Cash Wallet Salary Cycle & Multi-Factor Filtering
+* **Date Identified**: 2026-08-30
+* **Symptom**: Physical Cash Wallet lacked Salary Pay Cycle (15th-to-15th), category, and live search filtering, showing all-time aggregated numbers without ability to view current salary cycle cash allocations.
+* **Root Cause**:
+  * `/api/cash-wallet` GET route had no query parameter support for `?month=`, `?cycle=`, `?category=`, or `?search=`.
+  * Cash Wallet frontend UI lacked salary cycle dropdowns, category chips, search inputs, and period-scoped stat cards.
+* **Exact Resolution**:
+  * Enhanced `/api/cash-wallet` GET handler with `resolveSalaryCycleRange` bounding, returning `availableCycles`, `activeCycle`, and `periodMetrics` (`inflowsInPeriod`, `outflowsInPeriod`, `domesticInPeriod`, `gardenInPeriod`).
+  * Built Apple-caliber Filter HUD toolbar on `/cash-wallet` with 15th-to-15th salary cycle picker, calendar month toggle, quick flow type tabs, category chips with counts, and live debounced search.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-010`) & `tests/cashWalletSplit.test.ts`.
+
+

@@ -30,7 +30,19 @@ import {
   X,
   ChevronRight,
   ArrowRight,
+  Search,
+  Filter,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
+
+interface AvailableCycle {
+  key: string;
+  label: string;
+  rangeFormatted: string;
+  startDate: string;
+  endDate: string;
+}
 
 interface UnallocatedBatch {
   id: string;
@@ -55,13 +67,31 @@ interface CashWalletData {
   totalUnallocatedCash?: number;
   unallocatedBatches?: UnallocatedBatch[];
   lastReconciledAt: string | null;
+  availableCycles?: AvailableCycle[];
+  activeCycle?: {
+    key: string;
+    mode: string;
+    formattedRange: string;
+    startDate?: string;
+    endDate?: string;
+  } | null;
+  periodMetrics?: {
+    totalInflow: number;
+    totalOutflow: number;
+    domesticSpend: number;
+    gardenSpend: number;
+    netChange: number;
+  };
   recentFlows: Array<{
     id: string;
     parentFlowId?: string | null;
     date: string;
     type: string;
+    category?: string;
     description: string;
     amount: number;
+    rawAmount?: number;
+    isIncoming?: boolean;
   }>;
 }
 
@@ -94,7 +124,11 @@ const PRESET_SPLIT_CHIPS = [
 export default function CashWalletPage() {
   const [wallet, setWallet] = useState<CashWalletData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<"ALL" | "INFLOW" | "DOMESTIC_GARDEN" | "SPEND">("ALL");
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [cycleMode, setCycleMode] = useState<"PAY_CYCLE" | "CALENDAR_MONTH">("PAY_CYCLE");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [filterType, setFilterType] = useState<"ALL" | "UNALLOCATED" | "DOMESTIC_GARDEN" | "SPEND" | "INFLOW">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Form states
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -110,9 +144,13 @@ export default function CashWalletPage() {
   const [splitRows, setSplitRows] = useState<SplitItemForm[]>([]);
   const [splitSubmitting, setSplitSubmitting] = useState(false);
 
-  const loadWallet = () => {
+  const loadWallet = (month = selectedMonth, mode = cycleMode) => {
     setLoading(true);
-    fetch("/api/cash-wallet")
+    const params = new URLSearchParams();
+    if (month && month !== "ALL") params.set("month", month);
+    params.set("mode", mode);
+
+    fetch(`/api/cash-wallet?${params.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         setWallet(data);
@@ -125,8 +163,8 @@ export default function CashWalletPage() {
   };
 
   useEffect(() => {
-    loadWallet();
-  }, []);
+    loadWallet(selectedMonth, cycleMode);
+  }, [selectedMonth, cycleMode]);
 
   const openSplitModal = (batch: UnallocatedBatch) => {
     setSelectedBatchForSplit(batch);
@@ -350,7 +388,16 @@ export default function CashWalletPage() {
 
   // Compute metrics
   const metrics = useMemo(() => {
-    if (!wallet) return { totalInflow: 0, totalOutflow: 0, domesticSpend: 0, gardenSpend: 0 };
+    if (!wallet) return { totalInflow: 0, totalOutflow: 0, domesticSpend: 0, gardenSpend: 0, unallocatedCount: 0 };
+    if (wallet.periodMetrics && selectedMonth !== "ALL") {
+      return {
+        totalInflow: wallet.periodMetrics.totalInflow,
+        totalOutflow: wallet.periodMetrics.totalOutflow,
+        domesticSpend: wallet.periodMetrics.domesticSpend,
+        gardenSpend: wallet.periodMetrics.gardenSpend,
+        unallocatedCount: (wallet.unallocatedBatches || []).length,
+      };
+    }
     let totalInflow = 0;
     let totalOutflow = 0;
     let domesticSpend = 0;
@@ -367,19 +414,45 @@ export default function CashWalletPage() {
       }
     }
 
-    return { totalInflow, totalOutflow, domesticSpend, gardenSpend };
-  }, [wallet]);
+    return {
+      totalInflow,
+      totalOutflow,
+      domesticSpend,
+      gardenSpend,
+      unallocatedCount: (wallet.unallocatedBatches || []).length,
+    };
+  }, [wallet, selectedMonth]);
 
   // Filtered flows
   const filteredFlows = useMemo(() => {
     if (!wallet) return [];
     return wallet.recentFlows.filter((f) => {
-      if (filterType === "INFLOW") return f.amount > 0;
-      if (filterType === "DOMESTIC_GARDEN") return f.description.includes("Domestic") || f.description.includes("Garden");
-      if (filterType === "SPEND") return f.amount < 0;
+      // 1. Flow Type Tab Filter
+      if (filterType === "INFLOW" && f.amount <= 0) return false;
+      if (filterType === "SPEND" && f.amount >= 0) return false;
+      if (filterType === "DOMESTIC_GARDEN" && !(f.description.includes("Domestic") || f.description.includes("Garden"))) return false;
+
+      // 2. Specific Category Filter
+      if (selectedCategory !== "ALL") {
+        const matchesCat = f.category === selectedCategory || f.description.toLowerCase().includes(selectedCategory.toLowerCase());
+        if (!matchesCat) return false;
+      }
+
+      // 3. Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesDesc = f.description.toLowerCase().includes(q);
+        const matchesCategory = (f.category || "").toLowerCase().includes(q);
+        const matchesDate = f.date.includes(q);
+        const matchesAmount = Math.abs(f.amount).toString().includes(q);
+        if (!matchesDesc && !matchesCategory && !matchesDate && !matchesAmount) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [wallet, filterType]);
+  }, [wallet, filterType, selectedCategory, searchQuery]);
 
   return (
     <>
@@ -399,7 +472,7 @@ export default function CashWalletPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button
-            onClick={loadWallet}
+            onClick={() => loadWallet()}
             className="btn btn-secondary"
             style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px" }}
           >
@@ -441,6 +514,215 @@ export default function CashWalletPage() {
           </div>
         ) : wallet ? (
           <>
+            {/* 🎛️ APPLE-GRADE CASH WALLET FILTER HUD TOOLBAR */}
+            <div
+              style={{
+                background: "rgba(15, 23, 42, 0.75)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "18px",
+                padding: "18px 22px",
+                marginBottom: "24px",
+                backdropFilter: "blur(20px)",
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              {/* Row 1: Pay Cycle Selector, Cycle Mode Toggle, and Reset */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  {/* Mode Pills */}
+                  <div style={{ display: "flex", background: "rgba(7, 11, 20, 0.7)", padding: "3px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                    <button
+                      onClick={() => setCycleMode("PAY_CYCLE")}
+                      style={{
+                        padding: "5px 12px",
+                        borderRadius: "7px",
+                        border: "none",
+                        background: cycleMode === "PAY_CYCLE" ? "rgba(245, 158, 11, 0.2)" : "transparent",
+                        color: cycleMode === "PAY_CYCLE" ? "#fbbf24" : "#94a3b8",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <Calendar size={13} /> Pay Cycle (15th–15th)
+                    </button>
+                    <button
+                      onClick={() => setCycleMode("CALENDAR_MONTH")}
+                      style={{
+                        padding: "5px 12px",
+                        borderRadius: "7px",
+                        border: "none",
+                        background: cycleMode === "CALENDAR_MONTH" ? "rgba(56, 189, 248, 0.2)" : "transparent",
+                        color: cycleMode === "CALENDAR_MONTH" ? "#38bdf8" : "#94a3b8",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <SlidersHorizontal size={13} /> Calendar Month
+                    </button>
+                  </div>
+
+                  {/* Salary Cycle Dropdown */}
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      style={{
+                        appearance: "none",
+                        background: "rgba(7, 11, 20, 0.8)",
+                        border: "1px solid rgba(245, 158, 11, 0.3)",
+                        borderRadius: "10px",
+                        padding: "7px 32px 7px 14px",
+                        color: "#f8fafc",
+                        fontSize: "13px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        outline: "none",
+                      }}
+                    >
+                      <option value="ALL">📁 All Pay Cycles / Cumulative Cash</option>
+                      {(wallet.availableCycles || []).map((c) => (
+                        <option key={c.key} value={c.key}>
+                          📅 {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Search & Reset */}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {/* Live Search Input */}
+                  <div style={{ position: "relative", minWidth: "220px" }}>
+                    <Search size={14} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+                    <input
+                      type="text"
+                      placeholder="Search cash expenses, recipients..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={{
+                        width: "100%",
+                        background: "rgba(7, 11, 20, 0.7)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "10px",
+                        padding: "7px 30px 7px 32px",
+                        color: "#f8fafc",
+                        fontSize: "12px",
+                        outline: "none",
+                      }}
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        style={{
+                          position: "absolute",
+                          right: "8px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "transparent",
+                          border: "none",
+                          color: "#94a3b8",
+                          cursor: "pointer",
+                          padding: "2px",
+                        }}
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {(selectedMonth !== "ALL" || selectedCategory !== "ALL" || filterType !== "ALL" || searchQuery) && (
+                    <button
+                      onClick={() => {
+                        setSelectedMonth("ALL");
+                        setSelectedCategory("ALL");
+                        setFilterType("ALL");
+                        setSearchQuery("");
+                      }}
+                      style={{
+                        padding: "7px 12px",
+                        borderRadius: "9px",
+                        background: "rgba(239, 68, 68, 0.15)",
+                        border: "1px solid rgba(239, 68, 68, 0.3)",
+                        color: "#f87171",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <RotateCcw size={12} /> Reset Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 2: Category Filter Chips */}
+              <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "2px" }}>
+                <button
+                  onClick={() => setSelectedCategory("ALL")}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: `1px solid ${selectedCategory === "ALL" ? "#f59e0b" : "rgba(255, 255, 255, 0.08)"}`,
+                    background: selectedCategory === "ALL" ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.03)",
+                    color: selectedCategory === "ALL" ? "#fbbf24" : "#94a3b8",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <Filter size={12} /> All Categories ({wallet.recentFlows?.length || 0})
+                </button>
+
+                {CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const count = (wallet.recentFlows || []).filter((f) => f.category === cat.id || f.description.includes(cat.id)).length;
+                  const isSelected = selectedCategory === cat.id;
+
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(isSelected ? "ALL" : cat.id)}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        border: `1px solid ${isSelected ? cat.color : "rgba(255, 255, 255, 0.08)"}`,
+                        background: isSelected ? `${cat.color}25` : "rgba(255, 255, 255, 0.03)",
+                        color: isSelected ? "#f8fafc" : "#94a3b8",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <Icon size={13} style={{ color: cat.color }} />
+                      {cat.label} {count > 0 ? `(${count})` : ""}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Top 4 Core Stat Cards Grid */}
             <div className="stat-grid mb-6">
               {/* Card 1: Tracked Cash Balance */}
@@ -460,13 +742,13 @@ export default function CashWalletPage() {
               {/* Card 2: Total ATM Cash Inflows */}
               <div className="stat-card info">
                 <div className="stat-label flex items-center justify-between" style={{ color: "#60a5fa" }}>
-                  <span>Total ATM Inflows</span>
+                  <span>{selectedMonth === "ALL" ? "Total ATM Inflows" : "Cycle ATM Inflows"}</span>
                   <TrendingUp size={16} />
                 </div>
                 <div className="stat-value blue" style={{ fontSize: "28px", margin: "8px 0 4px 0" }}>
                   +{formatZAR(metrics.totalInflow)}
                 </div>
-                <div className="stat-sub">From Standard Bank Cheque Autobank</div>
+                <div className="stat-sub">{wallet.activeCycle?.formattedRange || "From Standard Bank Autobank"}</div>
               </div>
 
               {/* Card 3: Domestic & Garden Services */}
@@ -484,13 +766,13 @@ export default function CashWalletPage() {
               {/* Card 4: Total Allocated Cash Spend */}
               <div className="stat-card warning">
                 <div className="stat-label flex items-center justify-between" style={{ color: "#f87171" }}>
-                  <span>Total Cash Allocated</span>
+                  <span>{selectedMonth === "ALL" ? "Total Cash Allocated" : "Cycle Cash Allocated"}</span>
                   <TrendingDown size={16} />
                 </div>
                 <div className="stat-value red" style={{ fontSize: "28px", margin: "8px 0 4px 0" }}>
                   -{formatZAR(metrics.totalOutflow)}
                 </div>
-                <div className="stat-sub">100% accounted into budget categories</div>
+                <div className="stat-sub">{selectedMonth === "ALL" ? "100% accounted into budget categories" : `In ${wallet.activeCycle?.formattedRange || "cycle"}`}</div>
               </div>
             </div>
 

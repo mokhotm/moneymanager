@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/session";
+import { resolveSalaryCycleRange } from "@/lib/payrollCalendar";
 import {
   AccountType,
   FlowType,
@@ -9,12 +10,35 @@ import {
   FlowStatus,
 } from "@prisma/client";
 
+const KNOWN_MONTH_KEYS = [
+  "2026-08",
+  "2026-07",
+  "2026-06",
+  "2026-05",
+  "2026-04",
+  "2026-03",
+  "2026-02",
+  "2026-01",
+  "2025-12",
+  "2025-11",
+  "2025-10",
+  "2025-09",
+  "2025-08",
+];
+
 export async function GET(req: NextRequest) {
   try {
     const userId = await getEffectiveUserId(req);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const { searchParams } = new URL(req.url);
+    const requestedMonth = searchParams.get("month") || searchParams.get("cycle") || "ALL";
+    const cycleMode = searchParams.get("mode") || "PAY_CYCLE";
+    const requestedCategory = searchParams.get("category") || "ALL";
+    const requestedStatus = searchParams.get("status") || "ALL";
+    const search = (searchParams.get("search") || "").trim().toLowerCase();
 
     let cashAccount = await prisma.account.findFirst({
       where: { userId, type: AccountType.CASH_WALLET },
@@ -25,13 +49,42 @@ export async function GET(req: NextRequest) {
         cashWalletAccountId: "",
         accountName: "Physical Cash Wallet",
         trackedBalance: 0,
+        totalUnallocatedCash: 0,
         lastReconciledAt: null,
+        availableCycles: [],
+        activeCycle: null,
+        periodMetrics: {
+          totalInflow: 0,
+          totalOutflow: 0,
+          domesticSpend: 0,
+          gardenSpend: 0,
+          netChange: 0,
+        },
+        unallocatedBatches: [],
         recentFlows: [],
       });
     }
 
+    // Generate list of available salary cycles with rich metadata
+    const availableCycles = KNOWN_MONTH_KEYS.map((key) => {
+      const bounds = resolveSalaryCycleRange(key);
+      return {
+        key,
+        label: bounds.dropdownLabel,
+        rangeFormatted: bounds.formattedRange,
+        startDate: bounds.startDate.toISOString(),
+        endDate: bounds.endDate.toISOString(),
+      };
+    });
+
+    // Resolve active cycle bounds if not "ALL"
+    let cycleBounds: ReturnType<typeof resolveSalaryCycleRange> | null = null;
+    if (requestedMonth !== "ALL") {
+      cycleBounds = resolveSalaryCycleRange(requestedMonth);
+    }
+
     // Fetch live money flows for this cash wallet
-    let flows = await prisma.moneyFlow.findMany({
+    let allFlows = await prisma.moneyFlow.findMany({
       where: {
         OR: [
           { destinationRef: cashAccount.id },
@@ -44,8 +97,20 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    // Calculate all-time cumulative tracked balance
+    let allTimeTrackedBalance = 0;
+    for (const f of allFlows) {
+      const isIncoming = f.destinationRef === cashAccount.id;
+      const amt = Number(f.amount);
+      if (isIncoming) {
+        allTimeTrackedBalance += amt;
+      } else {
+        allTimeTrackedBalance -= amt;
+      }
+    }
+
     // Identify unallocated or partially allocated ATM withdrawal parent batches
-    const unallocatedBatches = flows
+    const allUnallocatedBatches = allFlows
       .filter(
         (f) =>
           f.flowType === FlowType.CASH_WITHDRAWAL &&
@@ -55,7 +120,8 @@ export async function GET(req: NextRequest) {
       .map((f) => ({
         id: f.id,
         date: f.createdAt.toISOString().split("T")[0],
-        sourceAccountName: "Linked Bank Account",
+        createdAt: f.createdAt,
+        sourceAccountName: "Standard Bank Autobank ATM",
         originalAmount: Number(f.amount),
         unallocatedAmount: Number(f.currentAmount),
         allocatedAmount: Number(f.amount) - Number(f.currentAmount),
@@ -68,32 +134,76 @@ export async function GET(req: NextRequest) {
         })),
       }));
 
-    // Compute live balance: Sum of inflows - Sum of outflows
-    let trackedBalance = 0;
-    const recentFlows = flows.map((f) => {
+    // Filter flows for the active cycle / date range
+    let scopedFlows = allFlows;
+    if (cycleBounds) {
+      const start = cycleBounds.startDate;
+      const end = cycleBounds.endDate;
+      scopedFlows = allFlows.filter((f) => f.createdAt >= start && f.createdAt <= end);
+    }
+
+    // Calculate period-scoped metrics
+    let periodInflow = 0;
+    let periodOutflow = 0;
+    let periodDomestic = 0;
+    let periodGarden = 0;
+
+    for (const f of scopedFlows) {
       const isIncoming = f.destinationRef === cashAccount.id;
       const amt = Number(f.amount);
+      const desc = (f.destinationRef || "").toLowerCase();
+
       if (isIncoming) {
-        trackedBalance += amt;
+        periodInflow += amt;
       } else {
-        trackedBalance -= amt;
+        periodOutflow += amt;
+        if (desc.includes("domestic")) periodDomestic += amt;
+        if (desc.includes("garden")) periodGarden += amt;
       }
+    }
+
+    // Format scoped flows for response
+    const formattedFlows = scopedFlows.map((f) => {
+      const isIncoming = f.destinationRef === cashAccount.id;
+      const amt = Number(f.amount);
+      const rawDesc = f.destinationRef || "";
+
+      let category = "Discretionary";
+      if (rawDesc.includes("Domestic")) category = "Domestic Worker";
+      else if (rawDesc.includes("Garden")) category = "Garden Services";
+      else if (rawDesc.includes("Grocer") || rawDesc.includes("Food") || rawDesc.includes("Fresh")) category = "Groceries";
+      else if (rawDesc.includes("Transport") || rawDesc.includes("Taxi") || rawDesc.includes("Fuel")) category = "Transport";
+      else if (rawDesc.includes("Dining") || rawDesc.includes("Coffee") || rawDesc.includes("Café")) category = "Dining";
+      else if (rawDesc.includes("Parking") || rawDesc.includes("Tip")) category = "Parking";
+      else if (isIncoming) category = "ATM Withdrawal";
 
       return {
         id: f.id,
         parentFlowId: f.parentFlowId,
         date: f.createdAt.toISOString().split("T")[0],
+        createdAt: f.createdAt,
         type: f.flowType,
-        description: f.destinationRef?.startsWith("Domestic") || f.destinationRef?.startsWith("Garden")
-          ? f.destinationRef
+        category,
+        description: rawDesc.startsWith("Domestic") || rawDesc.startsWith("Garden")
+          ? rawDesc
           : isIncoming
           ? "ATM Cash Withdrawal"
-          : f.destinationRef || "Cash Expense",
+          : rawDesc || "Cash Expense",
         amount: isIncoming ? amt : -amt,
+        rawAmount: amt,
+        isIncoming,
       };
     });
 
-    const totalUnallocatedCash = unallocatedBatches.reduce(
+    // Filter unallocated batches by cycle if active
+    let unallocatedBatches = allUnallocatedBatches;
+    if (cycleBounds) {
+      const start = cycleBounds.startDate;
+      const end = cycleBounds.endDate;
+      unallocatedBatches = allUnallocatedBatches.filter((b) => b.createdAt >= start && b.createdAt <= end);
+    }
+
+    const totalUnallocatedCash = allUnallocatedBatches.reduce(
       (sum, b) => sum + b.unallocatedAmount,
       0
     );
@@ -101,11 +211,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       cashWalletAccountId: cashAccount.id,
       accountName: cashAccount.name,
-      trackedBalance: Math.max(0, trackedBalance),
+      trackedBalance: Math.max(0, allTimeTrackedBalance),
       totalUnallocatedCash,
-      unallocatedBatches,
       lastReconciledAt: cashAccount.updatedAt,
-      recentFlows,
+      availableCycles,
+      activeCycle: cycleBounds ? {
+        key: requestedMonth,
+        mode: cycleMode,
+        formattedRange: cycleBounds.formattedRange,
+        startDate: cycleBounds.startDate.toISOString(),
+        endDate: cycleBounds.endDate.toISOString(),
+      } : {
+        key: "ALL",
+        mode: "ALL_TIME",
+        formattedRange: "Cumulative All Time",
+      },
+      periodMetrics: {
+        totalInflow: periodInflow,
+        totalOutflow: periodOutflow,
+        domesticSpend: periodDomestic,
+        gardenSpend: periodGarden,
+        netChange: periodInflow - periodOutflow,
+      },
+      unallocatedBatches,
+      recentFlows: formattedFlows,
     });
   } catch (error: any) {
     console.error("Cash wallet GET error:", error);

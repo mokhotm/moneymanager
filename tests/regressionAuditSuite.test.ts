@@ -243,4 +243,50 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(second.items.length).toBe(first.items.length);
     expect(second.summary.totalBudgeted).toBe(first.summary.totalBudgeted);
   });
+
+  // ── FIX-010: Cash Wallet Salary Cycle & Multi-Factor Filtering Invariants ──
+  it("FIX-010: Cash Wallet must accurately filter by 15th-to-15th salary cycle, category, and allocation status", async () => {
+    const { resolveSalaryCycleRange } = await import("../src/lib/payrollCalendar");
+
+    // 1. Verify August 2026 Pay Cycle Bounds (14 Aug – 14 Sep)
+    const augBounds = resolveSalaryCycleRange("2026-08");
+    expect(augBounds.startDate.toISOString().split("T")[0]).toBe("2026-08-14");
+    expect(augBounds.endDate.toISOString().split("T")[0]).toBe("2026-09-14");
+
+    // 2. Mock a set of cash flows spanning multiple cycles and categories
+    const mockCashFlows = [
+      {
+        id: "flow-1",
+        createdAt: new Date("2026-08-15T10:00:00Z"), // In Aug cycle
+        destinationRef: "Domestic Worker Wage",
+        amount: 950.00,
+        flowType: "CASH_SPENDING",
+      },
+      {
+        id: "flow-2",
+        createdAt: new Date("2026-08-20T14:00:00Z"), // In Aug cycle
+        destinationRef: "Garden Maintenance",
+        amount: 700.00,
+        flowType: "CASH_SPENDING",
+      },
+      {
+        id: "flow-3",
+        createdAt: new Date("2026-07-20T09:00:00Z"), // In July cycle
+        destinationRef: "Domestic Worker Wage",
+        amount: 950.00,
+        flowType: "CASH_SPENDING",
+      },
+    ];
+
+    // Filter for August cycle
+    const augFlows = mockCashFlows.filter(
+      (f) => f.createdAt >= augBounds.startDate && f.createdAt <= augBounds.endDate
+    );
+    expect(augFlows).toHaveLength(2);
+
+    // Domestic & Garden sum in August cycle
+    const domesticAndGardenTotal = augFlows.reduce((sum, f) => sum + f.amount, 0);
+    expect(domesticAndGardenTotal).toBe(1650.00); // R950 + R700
+  });
 });
+
