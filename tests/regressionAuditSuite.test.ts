@@ -288,5 +288,31 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     const domesticAndGardenTotal = augFlows.reduce((sum, f) => sum + f.amount, 0);
     expect(domesticAndGardenTotal).toBe(1650.00); // R950 + R700
   });
+
+  // ── FIX-011: 365-Day Cashflow Forecast Single-Month Budget Scoping Invariant ─
+  it("FIX-011: Cashflow Forecast must isolate single-month budget items and produce positive 365-day trajectory", async () => {
+    const { generate365DayCashflowForecast } = await import("../src/engine/cashflowForecast");
+
+    // Verified single-month profile for August 2026
+    const result = generate365DayCashflowForecast(
+      {
+        startingBalance: 46135.15,
+        monthlyNetIncome: 74438.26,
+        incomePayDay: 15,
+        recurringObligations: 11348.81,
+        debtMonthlyPayment: 42794.29,
+        livingDiscretionaryMonthly: 7700.00,
+        minimumSafetyBuffer: 30000.00,
+      },
+      new Date("2026-08-30T00:00:00Z")
+    );
+
+    expect(result.startingBalance).toBe(46135.15);
+    expect(result.minimumProjectedBalance).toBeGreaterThan(0); // Must NOT go negative
+    expect(result.deficitDaysCount).toBe(0); // 0 days in deficit
+    expect(result.projected12MonthNetSurplus).toBeGreaterThan(100000); // > R100k positive annual surplus
+    expect(result.dailyPoints[364].baselineBalance).toBeGreaterThan(150000); // Year-end liquid balance > R150k
+  });
 });
+
 

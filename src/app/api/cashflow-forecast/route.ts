@@ -43,10 +43,25 @@ export async function GET(req: NextRequest) {
       0
     );
 
-    // Aggregate active budget items
-    const budgetItems = await prisma.budgetLineItem.findMany({
-      where: { userId },
+    // Aggregate active single-month budget items (default to active August 2026 cycle)
+    const targetMonth = searchParams.get("month") || "2026-08";
+
+    let budgetItems = await prisma.budgetLineItem.findMany({
+      where: { userId, month: targetMonth },
     });
+
+    // If no items exist for the target month, fallback to the latest active month in database
+    if (budgetItems.length === 0) {
+      const latestItem = await prisma.budgetLineItem.findFirst({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+      });
+      if (latestItem?.month) {
+        budgetItems = await prisma.budgetLineItem.findMany({
+          where: { userId, month: latestItem.month },
+        });
+      }
+    }
 
     const fixedObligations = budgetItems
       .filter((b) => b.category === "FIXED_HOUSEHOLD_OBLIGATIONS")

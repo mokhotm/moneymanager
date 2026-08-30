@@ -48,6 +48,7 @@ export interface CashflowForecastResult {
   deficitDaysCount: number;
   safetyBufferBreachCount: number;
   averageMonthlyBurn: number;
+  projected12MonthNetSurplus: number;
   runwayMonths: number;
   dailyPoints: DailyBalancePoint[];
   stressTestSummary: {
@@ -180,6 +181,7 @@ export function generate365DayCashflowForecast(
 
   const monthlyTotalBurn = round2(recurringObligations + debtPayment + livingSpend);
   const runwayMonths = monthlyTotalBurn > 0 ? round2(startingBalance / monthlyTotalBurn) : 12;
+  const projected12MonthNetSurplus = round2((monthlyIncome * 12) - (monthlyTotalBurn * 12));
 
   return {
     startDate: startDate.toISOString().split("T")[0],
@@ -193,6 +195,7 @@ export function generate365DayCashflowForecast(
     deficitDaysCount,
     safetyBufferBreachCount: safetyBreachCount,
     averageMonthlyBurn: monthlyTotalBurn,
+    projected12MonthNetSurplus,
     runwayMonths,
     dailyPoints,
     stressTestSummary: {

@@ -112,4 +112,18 @@ This document records all software, data parsing, geocoding, and deployment issu
   * Built Apple-caliber Filter HUD toolbar on `/cash-wallet` with 15th-to-15th salary cycle picker, calendar month toggle, quick flow type tabs, category chips with counts, and live debounced search.
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-010`) & `tests/cashWalletSplit.test.ts`.
 
+---
+
+### FIX-011: 365-Day Neural Cashflow Forecast Single-Month Budget Scoping
+* **Date Identified**: 2026-08-30
+* **Symptom**: The 365-Day Daily Balance Curve in the Forecast page plunged deeply negative (to -R512,577.42) despite positive monthly net cashflow (+R12,595.16/mo).
+* **Root Cause**:
+  * In `/api/cashflow-forecast`, `prisma.budgetLineItem.findMany({ where: { userId } })` queried without a `month` constraint, summing all 100 budget line items across 4 historical months (`2026-05`, `2026-06`, `2026-07`, `2026-08`).
+  * This quadrupled monthly living expenses (from R7,700 to R30,800) and fixed obligations (from R11,348 to R45,395), simulating an artificial monthly burn of R118,989 against R74,438 salary.
+* **Exact Resolution**:
+  * Scoped `/api/cashflow-forecast` budget aggregation to `where: { userId, month: targetMonth }` (defaulting to active cycle `2026-08`), correctly modeling true monthly outflow of R61,843.10.
+  * Added `projected12MonthNetSurplus` computation to `generate365DayCashflowForecast`.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-011`) & `tests/cashflowForecast.test.ts`.
+
+
 
