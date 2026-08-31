@@ -63,9 +63,38 @@ export async function GET(req: NextRequest) {
     // Reconcile budget line items against cleared statement transactions
     const reconciliation = await reconcileBudgetItemsForMonth(userId, month, items);
 
+    // Enrich items with linked goal metadata
+    const userGoals = await prisma.goal.findMany({ where: { userId } });
+    const goalMap = new Map(userGoals.map((g) => [`goal:${g.id}`, g]));
+
+    const enrichedItems = reconciliation.items.map((item) => {
+      if (item.sourceRef && goalMap.has(item.sourceRef)) {
+        const goal = goalMap.get(item.sourceRef)!;
+        const currentAmt = Number(goal.currentAmount || 0);
+        const targetAmt = goal.targetAmount ? Number(goal.targetAmount) : 0;
+        const progressPct = targetAmt > 0 ? Math.min(100, Math.round((currentAmt / targetAmt) * 100)) : 100;
+        return {
+          ...item,
+          linkedGoal: {
+            id: goal.id,
+            name: goal.name,
+            type: goal.type,
+            currentAmount: currentAmt,
+            targetAmount: targetAmt,
+            progressPct,
+            linkToBudget: goal.linkToBudget,
+            autoAllocateSurplus: goal.autoAllocateSurplus,
+            aiFeasibilityScore: goal.aiFeasibilityScore,
+            aiShouldAllocate: goal.aiShouldAllocate,
+          },
+        };
+      }
+      return item;
+    });
+
     return NextResponse.json({
       month,
-      items: reconciliation.items,
+      items: enrichedItems,
       summary: reconciliation.summary,
     });
   } catch (error) {

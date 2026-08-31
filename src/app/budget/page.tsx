@@ -102,6 +102,18 @@ interface LineItem {
   sourceRef: string | null;
   isComputed: boolean;
   execution?: BudgetItemExecution;
+  linkedGoal?: {
+    id: string;
+    name: string;
+    type: string;
+    currentAmount: number;
+    targetAmount: number;
+    progressPct: number;
+    linkToBudget: boolean;
+    autoAllocateSurplus: boolean;
+    aiFeasibilityScore: number | null;
+    aiShouldAllocate: boolean | null;
+  };
 }
 
 interface BudgetData {
@@ -900,12 +912,42 @@ export default function BudgetPage() {
                                   {item.sourceRef}
                                 </span>
                               )}
+
+                              {item.linkedGoal && (
+                                <a
+                                  href="/goals"
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "2px 8px",
+                                    borderRadius: "99px",
+                                    background: "rgba(16, 185, 129, 0.12)",
+                                    border: "1px solid rgba(16, 185, 129, 0.3)",
+                                    color: "#34d399",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    textDecoration: "none",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  <PiggyBank size={11} />
+                                  <span>Goal: {item.linkedGoal.progressPct}% Saved</span>
+                                </a>
+                              )}
                             </div>
 
                             {/* Statement Audit Citation Trace */}
                             {item.execution?.statementDocName && (
                               <div style={{ fontSize: "11px", color: isBounced ? "#f87171" : "#10b981", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px", fontFamily: "var(--font-mono)" }}>
                                 <FileText size={12} /> {item.execution.statementDocName} · {item.execution.executionRef}
+                              </div>
+                            )}
+
+                            {item.linkedGoal && (
+                              <div style={{ margin: "6px 0 2px 0", maxWidth: "260px" }}>
+                                <div style={{ height: "4px", borderRadius: "99px", background: "rgba(255, 255, 255, 0.08)", overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${item.linkedGoal.progressPct}%`, background: "#10b981", borderRadius: "99px" }} />
+                                </div>
                               </div>
                             )}
 

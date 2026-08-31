@@ -323,6 +323,33 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     const bankingTabModule = await import("../src/components/BankingTab");
     expect(bankingTabModule.BankingTab).toBeDefined();
   });
+
+  // ── FIX-013: Goal-to-Budget Dynamic Surplus Allocation & AI Feasibility Invariants ──
+  it("FIX-013: Goal-to-Budget Sync and AI Feasibility engine must calculate surplus and evaluate goal feasibility", async () => {
+    const { calculateAvailableCashflowSurplus } = await import("../src/lib/goalBudgetSync");
+    expect(calculateAvailableCashflowSurplus).toBeDefined();
+
+    const { prisma } = await import("../src/lib/prisma");
+    const primaryUser = await prisma.user.findFirst({ where: { username: "mokhotm" } });
+    const targetUserId = primaryUser?.id || "default-user";
+
+    // Verify surplus math
+    const surplus = await calculateAvailableCashflowSurplus(targetUserId, "2026-08");
+    expect(surplus).toBeDefined();
+    expect(surplus.monthlyIncome).toBeGreaterThan(0);
+    expect(surplus.activeCycleMonth).toBe("2026-08");
+    expect(surplus.availableSurplus).toBeGreaterThan(0);
+
+    // Verify AI Feasibility evaluator module & projection math
+    const { evaluateGoalFeasibilityWithAI, projectGoalCompletion } = await import("../src/agents/goalsAgent");
+    expect(evaluateGoalFeasibilityWithAI).toBeDefined();
+    expect(projectGoalCompletion).toBeDefined();
+
+    const proj = projectGoalCompletion("g1", "Emergency Reserve", 25000, 150000, 5000, new Date("2026-08-01"));
+    expect(proj.isAchieved).toBe(false);
+    expect(proj.shortfall).toBe(125000);
+    expect(proj.monthsToTarget).toBe(25);
+  });
 });
 
 

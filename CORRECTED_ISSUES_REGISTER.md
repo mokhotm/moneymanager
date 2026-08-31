@@ -138,6 +138,25 @@ This document records all software, data parsing, geocoding, and deployment issu
   * Updated `src/components/Sidebar.tsx` to group Bank Feeds under System & Settings while keeping `/banking` as a seamless redirect/embed for zero breaking changes.
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-012`) & `tests/stitchOpenBanking.test.ts`.
 
+---
+
+### FIX-013: Dynamic Goal-to-Budget Linking & AI Feasibility Engine
+* **Date Identified**: 2026-08-31
+* **Symptom**: Financial Goals and the Monthly Budget operated as disconnected silos; goals could not dynamically allocate from monthly cashflow surplus, and users lacked an AI feasibility engine to evaluate whether a goal was realistic given high-interest debts and fixed household obligations.
+* **Root Cause**:
+  * `model Goal` had no budget link flags (`linkToBudget`, `autoAllocateSurplus`, `allocatedBudgetAmount`) or AI evaluation metadata.
+  * `BudgetLineItem` records in `GOAL_CONTRIBUTIONS` were manual and not synchronized with active Goal records.
+  * No AI financial advisory agent evaluated goal feasibility against ground-truth income, debt APRs, and monthly surplus.
+* **Exact Resolution**:
+  * Extended `model Goal` in `prisma/schema.prisma` with `linkToBudget`, `autoAllocateSurplus`, `allocatedBudgetAmount`, and AI evaluation fields (`aiFeasibilityScore`, `aiShouldAllocate`, `aiRecommendedAllocation`, `aiEvaluationSummary`, `aiLastEvaluatedAt`).
+  * Built `src/lib/goalBudgetSync.ts` for real-time surplus calculation (`Total Income` − `Fixed Obligations` − `Debt Obligations`) and priority-based waterfall allocation into `BudgetLineItem` (`category: GOAL_CONTRIBUTIONS`, `sourceRef: goal:<id>`).
+  * Implemented `evaluateGoalFeasibilityWithAI` in `src/agents/goalsAgent.ts` executing via multi-LLM vault (`executeAgentPrompt("GOALS_AGENT", ...)`).
+  * Created on-demand AI evaluation endpoint `/api/goals/[id]/evaluate-ai` and surplus sync endpoint `/api/goals/sync-budget`.
+  * Redesigned `/goals` with Cashflow Surplus Allocation HUD, AI Feasibility Badges, and interactive AI evaluation drawers.
+  * Enriched `/budget` line items with linked Goal progress bars and target completion tags.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-013`).
+
+
 
 
 

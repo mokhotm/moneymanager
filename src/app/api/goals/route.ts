@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { projectGoalCompletion } from "@/agents/goalsAgent";
+import { projectGoalCompletion, evaluateGoalFeasibilityWithAI } from "@/agents/goalsAgent";
 import { getEffectiveUserId } from "@/lib/session";
+import { syncGoalToBudget } from "@/lib/goalBudgetSync";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     const goals = await prisma.goal.findMany({
       where: { userId },
-      orderBy: { priority: "asc" },
+      orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
     });
 
     const enriched = goals.map((g) => {
@@ -25,6 +26,11 @@ export async function GET(req: NextRequest) {
       );
       return {
         ...g,
+        currentAmount: Number(g.currentAmount),
+        targetAmount: g.targetAmount ? Number(g.targetAmount) : null,
+        monthlyContribution: Number(g.monthlyContribution),
+        allocatedBudgetAmount: Number(g.allocatedBudgetAmount || 0),
+        aiRecommendedAllocation: g.aiRecommendedAllocation ? Number(g.aiRecommendedAllocation) : null,
         projection: proj,
       };
     });
@@ -43,6 +49,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const linkToBudget = Boolean(body.linkToBudget);
+    const autoAllocateSurplus = body.autoAllocateSurplus !== undefined ? Boolean(body.autoAllocateSurplus) : true;
+
     const goal = await prisma.goal.create({
       data: {
         userId,
@@ -55,6 +64,9 @@ export async function POST(req: NextRequest) {
         monthlyContribution: body.monthlyContribution ? parseFloat(body.monthlyContribution) : 0,
         priority: body.priority ? parseInt(body.priority) : 1,
         note: body.note || null,
+        linkToBudget,
+        autoAllocateSurplus,
+        allocatedBudgetAmount: 0,
       },
     });
 
@@ -68,6 +80,20 @@ export async function POST(req: NextRequest) {
         actor: "USER",
       },
     });
+
+    // If budget link is enabled, sync to active budget cycle immediately
+    if (linkToBudget) {
+      try {
+        await syncGoalToBudget(goal.id, userId);
+      } catch (err) {
+        console.warn("Initial goal-budget sync notice:", err);
+      }
+    }
+
+    // Proactively run AI Feasibility analysis in background
+    evaluateGoalFeasibilityWithAI(goal.id, userId).catch((e) =>
+      console.warn("Async AI goal evaluation background note:", e)
+    );
 
     return NextResponse.json(goal, { status: 201 });
   } catch (error: any) {
@@ -107,16 +133,33 @@ export async function PUT(req: NextRequest) {
       newCurrentAmount = parseFloat(body.currentAmount);
     }
 
+    const linkToBudget =
+      body.linkToBudget !== undefined ? Boolean(body.linkToBudget) : existing.linkToBudget;
+    const autoAllocateSurplus =
+      body.autoAllocateSurplus !== undefined
+        ? Boolean(body.autoAllocateSurplus)
+        : existing.autoAllocateSurplus;
+
     const updated = await prisma.goal.update({
       where: { id: targetId },
       data: {
         name: body.name !== undefined ? body.name : existing.name,
         type: body.type !== undefined ? body.type : existing.type,
-        targetAmount: body.targetAmount !== undefined ? (body.targetAmount ? parseFloat(body.targetAmount) : null) : existing.targetAmount,
+        targetAmount:
+          body.targetAmount !== undefined
+            ? body.targetAmount
+              ? parseFloat(body.targetAmount)
+              : null
+            : existing.targetAmount,
         currentAmount: newCurrentAmount,
-        monthlyContribution: body.monthlyContribution !== undefined ? parseFloat(body.monthlyContribution) : existing.monthlyContribution,
+        monthlyContribution:
+          body.monthlyContribution !== undefined
+            ? parseFloat(body.monthlyContribution)
+            : existing.monthlyContribution,
         priority: body.priority !== undefined ? parseInt(body.priority) : existing.priority,
         note: body.note !== undefined ? body.note : existing.note,
+        linkToBudget,
+        autoAllocateSurplus,
       },
     });
 
@@ -127,10 +170,19 @@ export async function PUT(req: NextRequest) {
         fieldChanged: body.depositAmount ? "currentAmount (deposit)" : "updatedFields",
         oldValue: String(existing.currentAmount),
         newValue: String(updated.currentAmount),
-        reason: body.depositAmount ? `Deposited R${body.depositAmount} into ${updated.name}` : `Updated goal ${updated.name}`,
+        reason: body.depositAmount
+          ? `Deposited R${body.depositAmount} into ${updated.name}`
+          : `Updated goal ${updated.name}`,
         actor: "USER",
       },
     });
+
+    // Synchronize to monthly budget if link setting changed or contribution updated
+    try {
+      await syncGoalToBudget(targetId, userId);
+    } catch (err) {
+      console.warn("Goal-budget sync notice on update:", err);
+    }
 
     return NextResponse.json(updated);
   } catch (error: any) {
@@ -159,6 +211,14 @@ export async function DELETE(req: NextRequest) {
     if (!existing || existing.userId !== userId) {
       return NextResponse.json({ error: "Goal not found" }, { status: 404 });
     }
+
+    // Clean up budget line items before deleting
+    await prisma.budgetLineItem.deleteMany({
+      where: {
+        userId,
+        sourceRef: `goal:${goalId}`,
+      },
+    });
 
     await prisma.goal.delete({ where: { id: goalId } });
 
