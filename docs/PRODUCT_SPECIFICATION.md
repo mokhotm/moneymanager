@@ -205,8 +205,45 @@ stateDiagram-v2
      - Updates parent `MoneyFlow.currentAmount = parentFlow.amount - sum(splits.amount)`.
      - If `currentAmount == 0`, updates parent `status = FULLY_CONSUMED`; if `currentAmount > 0`, updates `status = PARTIALLY_CONSUMED`.
 3. **Downstream Budget & Lineage Propagation**:
-   - Automatically synchronizes with corresponding `BudgetLineItem` records.
-   - Eliminates phantom cash leakage from `/api/reports`.
+    - Automatically synchronizes with corresponding `BudgetLineItem` records.
+    - Eliminates phantom cash leakage from `/api/reports`.
+
+---
+
+### Pillar 9: Dynamic Goal-to-Budget Linking & AI Feasibility Engine (`src/lib/goalBudgetSync.ts`, `src/agents/goalsAgent.ts`)
+
+#### 9.1 Architectural Flow
+```mermaid
+graph TD
+    A[Financial Goal Created / Updated] --> B[AI Feasibility & Actuarial Evaluator]
+    
+    subgraph Ground-Truth Cashflow Context
+        C1[Monthly Net Salary & Inflows]
+        C2[Fixed Household Obligations]
+        C3[Debt Minimum Servicing & APRs]
+    end
+    
+    C1 --> D[Net Surplus Engine]
+    C2 --> D
+    C3 --> D
+    
+    D -->|Available Monthly Surplus| B
+    B -->|Feasibility Score 0-100 & Recommendation| E[Priority-Ordered Waterfall Allocator]
+    E -->|Auto-Inserts / Updates Line Item| F[Active Budget: GOAL_CONTRIBUTIONS]
+    F -->|Bank Statement Reconciliation| G[Goal Execution & Progress Tracker]
+```
+
+#### 9.2 Key Capabilities
+* **Multi-Agent Actuarial Evaluator**: Evaluates goal viability against the user's ground-truth cashflow, flagging high-interest debt drags (>15% APR) vs investment returns, safety buffers, and time horizons.
+* **Priority Waterfall Allocation**: When `autoAllocateSurplus` is enabled, the system allocates available monthly cash surplus to goals sequentially based on priority rank (e.g. Priority 1 Emergency Reserve first).
+* **Two-Way Synchronization**: Automatically maintains `BudgetLineItem` records under `category: "GOAL_CONTRIBUTIONS"` with `sourceRef: "goal:<id>"`.
+
+---
+
+### Pillar 10: South African Open Banking & Inbound Scanner Hub (`/settings?tab=banking`)
+* **Stitch Open Finance Directory**: Native connectors for all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
+* **Hybrid Statement Scanner**: Inbound IMAP email scanner automatically captures e-statements, municipal utility rates, and telco invoices.
+* **Sovereign Key & Token Vault**: AES-256-CBC token encryption at rest.
 
 ---
 

@@ -183,25 +183,41 @@ AWS App Runner provides auto-scaling containers with zero infrastructure mainten
 
 ---
 
-## Maintenance, Backups & Updates
+## Maintenance, Backups & Automated Deployments
 
-### Updating Your EC2 Deployment
-Whenever you push new code to your repository:
+### Automated 1-Click Production Deployment Pipeline
+MoneyManager includes a zero-regression, pre-audited deployment pipeline that builds and verifies the application before shipping to EC2:
+
+```bash
+python scripts/deploy_full_to_ec2.py
+```
+
+This automated deployment script executes:
+1. **Local Gate 1**: Master 6-Pillar Data & Geocoding Audit (`npx tsx scripts/run_all_audits.ts`)
+2. **Local Gate 2**: Vitest Regression Suite across all 13 corrected issues (`npx vitest run tests/regressionAuditSuite.test.ts`)
+3. **Local Gate 3**: Spending Location Radar Unit Suite (`npx vitest run tests/spendingLocationRadar.test.ts`)
+4. **Git Sync**: Automatic stage, commit, and push to GitHub `main`
+5. **EC2 Orchestration**: Remote SSH git pull and zero-downtime container rebuild (`docker compose up -d --build`)
+6. **Live Smoke Gate**: Remote live smoke test and authenticated API radar verification on `http://16.171.199.75`
+
+### Manual Remote EC2 Update
+If executing directly on the EC2 instance:
 ```bash
 cd ~/moneymanager
 git pull origin main
-sudo docker-compose down
-sudo docker-compose up -d --build
-sudo docker-compose exec -T web npx prisma db push
+sudo docker compose down
+sudo docker compose up -d --build
+sudo docker compose exec -T web npx prisma db push
 ```
 
-### PostgreSQL Database Backup
+### PostgreSQL Database Backup & Restore
 To create an instant backup of your production database:
 ```bash
-sudo docker-compose exec -T db pg_dump -U moneymanager money_manager > backup_$(date +%Y%m%d_%H%M%S).sql
+sudo docker compose exec -T db pg_dump -U moneymanager money_manager > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 To restore from a backup:
 ```bash
-cat backup_YYYYMMDD_HHMMSS.sql | sudo docker-compose exec -T db psql -U moneymanager -d money_manager
+cat backup_YYYYMMDD_HHMMSS.sql | sudo docker compose exec -T db psql -U moneymanager -d money_manager
 ```
+

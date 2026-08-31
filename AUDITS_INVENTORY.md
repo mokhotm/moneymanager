@@ -62,8 +62,18 @@ This document maintains an immutable index of all audits, verification suites, a
 * **Underlying Scripts**: [`scripts/test_all_apis.js`](file:///c:/Ezzy/Projects/Money/scripts/test_all_apis.js), [`scripts/test_ec2_auth.js`](file:///c:/Ezzy/Projects/Money/scripts/test_ec2_auth.js)
 * **Scope & Invariants**:
   * Authenticates live sessions on EC2 instance (`16.171.199.75`).
-  * Probes `/api/dashboard`, `/api/budget`, `/api/documents`, `/api/banking`, and `/api/entities` for HTTP 200 responses.
+  * Probes `/api/dashboard`, `/api/budget`, `/api/documents`, `/api/banking`, `/api/goals`, and `/api/entities` for HTTP 200 responses.
   * Asserts full spending radar JSON payload rendering on live production environment.
+
+---
+
+### 7. Pillar 7: Dynamic Goal-to-Budget Linking & AI Feasibility Engine
+* **Runner / Script**: [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts) (`FIX-013`)
+* **Underlying Libraries**: [`src/lib/goalBudgetSync.ts`](file:///c:/Ezzy/Projects/Money/src/lib/goalBudgetSync.ts), [`src/agents/goalsAgent.ts`](file:///c:/Ezzy/Projects/Money/src/agents/goalsAgent.ts)
+* **Scope & Invariants**:
+  * Calculates real-time available monthly cashflow surplus (`Total Net Salary` − `Fixed Obligations` − `Debt Servicing Minimums`).
+  * Validates priority-based waterfall allocation into `BudgetLineItem` under `category: GOAL_CONTRIBUTIONS` with `sourceRef: goal:<id>`.
+  * Verifies AI multi-agent feasibility scoring (0–100), safe monthly allocation recommendations, and risk warnings.
 
 ---
 
@@ -71,7 +81,7 @@ This document maintains an immutable index of all audits, verification suites, a
 
 > [!IMPORTANT]
 > **Pre-Deployment & Change Rule**:
-> Every time changes are made to data parsers, database schemas, budget models, or spending radar engines, you **MUST** run:
+> Every time changes are made to data parsers, database schemas, budget models, goals, or spending radar engines, you **MUST** run:
 > ```bash
 > npx tsx scripts/run_all_audits.ts
 > npx vitest run

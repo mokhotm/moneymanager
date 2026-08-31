@@ -211,46 +211,51 @@ A comprehensive breakdown of your total wealth position.
 
 ### 4.2 Goals & Wealth
 
-**Navigation:** Sidebar → *Goals & Wealth*
+**Navigation:** Sidebar → *Goals & Wealth* (`/goals`)
 
-Set, track, and project financial goals with AI-powered completion forecasts.
+Set, track, and project financial goals with **AI-powered feasibility evaluations** and **dynamic monthly cashflow surplus allocation**.
 
 #### Supported Goal Types
 
 | Goal Type | Icon | Description |
 | :--- | :---: | :--- |
-| Emergency Reserve | 🛡 | Build 3–6 months of living expenses as a safety net |
+| Emergency Reserve | 🛡 | Build 3–6 months of living expenses as a liquid safety net |
 | Debt Freedom | ✨ | Become completely debt-free by a target date |
-| House Deposit | 🏠 | Save for a property deposit |
-| Investment Growth | 📈 | Grow your investment portfolio to a target value |
-| Education Fund | 🎓 | Save for education (self or children) |
-| General Savings | 🛒 | Any other savings target |
+| House Deposit | 🏠 | Save for a property deposit or transfer fees |
+| Retirement & ETF | 📈 | Grow investment portfolios and index funds |
+| Education Fund | 🎓 | Save for university or school tuition fees |
+| Major Purchase | 🛒 | Vehicles, home renovations, or capital equipment |
+| Custom Target | 🎯 | Tailored financial milestones |
 
-#### Creating a Goal
+#### Creating & Linking a Goal
 
-1. Click **"+ New Goal"**
-2. Select the goal type from the dropdown
-3. Enter:
-   - **Goal Name** — A descriptive label (e.g., "3-Month Emergency Fund")
-   - **Target Amount** — The ZAR amount you're aiming for (or a formula like `3 × monthly_expenses`)
-   - **Monthly Contribution** — How much you'll put toward this goal each month
-   - **Priority** — Ranking relative to other goals (1 = highest)
-4. Click **"Save"**
+1. Click **"+ New Financial Goal"**
+2. Fill in:
+   - **Goal Name** — Descriptive title (e.g. "6-Month Emergency Reserve")
+   - **Goal Type & Priority Ranking** — Priority #1 (Emergency / Debt), Priority #2 (Reserves), Priority #3 (Investments), Priority #4 (Luxury)
+   - **Target Capital Amount (ZAR)** & **Monthly Contribution (ZAR)**
+   - **Starting Balance**
+3. **Budget & Surplus Integration Toggles**:
+   - ☑️ **Link to Monthly Budget Cycle**: Inserts a corresponding line item into your active monthly budget under *Goal Contributions*.
+   - ☑️ **Auto-Allocate from Cashflow Surplus**: Automatically scales and allocates contributions based on available monthly cash surplus after fixed obligations and debt minimums.
+4. Click **"Create & Link Goal"**
 
-#### Goal Projections
+#### Monthly Cashflow Surplus Allocation HUD
 
-Each goal card displays:
-- **Progress bar** — Percentage funded
-- **Months to Target** — AI-projected months until completion at current contribution rate
-- **Projected Completion Date** — Calendar date the goal will be achieved
-- **Shortfall** — Any deficit if the current trajectory won't meet the target
-- **Status** — Active, Achieved, or Paused
+The top banner of the Goals page displays real-time cashflow metrics for the active salary cycle:
+* **Monthly Net Income**: Total verified recurring salary deposits.
+* **Fixed & Debt Commitments**: Total household obligations + debt servicing minimums.
+* **Available Cashflow Surplus**: Funds remaining and eligible for goal contributions.
+* **Allocated to Active Budget**: Sum of all linked goal line items currently active in the budget.
+* **Sync Button**: One-click **"Sync All Goals to Budget"** runs a priority waterfall allocation across all linked goals.
 
-#### Managing Goals
+#### AI / LLM Goal Feasibility Evaluator
 
-- **Edit** (✏️) — Update target amount, contribution, or priority
-- **Delete** (🗑) — Remove a goal permanently
-- **Filter** — Filter by goal type or status
+Each goal features an interactive **AI Feasibility Engine**:
+* **Feasibility Score (0–100)**: Quantitative rating assessing whether the goal is viable within your available monthly cashflow.
+* **AI Recommendation**: Advises whether to allocate budget now or prioritize emergency liquidity and high-interest debt payoff first.
+* **Safe Monthly Allocation**: AI-calculated safe contribution amount that prevents household cash buffers from dropping below safety thresholds.
+* **Interactive AI Drawer**: Click **"AI Review"** on any goal card to inspect the detailed actuarial reasoning, risk factors, and actionable advice.
 
 ---
 
@@ -844,24 +849,39 @@ Comprehensive financial analytics with a focus on finding money "leaks" — unne
 
 ## 8. System & Settings
 
-### 8.1 Settings & BYOK Multi-LLM Vault
+### 8.1 Settings & Financial System Hub
 
-**Navigation:** Sidebar → *Settings & BYOK*
+**Navigation:** Sidebar → *System & Settings* (`/settings`)
 
-**BYOK = Bring Your Own Key** — MoneyManager gives you total data sovereignty and cost flexibility by allowing you to connect, configure, and dynamically edit custom AI models and API credentials.
+The **Settings & Financial System Hub** features an Apple-grade multi-tab HUD that brings together banking connections, AI model vaults, continuous agent learning, and property deeds registers:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    AES-256 VAULT STORAGE                    │
-├──────────────────────────┬──────────────────────────────────┤
-│ Google Gemini 3.7 / 2.0  │ Free Tier & High-Speed Reasoning │
-│ Anthropic Claude Opus 4.8│ Complex Financial Logic & OCR    │
-│ OpenAI GPT-5.6 / 4o      │ General Purpose Multi-Modal      │
-│ DeepSeek V4 / R1 Reasoner│ Ultra Low Cost ($0.14 / 1M tokens)│
-│ Alibaba Qwen 3 Max       │ High-Context Multilingual        │
-│ Local Ollama / LM Studio │ 100% Free Zero-Cloud Privacy     │
-└──────────────────────────┴──────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                              SETTINGS & FINANCIAL SYSTEM HUB                           │
+├───────────────────────┬────────────────────────┬─────────────────────┬─────────────────┤
+│ 🏦 BANK FEEDS & SYNC  │ 🤖 AI MODELS & BYOK    │ 🧠 AGENT MEMORIES   │ 🏡 PROPERTY DATA│
+├───────────────────────┼────────────────────────┼─────────────────────┼─────────────────┤
+│ • Stitch Open Banking │ • AES-256 Vault        │ • Memory Inspector  │ • WinDeed CIPC  │
+│ • 8 SA Bank Connectors│ • Multi-LLM Routing    │ • Correction Rules  │ • Lightstone AVM│
+│ • Live Feed Sync      │ • Gemini, Claude, GPT  │ • Learned Prefs     │ • Deeds Registry│
+│ • Inbound Scanner Hub │ • DeepSeek, Qwen, Kimi │ • Heuristic Tweaks  │ • Auto-Lookup   │
+└───────────────────────┴────────────────────────┴─────────────────────┴─────────────────┘
 ```
+
+#### Tab 1: Bank Feeds & Open Banking (`?tab=banking`)
+* **Stitch Open Finance Connectors**: Connect all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
+* **Real-Time Account Sync**: One-click synchronization streams transactions directly into your ledger without manual file handling.
+* **Inbound Statement Scanner Hub (`EmailScannerHub`)**: Configure sovereign IMAP email scanning for e-statements, municipal rates, and utility invoices.
+
+#### Tab 2: AI Models & BYOK Keys (`?tab=ai-models`)
+* **BYOK = Bring Your Own Key**: Store and edit encrypted API keys for Google Gemini, Anthropic Claude, OpenAI, DeepSeek, Qwen, GLM, Kimi, or local Ollama.
+* **Per-Agent Routing**: Route specialized tasks (OCR to Vision models, mathematical cascades to reasoning models).
+
+#### Tab 3: Continuous Agent Learning (`?tab=agent-memory`)
+* **Agent Memory Store**: Inspect and manage long-term learned rules, merchant name calibrations, and pay cycle preferences.
+
+#### Tab 4: Property & Deeds Office (`?tab=property-data`)
+* **WinDeed & Lightstone Integration**: Configure credentials for automated deed lookups and property valuation models.
 
 #### Adding & Configuring LLM Keys
 

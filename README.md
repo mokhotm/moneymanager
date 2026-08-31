@@ -19,6 +19,14 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 │ • Sunday->Monday  │ • Category Stripes│ • Auto-Fit View   │ • 30-Day Cash Runway       │
 │ • Holiday Shifts  │ • 1-Click Mapping │ • Expandable View │ • Friction & Leakage Radar │
 │ • Statement Sync  │ • Live KPI Sync   │ • Mask GPU Clip   │ • 6-Month Trajectory Graph │
+├───────────────────┼───────────────────┼───────────────────┼────────────────────────────┤
+│   OPEN BANKING &  │  GOALS & BUDGET   │  AI FEASIBILITY   │  6-PILLAR PRE-DEPLOYMENT   │
+│   BANK FEEDS TAB  │  SURPLUS WATERFALL│  ACTUARIAL AGENT  │       AUDIT ENGINE         │
+├───────────────────┼───────────────────┼───────────────────┼────────────────────────────┤
+│ • Stitch Open Fin │ • Dynamic Surplus │ • Feasibility Sc. │ • Account & Entity Parity  │
+│ • 8 SA Bank Feeds │ • Priority Order  │ • Debt Drag Ratio │ • Statement Continuity     │
+│ • Inbound Scanner │ • 2-Way Syncing   │ • Safe Allocation │ • Spending Location Radar  │
+│ • AES-256 Tokens  │ • Micro-Progress  │ • BYOK Multi-LLM  │ • Zero-Regression Suite    │
 └───────────────────┴───────────────────┴───────────────────┴────────────────────────────┘
 ```
 
@@ -80,38 +88,31 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 
 ---
 
-### 4. Financial Intelligence & Leakage Hub (`src/app/reports/page.tsx`, `/reports`)
-- **Dynamic Verified Monthly Take-Home Salary**:
-  - Dynamically calculates salary based on verified bank statement records for each selected pay cycle:
-    - **August 2026**: `R 74,438.26` *(Confirmed SARS Payslip)*
-    - **July 2026**: `R 71,026.90` *(Confirmed Statement Deposit)*
-    - **June 2026**: `R 71,326.43` *(Confirmed Statement Deposit)*
-    - **May 2026**: `R 74,217.05` *(Confirmed Statement Deposit)*
-    - **April 2026**: `R 74,550.25` *(Confirmed Statement Deposit)*
-    - **March 2026**: `R 81,932.37` *(Confirmed Statement Deposit)*
-    - **February 2026**: `R 73,750.62` *(Confirmed Statement Deposit)*
-- **Dynamic Debt & Living Outflow Breakdowns**:
-  - Subtitle metrics reflect actual cycle debts, living spend, and operating free cash.
-- **30-Day Pay Cycle Cash Runway & Burn Rate**:
-  - Tracks 4-week burn velocity and buffer against the selected pay cycle range.
-- **Leakage & Friction Charges Radar**:
-  - Identifies bounce fees, overdraft service fees, card decline fees, and instant voucher costs with actionable elimination guidance.
-- **6-Month Historical Trajectory Visualizer**:
-  - Verified multi-month bar comparison of salary inflow vs. actual outflows and free margin.
+### 4. South African Open Banking & Bank Feeds Hub (`/settings?tab=banking`)
+- **Stitch Open Finance SA Connector Directory**:
+  - Native integration for all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
+  - Encrypted token storage with AES-256-CBC and real-time on-demand transaction feed synchronization.
+- **Hybrid Ingestion Architecture (`EmailScannerHub`)**:
+  - Combines live Open Banking API feeds with multi-agent inbound IMAP email scanning for e-statements, municipal rates, telco invoices, and payslips.
+- **Unified Settings Tab HUD**:
+  - Seamlessly embedded in `/settings?tab=banking` alongside AI Models & BYOK Keys, Continuous Agent Learning, and Property Data.
 
 ---
 
-### 5. Monthly Budget & Cashflow Engine (`src/app/budget/page.tsx`, `/budget`)
-- **Pay-Cycle Control Bar**:
-  - Mode switcher pills for `Payslip Auto` vs `Calendar Month`, weekend shift alerts, and salary date ranges.
-- **Dual Net Margin Stat Grid**:
-  - Tracks **Take-Home Income**, **Recurring Obligations**, **Recurring Net Margin**, and **Actual Margin (This Month)**.
-- **Customized User Budget Items**:
-  - Sinking funds for Car Brakes Repair (`R 2,500.00`), Family Weekend Getaway (`R 2,500.00`), and Optimized Groceries (`R 7,700.00`) persisted to database and seed.
+### 5. Dynamic Goal-to-Budget Linking & AI Feasibility Engine (`/goals`, `/budget`)
+- **Priority-Based Cashflow Surplus Waterfall**:
+  - Calculates real-time available monthly cashflow surplus (`Total Net Income` − `Fixed Obligations` − `Debt Obligations`).
+  - Automatically allocates monthly contributions into the active budget under `GOAL_CONTRIBUTIONS` based on goal priority rank when funds are available.
+- **AI/LLM Goal Feasibility Evaluator (`src/agents/goalsAgent.ts`)**:
+  - Analyzes goal targets against ground-truth salary, high-interest debt APRs, and liquidity buffer margins.
+  - Returns a quantitative Feasibility Score (0–100), recommendation on whether to allocate budget, safe monthly allocation amount, and strategic rationale.
+- **Synchronized UI/UX**:
+  - Goals page features a real-time Surplus Allocation HUD bar, AI Feasibility Badges (`🟢 92/100 AI Feasible`), and interactive AI insight drawers.
+  - Budget page displays goal micro-progress bars and direct links to underlying goals.
 
 ---
 
-### 6. Payoff Timeline & Debt Waterfall Acceleration (`/timeline`, `/payoff`, `/debts`)
+### 6. Payoff Timeline & Debt Waterfall Acceleration (`/timeline`, `/debts`)
 - **Dual-Track Debt Cascade Engine**:
   - Groups liabilities into short-term consumer debts vs. 20-year mortgage bond.
 - **Strategy & View Switchers**:
@@ -121,91 +122,81 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 
 ---
 
-### 7. Cooperative Multi-Agent AI System & BYOK Multi-LLM Vault (`/settings`)
+### 7. Cooperative Multi-Agent AI System & BYOK Multi-LLM Vault (`/settings?tab=ai-models`)
 - **5 Specialized AI Agents**:
   - **Document Agent**: Vision & OCR scanning for bank statements, payslips, and municipal bills.
   - **Budget Agent**: Analyzes monthly cash flow streams and calculates Dual Net Margins.
   - **Debt Acceleration Agent**: Simulates Snowball vs. Avalanche payoff timelines and interest savings.
-  - **Goals & Wealth Agent**: Projects emergency fund targets and wealth accumulation.
+  - **Goals & Wealth Agent**: Projects emergency fund targets and evaluates cashflow feasibility.
   - **Forensics & Audit Agent**: Reconciles cleared bank transactions against ground-truth statements and flags leakages.
 - **BYOK Multi-LLM Vault with AES-256-CBC Encryption**:
-  - Store and edit API keys for **Google Gemini 3.7 / 2.0**, **Anthropic Claude Opus 4.8 / 3.7 Sonnet**, **OpenAI GPT-5.6 / 4o**, **DeepSeek V4 / R1 Reasoner**, **Alibaba Qwen 3 Max**, **Zhipu GLM-4 Plus / Flash**, **Moonshot Kimi K3**, and **Local Ollama / LM Studio** (`http://localhost:11434/v1`).
-  - Interactive key editor allowing live key replacement, model ID changes, display labels, and active/disabled toggling.
+  - Store and edit API keys for **Google Gemini 3.7 / 2.0**, **Anthropic Claude Opus 4.8 / 3.7 Sonnet**, **OpenAI GPT-5.6 / 4o**, **DeepSeek V4 / R1 Reasoner**, **Alibaba Qwen 3 Max**, **Zhipu GLM-4 Plus**, **Moonshot Kimi K3**, and **Local Ollama / LM Studio** (`http://localhost:11434/v1`).
   - Per-agent model routing and dynamic `.env` key synchronization.
-- **Human-in-the-Loop Review Queue (`/recommendations`)**:
-  - AI proposals with plain-language rationales and an **Approve & Apply** button.
 
 ---
 
-### 8. Multi-Entity & Family Office Workspace Switcher (`src/components/EntitySwitcher.tsx`)
+### 8. Physical Cash Wallet & 15th-to-15th Salary Cycle Filter (`/cash-wallet`)
+- **Multi-Factor Filter HUD**:
+  - Filter cash withdrawals and splits by **15th-to-15th Statutory Salary Cycle**, calendar month, flow direction, and category chips with live count badges.
+- **Period-Scoped Metrics**:
+  - Dynamically calculates total period cash inflows, outflows, domestic worker allocations, and garden maintenance spend.
+
+---
+
+### 9. Multi-Entity & Family Office Workspace Switcher (`src/components/EntitySwitcher.tsx`)
 - **One-Click Workspace Switching in Sidebar**:
   - Toggle between **Personal Wealth** (`PERSONAL`), **Family Trust** (`TRUST`), **Operating Company** (`BUSINESS`), and **Property SPV** (`SPV_PROPERTY`).
 - **Dynamic Ground-Truth Aggregation**:
   - Automatically calculates live Net Worth, Total Assets, Total Liabilities, and account counts per legal entity without logging out.
-- **SARS Tax & Legal Ring-Fencing**:
-  - Strictly separates personal ITR12 records from corporate ITR14 and trust IT12TR filings.
 
 ---
 
-### 9. Zero-Trust System Readiness Diagnostics (`/system/readiness`)
-- Real-time cryptographic diagnostic verification for `ENCRYPTION_KEY` (256-bit AES), `SESSION_SIGNING_SECRET` (HMAC-SHA256), `GATEWAY_WEBHOOK_SECRET`, and `OPEN_BANKING_SYNC_URL`.
-- Instant runtime re-testing with `VERIFIED PASS` status badges.
+### 10. Master Pre-Deployment 6-Pillar Audit Engine (`scripts/run_all_audits.ts`)
+- **Mandatory Pre-Deployment Audit Gates**:
+  1. **Pillar 1: Database Entity & Account Integrity** — Verifies primary user accounts and active debt facilities.
+  2. **Pillar 2: Transaction History & Continuous Statement Parity** — Validates 1,360+ statement flows from bank PDFs.
+  3. **Pillar 3: Spending Location Radar & Merchant Accuracy** — Ensures 86+ physical merchants across South African economic nodes with exact GPS and clean classification.
+  4. **Pillar 4: Pay Cycle & Budget Reconciliation Engine** — Validates monthly budget execution against statement debit orders and EFTs.
+  5. **Pillar 5: Debt Waterfall & Liability Schedules** — Confirms amortization, interest rates, and cascade payoff progress for all 10 debt instruments.
+  6. **Pillar 6: Remote AWS EC2 Production & API Health** — Executes live smoke tests and authenticated API probes.
+- **Zero-Regression Policy & Issues Register**:
+  - All bug fixes recorded in [`CORRECTED_ISSUES_REGISTER.md`](file:///c:/Ezzy/Projects/Money/CORRECTED_ISSUES_REGISTER.md).
+  - 13 automated tests in [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts).
 
 ---
 
-### 10. The 100x Architecture & Specification Matrix ([`docs/PRODUCT_SPECIFICATION.md`](docs/PRODUCT_SPECIFICATION.md))
-Detailed technical specifications for outperforming commercial platforms across 7 vectors:
-1. **Zero-Failure Hybrid Ingestion**: Direct Open Banking + Vision OCR Vault + Inbound E-Statement Webhooks.
-2. **Multi-Entity & Family Office**: Personal, SME / Side-Hustle, Property SPV, and Family Trust DAG lineage.
-3. **365-Day Neural Cashflow Simulation**: Daily liquid balance forecast curve with Monte Carlo interest rate and income shock stress tests.
-4. **Forensic 5-Year Vector RAG Memory**: Semantic cross-year queries across all uploaded financial PDFs and receipts.
-5. **Institutional Real Asset Analytics**: Automated Lightstone/Windeed deeds valuation and XIRR/TWR portfolio drift.
-6. **One-Click Tax & Audit Compliance**: SARS Section 11(a), Section 12B solar, RA 27.5% optimization, and 1-click audit pack exports.
-7. **Unified Global Layout & Local-First Ecosystem**: Standardized `.page-header` + `.page-body` across all 21 routes, PWA, and desktop integration.
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 16 (App Router with Turbopack)
+- **Language**: TypeScript 5.5+
+- **Styling**: Vanilla CSS Design System (`src/styles/globals.css`) with 5 switchable themes (*Obsidian Gold*, *Emerald Wealth*, *Cyberpunk Neon*, *Alpine Gold*, *Nordic Cobalt*)
+- **Database**: PostgreSQL 16 + Prisma ORM 5.22
+- **Testing**: Vitest 4.1 with automated regression & multi-pillar data integrity engines
+- **Deployment**: Docker container on AWS EC2 (`16.171.199.75`)
 
 ---
 
-## 🔐 Security Architecture
+## 🚀 Quick Start & Local Development
 
-- 🔑 **Password Hashing**: `bcrypt` (10 salt rounds) — plaintext passwords are never stored.
-- 🛡️ **Session Protection**: Base64 HTTP-only `auth_session` cookies preventing XSS and client-side session tampering.
-- 🔒 **Row-Level Tenant Isolation**: Server-enforced `userId` query scoping preventing horizontal privilege escalation across users.
-- 🛡️ **SQL Injection Defense**: Prisma ORM Parameterized Prepared Queries neutralizing SQL injection payloads.
-- 🔐 **BYOK Key Encryption**: AES-256-CBC authenticated encryption for LLM keys in `src/agents/llmProvider.ts`.
-- 📋 **Audit Log Engine**: `AuditLogEntry` model recording all user and agent mutations.
-
----
-
-## 🛠️ Getting Started & Local Setup
-
-### 1. Prerequisites
-- Node.js 18+
-- PostgreSQL 16+ running on `localhost:5432`
-
-### 2. Environment Setup
-Create a `.env` file in the root directory:
-```env
-DATABASE_URL="postgresql://sqamtho:%24qamth0%232025@localhost:5432/money_manager?schema=public"
-```
-
-### 3. Install Dependencies & Initialize Database
 ```bash
+# 1. Install dependencies
 npm install
+
+# 2. Configure environment
+cp .env.example .env.local
+
+# 3. Synchronize database schema
 npx prisma db push
-npx tsx scripts/create-tables.ts
-npx prisma db seed
+
+# 4. Run automated regression test suite
+npx vitest run
+
+# 5. Run master 6-pillar audit engine
+npx tsx scripts/run_all_audits.ts
+
+# 6. Start local development server
+npm run dev -- -p 3001
 ```
 
-### 4. Run Development Server
-```bash
-npm run dev -p 3001
-```
-Open [http://localhost:3001](http://localhost:3001) in your browser. Unauthenticated visitors are automatically routed to `/login`.
-
----
-
-## 🧪 Automated Testing & Verification
-
-- **Vitest Unit Test Suite**: `npm test` (**33/33 passing tests** across 4 test files).
-- **TypeScript Typecheck**: `npx tsc --noEmit` (**0 errors**).
-- **API Pay Cycle Test**: `node scratch/verify_all_cycles.js` (**100% passing HTTP 200 responses**).
+Access the application at `http://localhost:3001`.
+Production environment is live at `http://16.171.199.75`.

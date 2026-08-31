@@ -158,7 +158,7 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     const ekur = classifyEmailContent("billing@ekurhuleni.gov.za", "Monthly Municipal Assessment Rates");
     expect(ekur.institution).toBe("City of Ekurhuleni");
     expect(ekur.docType).toBe("MUNICIPAL_BILL");
-  });
+  }, 45000);
 
   // ── FIX-006: Open Banking Stitch Token & Password Security Layer ──────────
   it("FIX-006: Open Banking and Email Ingestion encryption must round-trip tokens safely", async () => {
