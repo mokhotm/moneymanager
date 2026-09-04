@@ -42,14 +42,14 @@ print("  MONEYMANAGER FULL PRODUCTION DEPLOYMENT TO 16.171.199.75")
 print("============================================================\n")
 
 # STEP 1: MANDATORY LOCAL PRE-DEPLOYMENT AUDIT GATE
-run_local("npx.cmd tsx scripts/run_all_audits.ts", "Master 6-Pillar Data & Geocoding Audit")
-run_local("npx.cmd vitest run tests/regressionAuditSuite.test.ts", "Corrected Issues Regression Suite")
-run_local("npx.cmd vitest run tests/spendingLocationRadar.test.ts", "Spending Location Radar Unit Suite")
+run_local("node node_modules/tsx/dist/cli.mjs scripts/run_all_audits.ts", "Master 6-Pillar Data & Geocoding Audit")
+run_local("node node_modules/vitest/vitest.mjs run tests/regressionAuditSuite.test.ts", "Corrected Issues Regression Suite")
+run_local("node node_modules/vitest/vitest.mjs run tests/spendingLocationRadar.test.ts", "Spending Location Radar Unit Suite")
 
 # STEP 2: GIT PUSH
 print("\n[Step 2] Staging, committing and pushing latest changes to GitHub...")
 subprocess.run("git add .", shell=True)
-subprocess.run('git commit -m "feat: Open Finance Gateway Admin Segregation, Continuous Agent Learning Redesign, Salary Intelligence, and Documentation Overhaul (FIX-021 - FIX-024)"', shell=True)
+subprocess.run('git commit -m "feat: Collapsible and Expandable Sidebar Navigation Groups, LocalStorage State Persistence & Active Spatial Continuity (FIX-026)"', shell=True)
 run_local("git push origin main", "Push to GitHub mokhotm/moneymanager")
 
 # STEP 3: REMOTE CODE UPDATE

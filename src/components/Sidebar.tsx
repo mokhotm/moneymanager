@@ -32,6 +32,7 @@ import {
   Building2,
   Mail,
   Calculator,
+  ChevronDown,
 } from "lucide-react";
 
 interface NavGroup {
@@ -111,19 +112,48 @@ export default function Sidebar() {
   const searchParams = useSearchParams();
   const currentTab = searchParams ? searchParams.get("tab") : null;
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const widthRef = useRef(SIDEBAR_DEFAULT_W);
 
-  // Load persisted width and apply CSS variable
+  // Load persisted width, collapsed groups, and apply CSS variable
   useEffect(() => {
-    const saved = localStorage.getItem("sidebar-width");
-    if (saved) {
-      const w = parseInt(saved, 10);
+    const savedWidth = localStorage.getItem("sidebar-width");
+    if (savedWidth) {
+      const w = parseInt(savedWidth, 10);
       if (w >= SIDEBAR_MIN_W && w <= SIDEBAR_MAX_W) {
         widthRef.current = w;
         document.documentElement.style.setProperty("--sidebar-w", `${w}px`);
       }
     }
+
+    try {
+      const savedCollapsed = localStorage.getItem("sidebar-collapsed-groups");
+      if (savedCollapsed) {
+        setCollapsedGroups(JSON.parse(savedCollapsed));
+      }
+    } catch {}
   }, []);
+
+  const toggleGroup = useCallback((sectionTitle: string) => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [sectionTitle]: !prev[sectionTitle] };
+      try {
+        localStorage.setItem("sidebar-collapsed-groups", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const isItemActive = useCallback(
+    (href: string) => {
+      const [itemBase, itemQuery] = href.split("?");
+      const targetTab = itemQuery ? new URLSearchParams(itemQuery).get("tab") : null;
+      return targetTab
+        ? pathname === itemBase && currentTab === targetTab
+        : pathname === href || (pathname === itemBase && !currentTab);
+    },
+    [pathname, currentTab]
+  );
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -199,70 +229,118 @@ export default function Sidebar() {
         }
         return (
           <nav className="sidebar-nav" style={{ padding: "0 12px 14px", gap: "2px" }}>
-            {effectiveNavGroups.map((group, groupIdx) => (
-              <div key={group.sectionTitle} style={{ marginBottom: groupIdx === effectiveNavGroups.length - 1 ? 0 : "12px" }}>
+            {effectiveNavGroups.map((group, groupIdx) => {
+              const isCollapsed = !!collapsedGroups[group.sectionTitle];
+              const hasActiveChild = group.items.some((item) => isItemActive(item.href));
+
+              return (
                 <div
-                  className="sidebar-section-label"
+                  key={group.sectionTitle}
                   style={{
-                    fontSize: "10.5px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: "var(--text-muted)",
-                    padding: "8px 12px 4px",
-                    fontFamily: "var(--font-mono)",
-                    opacity: 0.85,
+                    marginBottom: groupIdx === effectiveNavGroups.length - 1 ? 0 : isCollapsed ? "4px" : "12px",
+                    transition: "margin-bottom 0.2s ease",
                   }}
                 >
-                  {group.sectionTitle}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const [itemBase, itemQuery] = item.href.split("?");
-                    const targetTab = itemQuery ? new URLSearchParams(itemQuery).get("tab") : null;
-                    const isActive = targetTab
-                      ? pathname === itemBase && currentTab === targetTab
-                      : pathname === item.href || (pathname === itemBase && !currentTab);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`nav-item ${isActive ? "active" : ""}`}
-                        id={`nav-${item.href.replace("/", "") || "dashboard"}`}
-                        style={{
-                          padding: "8px 12px",
-                          fontSize: "13.5px",
-                          gap: "10px",
-                        }}
-                      >
-                        <span className="nav-item-icon" style={{ display: "flex", alignItems: "center" }}>
-                          <Icon size={17} />
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.sectionTitle)}
+                    className={`sidebar-section-header ${isCollapsed ? "is-collapsed" : ""}`}
+                    aria-expanded={!isCollapsed}
+                    aria-controls={`sidebar-group-${groupIdx}`}
+                    title={`${isCollapsed ? "Expand" : "Collapse"} ${group.sectionTitle}`}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        color: hasActiveChild && isCollapsed ? "var(--gold-light)" : undefined,
+                        fontWeight: hasActiveChild && isCollapsed ? 800 : 700,
+                      }}
+                    >
+                      {group.sectionTitle}
+                      {hasActiveChild && isCollapsed && (
+                        <span
+                          style={{
+                            width: "5px",
+                            height: "5px",
+                            borderRadius: "50%",
+                            background: "var(--gold)",
+                            boxShadow: "0 0 8px var(--gold)",
+                            display: "inline-block",
+                          }}
+                          title="Active page in this section"
+                        />
+                      )}
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {isCollapsed && (
+                        <span
+                          style={{
+                            fontSize: "9.5px",
+                            fontWeight: 700,
+                            color: "var(--text-muted)",
+                            padding: "1px 5px",
+                            borderRadius: "4px",
+                            background: "rgba(255, 255, 255, 0.04)",
+                            fontFamily: "var(--font-mono)",
+                          }}
+                        >
+                          {group.items.length}
                         </span>
-                        <span style={{ flex: 1 }}>{item.label}</span>
-                        {item.badge && (
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              padding: "2px 6px",
-                              borderRadius: "999px",
-                              background: item.badge === "Root" ? "rgba(245, 158, 11, 0.2)" : "var(--gold-dim)",
-                              color: item.badge === "Root" ? "#fbbf24" : "var(--gold)",
-                              border: item.badge === "Root" ? "1px solid rgba(245, 158, 11, 0.4)" : "none",
-                              fontWeight: 700,
-                              fontFamily: "var(--font-mono)",
-                            }}
-                          >
-                            {item.badge}
+                      )}
+                      <span className="sidebar-section-chevron">
+                        <ChevronDown size={13} />
+                      </span>
+                    </div>
+                  </button>
+
+                  <div
+                    id={`sidebar-group-${groupIdx}`}
+                    className={`sidebar-group-content ${isCollapsed ? "collapsed" : "expanded"}`}
+                  >
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = isItemActive(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`nav-item ${isActive ? "active" : ""}`}
+                          id={`nav-${item.href.replace("/", "") || "dashboard"}`}
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: "13.5px",
+                            gap: "10px",
+                          }}
+                        >
+                          <span className="nav-item-icon" style={{ display: "flex", alignItems: "center" }}>
+                            <Icon size={17} />
                           </span>
-                        )}
-                      </Link>
-                    );
-                  })}
+                          <span style={{ flex: 1 }}>{item.label}</span>
+                          {item.badge && (
+                            <span
+                              style={{
+                                fontSize: "10px",
+                                padding: "2px 6px",
+                                borderRadius: "999px",
+                                background: item.badge === "Root" ? "rgba(245, 158, 11, 0.2)" : "var(--gold-dim)",
+                                color: item.badge === "Root" ? "#fbbf24" : "var(--gold)",
+                                border: item.badge === "Root" ? "1px solid rgba(245, 158, 11, 0.4)" : "none",
+                                fontWeight: 700,
+                                fontFamily: "var(--font-mono)",
+                              }}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </nav>
         );
       })()}

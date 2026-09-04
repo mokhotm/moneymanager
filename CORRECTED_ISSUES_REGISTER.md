@@ -388,3 +388,26 @@ This document records all software, data parsing, geocoding, and deployment issu
     * Implemented `TIER_FEATURES` mapping in `src/app/billing/page.tsx` that mirrors the login page subtitles and feature checklists word-for-word.
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-025`).
 
+---
+
+### FIX-026: Collapsible & Expandable Sidebar Navigation Item Groups
+* **Date Identified**: 2026-09-04
+* **Symptom**:
+  * The navigation sidebar contained a long vertical list of navigation items across multiple functional sections (`Overview & Wealth`, `Cashflow & Banking`, `Debt & Freedom Engine`, `Intelligence & Document Vault`, `System & Settings`, and `Administration`).
+  * Navigation section headers were static plain text labels that could not be collapsed or expanded, requiring users on smaller or standard viewports to scroll through irrelevant sections.
+* **Root Cause**:
+  * `Sidebar.tsx` rendered section titles as static `<div>` containers (`.sidebar-section-label`) with no interactive state, chevron toggles, or collapse/expand handlers.
+* **Exact Resolution**:
+  * **Interactive Section Headers**:
+    * Converted `.sidebar-section-label` into an accessible, button-driven `.sidebar-section-header` with tactile hover state (`rgba(255, 255, 255, 0.04)`), focus rings, and pointer cursor.
+    * Added rotating chevron indicator (`ChevronDown`) executing smooth Apple-caliber micro-animations (`0deg` when expanded, `-90deg` when collapsed via cubic-bezier transition).
+  * **Fluid Animation & Layout Refinement**:
+    * Wrapped group items in `.sidebar-group-content` with CSS transition on `max-height`, `opacity`, and `margin`.
+    * When collapsed, the container transitions to `max-height: 0; opacity: 0; pointer-events: none; overflow: hidden`, reducing section margin for a compact, neat appearance.
+  * **Active Route & Spatial Awareness**:
+    * If a section containing the user's active page is collapsed, the header displays an active gold indicator dot (`●`) and highlighted typography (`var(--gold-light)`), ensuring the user never loses spatial orientation within the app.
+    * Displayed an item count badge (e.g. `5`) on collapsed headers for quick discoverability.
+  * **State Persistence**:
+    * Integrated `localStorage` persistence under key `sidebar-collapsed-groups` so user collapse/expand preferences are preserved across page navigations and reloads.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-026`).
+

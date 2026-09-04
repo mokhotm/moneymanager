@@ -305,6 +305,76 @@ a:hover {
   padding: 12px 14px 6px;
 }
 
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 8px 10px 6px 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.18s ease;
+  user-select: none;
+  text-align: left;
+}
+
+.sidebar-section-header:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-section-header:focus-visible {
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px var(--gold-light);
+}
+
+.sidebar-section-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s ease;
+  color: var(--text-muted);
+  opacity: 0.65;
+}
+
+.sidebar-section-header:hover .sidebar-section-chevron {
+  color: var(--gold-light);
+  opacity: 1;
+}
+
+.sidebar-section-header.is-collapsed .sidebar-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.sidebar-group-content {
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, margin 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-group-content.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  margin-top: 0;
+  pointer-events: none;
+}
+
+.sidebar-group-content.expanded {
+  max-height: 500px;
+  opacity: 1;
+}
+
 .nav-item {
   display: flex;
   align-items: center;

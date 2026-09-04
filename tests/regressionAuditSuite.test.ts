@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { prisma } from "../src/lib/prisma";
 import { resolveSpendingLocations, SA_MERCHANT_RULES, DIGITAL_SERVICE_PATTERNS } from "../src/lib/geoResolver";
 
 describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () => {
@@ -688,6 +687,35 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(billingPageContent).toContain("Up to 3 Bank & Asset Accounts");
     expect(billingPageContent).toContain("Dual-Track Consumer vs Mortgage Engine");
     expect(billingPageContent).toContain("Direct OpenBanking Feeds (8 SA Banks via Stitch)");
+  });
+
+  // ── FIX-026: Collapsible & Expandable Sidebar Navigation Groups ──
+  it("FIX-026: Sidebar navigation groups must support interactive collapse/expand, state persistence, and active route awareness", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+
+    // 1. Verify Sidebar.tsx has interactive state, chevron, localStorage persistence, and active-child indicator
+    const sidebarPath = path.join(process.cwd(), "src/components/Sidebar.tsx");
+    const sidebarContent = fs.readFileSync(sidebarPath, "utf-8");
+
+    expect(sidebarContent).toContain("collapsedGroups");
+    expect(sidebarContent).toContain("toggleGroup");
+    expect(sidebarContent).toContain("sidebar-collapsed-groups");
+    expect(sidebarContent).toContain("sidebar-section-header");
+    expect(sidebarContent).toContain("sidebar-section-chevron");
+    expect(sidebarContent).toContain("sidebar-group-content");
+    expect(sidebarContent).toContain("hasActiveChild");
+    expect(sidebarContent).toContain("ChevronDown");
+
+    // 2. Verify globals.css defines the animations and classes
+    const globalsCssPath = path.join(process.cwd(), "src/styles/globals.css");
+    const globalsContent = fs.readFileSync(globalsCssPath, "utf-8");
+
+    expect(globalsContent).toContain(".sidebar-section-header");
+    expect(globalsContent).toContain(".sidebar-section-chevron");
+    expect(globalsContent).toContain(".sidebar-group-content");
+    expect(globalsContent).toContain(".sidebar-group-content.collapsed");
+    expect(globalsContent).toContain(".sidebar-group-content.expanded");
   });
 });
 
