@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     subscriptions.forEach((sub) => {
       if (sub.status === "ACTIVE" && sub.tier) {
         totalMRR += Number(sub.tier.priceMonthly || 0);
-        const code = sub.tier.code || "UNKNOWN";
+        const code = sub.tier.name || "UNKNOWN";
         tierDistribution[code] = (tierDistribution[code] || 0) + 1;
       }
     });

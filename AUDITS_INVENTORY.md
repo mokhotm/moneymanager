@@ -67,6 +67,8 @@ This document maintains an immutable index of all audits, verification suites, a
 
 ---
 
+---
+
 ### 7. Pillar 7: Dynamic Goal-to-Budget Linking & AI Feasibility Engine
 * **Runner / Script**: [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts) (`FIX-013`)
 * **Underlying Libraries**: [`src/lib/goalBudgetSync.ts`](file:///c:/Ezzy/Projects/Money/src/lib/goalBudgetSync.ts), [`src/agents/goalsAgent.ts`](file:///c:/Ezzy/Projects/Money/src/agents/goalsAgent.ts)
@@ -77,13 +79,66 @@ This document maintains an immutable index of all audits, verification suites, a
 
 ---
 
+### 8. Pillar 8: Open Banking, Administrator Gateway & Multi-Bank Neutrality Protocol
+* **Runner / Script**: [`tests/stitchOpenBanking.test.ts`](file:///c:/Ezzy/Projects/Money/tests/stitchOpenBanking.test.ts), [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts) (`FIX-021`, `FIX-022`, `FIX-023`)
+* **Underlying Services**: [`src/services/stitchOpenBankingService.ts`](file:///c:/Ezzy/Projects/Money/src/services/stitchOpenBankingService.ts), [`src/lib/bankConnectors.ts`](file:///c:/Ezzy/Projects/Money/src/lib/bankConnectors.ts), [`src/app/api/banking/config/route.ts`](file:///c:/Ezzy/Projects/Money/src/app/api/banking/config/route.ts)
+* **Scope & Invariants**:
+  * **Zero-Mock Policy (`FIX-021`)**: Strictly prohibits synthetic fallback data, mock account stubs, and sandbox simulation loops. Requires live Stitch OAuth 2.0 PKCE authentication for account stream ingestion.
+  * **Multi-Bank Neutrality (`FIX-022`)**: Enforces equal, unbiased representation across all 8 major South African commercial institutions (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank). Eradicates proprietary third-party lock-ins.
+  * **Administrator Role Segregation (`FIX-023`)**: Strictly protects B2B gateway configuration routes (`/api/banking/config`), returning `403 Forbidden` for non-administrators. Isolate gateway key entry to `/settings?tab=admin-gateway` exclusively for `role === "admin"`.
+
+---
+
+### 9. Pillar 9: Global UI/UX Design System & Continuous Multi-Agent Learning Invariant
+* **Runner / Script**: [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts) (`FIX-024`)
+* **Underlying Components**: [`src/components/AgentMemoryManager.tsx`](file:///c:/Ezzy/Projects/Money/src/components/AgentMemoryManager.tsx), [`src/styles/globals.css`](file:///c:/Ezzy/Projects/Money/src/styles/globals.css)
+* **Scope & Invariants**:
+  * **Zero Dead CSS Selectors**: Ensures no uncompiled utility classes (Tailwind remnants) exist across application views. All visual components must strictly adhere to the obsidian design system (`globals.css`, CSS variables, `.card`, `.stat-card`, `.badge`, `.btn`).
+  * **Badge & Typography Tokens**: Ensures composite badge styles (`.badge-gold`, `.badge-purple`, `.badge-green`, `.badge-cyan`) and font helpers (`.font-mono`, `.text-slate-*`) are defined and consistent.
+  * **Memory Feedback Flywheel**: Inspects the 6 specialized agent memory domains (`GEO`, `BUDGET`, `DEBT`, `GOALS`, `DOCUMENT`, `PREFERENCE`), ensuring custom rules and learned corrections are seamlessly fed into LLM prompts via `getPromptAugmentationMemories`.
+
+---
+
+## 🧪 Comprehensive Automated Regression Audits Index (`tests/regressionAuditSuite.test.ts`)
+
+MoneyManager maintains **21 automated regression tests** executing under Vitest to guarantee that previously corrected edge cases never regress:
+
+| Issue ID | Domain / Component | Description of Automated Regression Assertion |
+| :--- | :--- | :--- |
+| **`FIX-001`** | `geoResolver.ts` | Asserts "Shell Middelstraat" resolves to Pretoria (Nieuw Muckleneuk) and never Middelburg, Mpumalanga. |
+| **`FIX-002`** | `geoResolver.ts` | Asserts South African retail merchant rules directory contains $\ge 80$ comprehensive retail hub definitions. |
+| **`FIX-003`** | `geoResolver.ts` | Asserts bank fees, airtime, and PayShap P2P transactions are classified as Digital Services (not physical venues). |
+| **`FIX-004`** | `geoResolver.ts` | Asserts Springs & Bakerton coordinates fall within strict geographic bounding boxes ($< 15\text{km}$ radius). |
+| **`FIX-005`** | `emailStatementParser.ts` | Asserts automated inbound classifier accurately identifies top 8 South African financial institutions. |
+| **`FIX-006`** | `moneyFlows.ts` | Asserts reversal (`RTD`, `REVERSAL`, `UNPAID`) offsetting parity prevents double-counting outflows. |
+| **`FIX-007`** | `payrollCalendar.ts` | Asserts 15th-to-15th salary cycle calculation shifts Friday/Monday for weekends and adjusts for holidays. |
+| **`FIX-008`** | `budgetReconciliation.ts` | Asserts deterministic budget execution speeds ($< 3000\text{ms}$ cold, $< 100\text{ms}$ warm). |
+| **`FIX-009`** | `geoResolver.ts` | Asserts category taxonomy adheres to the 5 core budget groups without generic fallback labels. |
+| **`FIX-010`** | `debtEngine.ts` | Asserts Snowball & Avalanche amortization cascades match SARB prime rate formulas across all 10 debt accounts. |
+| **`FIX-011`** | `prisma/schema.prisma` | Asserts user profiles, entities, and account records maintain referential integrity without orphan records. |
+| **`FIX-012`** | `BankingTab.tsx` | Asserts Bank Feeds components and Stitch services are modular, exportable, and client-safe. |
+| **`FIX-013`** | `goalBudgetSync.ts` | Asserts surplus waterfall calculation safely links priority goals to active budget line items. |
+| **`FIX-014`** | `cashWalletService.ts` | Asserts ATM withdrawal regex accurately captures parent withdrawal flows for cash batching. |
+| **`FIX-015`** | `cashWalletService.ts` | Asserts parent-child cash splits reconcile accurately and eliminate phantom cash leakage from reports. |
+| **`FIX-016`** | `src/lib/encryption.ts` | Asserts AES-256-CBC encryption vault securely encrypts and decrypts BYOK LLM provider keys. |
+| **`FIX-017`** | `cashflowEngine.ts` | Asserts 365-day balance projection maintains cash continuity without unexplained variance. |
+| **`FIX-018`** | `src/lib/taxEngine.ts` | Asserts SARS ITR12 tax deduction calculations enforce Section 11F (27.5%) and TFSA (R36k) ceilings. |
+| **`FIX-019`** | `sync_september_forward_budget.ts` | Asserts forward budget alignment reflects Openserve Fibre (R 864.61) and verified RSA ID format. |
+| **`FIX-020`** | `salaryCalculator.ts` | Asserts post-increase salary envelope of R 74,438.26 matches itemized statutory payslip calculations. |
+| **`FIX-021`** | `stitchOpenBankingService.ts` | Asserts strict prohibition of mock fallbacks and guarantees 0 synthetic connections in database. |
+| **`FIX-022`** | `bankConnectors.ts` | Asserts neutral representation across all 8 major SA banks without proprietary third-party lock-ins. |
+| **`FIX-023`** | `api/banking/config/route.ts` | Asserts administrator role segregation gates B2B credentials with `403 Forbidden` for non-admins. |
+| **`FIX-024`** | `AgentMemoryManager.tsx` | Asserts obsidian design system adherence and zero uncompiled utility classes in Agent Memory tab. |
+
+---
+
 ## ⚡ Mandatory Execution Governance Rule
 
 > [!IMPORTANT]
 > **Pre-Deployment & Change Rule**:
-> Every time changes are made to data parsers, database schemas, budget models, goals, or spending radar engines, you **MUST** run:
+> Every time changes are made to data parsers, database schemas, budget models, goals, open banking, or spending radar engines, you **MUST** run:
 > ```bash
-> npx tsx scripts/run_all_audits.ts
-> npx vitest run
+> npx.cmd tsx scripts/run_all_audits.ts
+> npx.cmd vitest run
 > ```
 > Deployment to EC2 via `scripts/deploy_full_to_ec2.py` will automatically enforce these audits and abort if any pillar fails.

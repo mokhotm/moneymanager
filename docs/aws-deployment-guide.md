@@ -176,8 +176,10 @@ AWS App Runner provides auto-scaling containers with zero infrastructure mainten
 | :--- | :--- | :---: | :--- |
 | `DATABASE_URL` | PostgreSQL connection URI | **Yes** | `postgresql://user:pwd@host:5432/db?schema=public` |
 | `SESSION_SECRET` | 32-char key for authentication cookies | **Yes** | `e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4` |
-| `ENCRYPTION_KEY` | 32-char key for BYOK credentials vault | **Yes** | `f1e2d3c4b5a697887766554433221100` |
+| `ENCRYPTION_KEY` | 32-char key for BYOK & Gateway credentials vault | **Yes** | `f1e2d3c4b5a697887766554433221100` |
 | `GEMINI_API_KEY` | Google Gemini API Key for AI Agents | Optional | `AIzaSy...` |
+| `STITCH_CLIENT_ID` | Stitch Open Finance Client ID (or via Admin Gateway UI) | Optional | `client-id-...` |
+| `STITCH_CLIENT_SECRET`| Stitch Open Finance Client Secret (or via Admin Gateway UI)| Optional | `secret-...` |
 | `PORT` | Application HTTP Port | Default: 3001 | `3001` |
 | `NODE_ENV` | Environment identifier | Default: production | `production` |
 
@@ -194,7 +196,7 @@ python scripts/deploy_full_to_ec2.py
 
 This automated deployment script executes:
 1. **Local Gate 1**: Master 6-Pillar Data & Geocoding Audit (`npx tsx scripts/run_all_audits.ts`)
-2. **Local Gate 2**: Vitest Regression Suite across all 13 corrected issues (`npx vitest run tests/regressionAuditSuite.test.ts`)
+2. **Local Gate 2**: Vitest Regression Suite across all 21 corrected issues (`npx vitest run tests/regressionAuditSuite.test.ts`)
 3. **Local Gate 3**: Spending Location Radar Unit Suite (`npx vitest run tests/spendingLocationRadar.test.ts`)
 4. **Git Sync**: Automatic stage, commit, and push to GitHub `main`
 5. **EC2 Orchestration**: Remote SSH git pull and zero-downtime container rebuild (`docker compose up -d --build`)

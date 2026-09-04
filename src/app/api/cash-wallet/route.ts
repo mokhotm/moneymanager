@@ -65,22 +65,57 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Generate list of available salary cycles with rich metadata
+    // Generate list of available salary cycles or calendar months with rich metadata
     const availableCycles = KNOWN_MONTH_KEYS.map((key) => {
-      const bounds = resolveSalaryCycleRange(key);
-      return {
-        key,
-        label: bounds.dropdownLabel,
-        rangeFormatted: bounds.formattedRange,
-        startDate: bounds.startDate.toISOString(),
-        endDate: bounds.endDate.toISOString(),
-      };
+      if (cycleMode === "CALENDAR_MONTH") {
+        const [yearStr, monthStr] = key.split("-");
+        const y = parseInt(yearStr, 10);
+        const m = parseInt(monthStr, 10);
+        const startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+        const monthName = startDate.toLocaleDateString("en-ZA", { month: "long", year: "numeric", timeZone: "UTC" });
+        const startDay = startDate.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", timeZone: "UTC" });
+        const endDay = endDate.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+        return {
+          key,
+          label: `${monthName} (${startDay} – ${endDay})`,
+          rangeFormatted: `${startDay} – ${endDay}`,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        };
+      } else {
+        const bounds = resolveSalaryCycleRange(key);
+        return {
+          key,
+          label: bounds.dropdownLabel,
+          rangeFormatted: bounds.formattedRange,
+          startDate: bounds.startDate.toISOString(),
+          endDate: bounds.endDate.toISOString(),
+        };
+      }
     });
 
     // Resolve active cycle bounds if not "ALL"
-    let cycleBounds: ReturnType<typeof resolveSalaryCycleRange> | null = null;
+    let cycleBounds: { startDate: Date; endDate: Date; formattedRange: string; dropdownLabel?: string } | null = null;
     if (requestedMonth !== "ALL") {
-      cycleBounds = resolveSalaryCycleRange(requestedMonth);
+      if (cycleMode === "CALENDAR_MONTH") {
+        const [yearStr, monthStr] = requestedMonth.split("-");
+        const y = parseInt(yearStr, 10);
+        const m = parseInt(monthStr, 10);
+        const startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+        const monthName = startDate.toLocaleDateString("en-ZA", { month: "long", year: "numeric", timeZone: "UTC" });
+        const startDay = startDate.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", timeZone: "UTC" });
+        const endDay = endDate.toLocaleDateString("en-ZA", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+        cycleBounds = {
+          startDate,
+          endDate,
+          formattedRange: `${startDay} – ${endDay}`,
+          dropdownLabel: `${monthName} (${startDay} – ${endDay})`,
+        };
+      } else {
+        cycleBounds = resolveSalaryCycleRange(requestedMonth);
+      }
     }
 
     // Fetch live money flows for this cash wallet
@@ -171,7 +206,7 @@ export async function GET(req: NextRequest) {
       let category = "Discretionary";
       if (rawDesc.includes("Domestic")) category = "Domestic Worker";
       else if (rawDesc.includes("Garden")) category = "Garden Services";
-      else if (rawDesc.includes("Grocer") || rawDesc.includes("Food") || rawDesc.includes("Fresh")) category = "Groceries";
+      else if (rawDesc.includes("Grocer") || rawDesc.includes("Food") || rawDesc.includes("Fresh") || rawDesc.includes("Market")) category = "Groceries";
       else if (rawDesc.includes("Transport") || rawDesc.includes("Taxi") || rawDesc.includes("Fuel")) category = "Transport";
       else if (rawDesc.includes("Dining") || rawDesc.includes("Coffee") || rawDesc.includes("Café")) category = "Dining";
       else if (rawDesc.includes("Parking") || rawDesc.includes("Tip")) category = "Parking";
@@ -203,7 +238,12 @@ export async function GET(req: NextRequest) {
       unallocatedBatches = allUnallocatedBatches.filter((b) => b.createdAt >= start && b.createdAt <= end);
     }
 
-    const totalUnallocatedCash = allUnallocatedBatches.reduce(
+    const totalUnallocatedCash = unallocatedBatches.reduce(
+      (sum, b) => sum + b.unallocatedAmount,
+      0
+    );
+
+    const allTimeUnallocatedCash = allUnallocatedBatches.reduce(
       (sum, b) => sum + b.unallocatedAmount,
       0
     );
@@ -213,6 +253,7 @@ export async function GET(req: NextRequest) {
       accountName: cashAccount.name,
       trackedBalance: Math.max(0, allTimeTrackedBalance),
       totalUnallocatedCash,
+      allTimeUnallocatedCash,
       lastReconciledAt: cashAccount.updatedAt,
       availableCycles,
       activeCycle: cycleBounds ? {

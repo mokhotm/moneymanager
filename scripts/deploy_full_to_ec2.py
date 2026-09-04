@@ -49,7 +49,7 @@ run_local("npx.cmd vitest run tests/spendingLocationRadar.test.ts", "Spending Lo
 # STEP 2: GIT PUSH
 print("\n[Step 2] Staging, committing and pushing latest changes to GitHub...")
 subprocess.run("git add .", shell=True)
-subprocess.run('git commit -m "fix(geo): correct Shell Middel Street to Pretoria and enforce zero-regression audit governance"', shell=True)
+subprocess.run('git commit -m "feat: Open Finance Gateway Admin Segregation, Continuous Agent Learning Redesign, Salary Intelligence, and Documentation Overhaul (FIX-021 - FIX-024)"', shell=True)
 run_local("git push origin main", "Push to GitHub mokhotm/moneymanager")
 
 # STEP 3: REMOTE CODE UPDATE

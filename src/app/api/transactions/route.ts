@@ -31,6 +31,7 @@ function resolveCycleKeyForDate(date: Date): string | null {
 export interface BankingTransaction {
   id: string;
   date: string;
+  dateTime: string;
   merchantName: string;
   merchantAddress?: string;
   accountName: string;
@@ -50,6 +51,11 @@ export interface BankingTransaction {
   budgetAmount?: number | null;
   isBudgeted: boolean;
   budgetStatus: "MATCHED" | "UNBUDGETED" | "INCOME" | "INTERNAL_TRANSFER";
+  // AI Forensic Suspicious Duplicate Fields
+  isSuspiciousDuplicate?: boolean;
+  suspiciousReason?: string;
+  duplicateCount?: number;
+  duplicateGroupId?: string;
 }
 
 export async function GET(request: NextRequest) {
@@ -537,11 +543,72 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    let filtered = transactions;
+    // ─── AI FORENSIC AUDIT: SUSPICIOUS DUPLICATE TRANSACTION DETECTOR ───
+    const candidateMap = new Map<string, BankingTransaction[]>();
+
+    for (const t of transactions) {
+      if (t.direction !== "OUTFLOW" || t.flowType === "TRANSFER") continue;
+
+      const amtKey = Math.abs(t.amount).toFixed(2);
+      const cleanMerchant = (t.merchantName || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 14);
+
+      const groupKey = `${amtKey}|${cleanMerchant}`;
+      if (!candidateMap.has(groupKey)) candidateMap.set(groupKey, []);
+      candidateMap.get(groupKey)!.push(t);
+    }
+
+    const suspiciousMap = new Map<string, { reason: string; count: number; groupId: string }>();
+
+    for (const [key, group] of candidateMap.entries()) {
+      if (group.length < 2) continue;
+
+      group.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const t1 = group[i];
+          const t2 = group[j];
+
+          const d1 = new Date(t1.date).getTime();
+          const d2 = new Date(t2.date).getTime();
+          const dayDiff = Math.abs(d2 - d1) / (1000 * 60 * 60 * 24);
+
+          // Flag duplicates occurring within 5 calendar days of each other
+          if (dayDiff <= 5) {
+            const reason = `AI Forensic Alert: ${group.length} identical charges of R${Math.abs(t1.amount).toFixed(2)} detected within ${Math.max(1, Math.round(dayDiff))} days for '${t1.merchantName}'. Possible duplicate swipe or double debit order.`;
+            suspiciousMap.set(t1.id, { reason, count: group.length, groupId: key });
+            suspiciousMap.set(t2.id, { reason, count: group.length, groupId: key });
+          }
+        }
+      }
+    }
+
+    const enrichedTransactions: BankingTransaction[] = transactions.map((t) => {
+      const susp = suspiciousMap.get(t.id);
+      if (susp) {
+        return {
+          ...t,
+          isSuspiciousDuplicate: true,
+          suspiciousReason: susp.reason,
+          duplicateCount: susp.count,
+          duplicateGroupId: susp.groupId,
+        };
+      }
+      return {
+        ...t,
+        isSuspiciousDuplicate: false,
+      };
+    });
+
+    let filtered = enrichedTransactions;
 
     // Filter by Flow Category
     if (category && category !== "ALL") {
       filtered = filtered.filter((t) => {
+        if (category === "SUSPICIOUS") return t.isSuspiciousDuplicate;
         if (category === "INCOME") return t.direction === "INFLOW";
         if (category === "DEBT") return t.flowType === "DEBT_PAYMENT";
         if (category === "TRANSFER") return t.flowType === "TRANSFER";
@@ -550,9 +617,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Filter by Budget Category / Budget Status
+    // Filter by Budget Category / Budget Status / Suspicious
     if (budgetFilter && budgetFilter !== "ALL") {
       filtered = filtered.filter((t) => {
+        if (budgetFilter === "SUSPICIOUS_ONLY") return t.isSuspiciousDuplicate;
         if (budgetFilter === "BUDGETED_ONLY") return t.isBudgeted && t.direction === "OUTFLOW";
         if (budgetFilter === "UNBUDGETED_ONLY") return !t.isBudgeted && t.direction === "OUTFLOW";
         return t.budgetCategory === budgetFilter;
@@ -569,7 +637,8 @@ export async function GET(request: NextRequest) {
           t.category.toLowerCase().includes(query) ||
           t.referenceNumber.toLowerCase().includes(query) ||
           (t.budgetItemLabel && t.budgetItemLabel.toLowerCase().includes(query)) ||
-          (t.budgetCategory && t.budgetCategory.toLowerCase().includes(query))
+          (t.budgetCategory && t.budgetCategory.toLowerCase().includes(query)) ||
+          (t.suspiciousReason && t.suspiciousReason.toLowerCase().includes(query))
       );
     }
 
@@ -614,6 +683,11 @@ export async function GET(request: NextRequest) {
         ? Math.min(100, Math.round((budgetedOutflow / totalOutflow) * 1000) / 10)
         : 100;
 
+    const suspiciousDuplicateCount = filtered.filter((t) => t.isSuspiciousDuplicate).length;
+    const suspiciousDuplicateTotal = filtered
+      .filter((t) => t.isSuspiciousDuplicate)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
     // Category breakdown for visual telemetry
     const categoryBreakdown = {
       FIXED_HOUSEHOLD_OBLIGATIONS: filtered
@@ -651,6 +725,8 @@ export async function GET(request: NextRequest) {
         budgetedOutflow,
         unbudgetedOutflow,
         budgetAdherenceRate,
+        suspiciousDuplicateCount,
+        suspiciousDuplicateTotal,
         categoryBreakdown,
       },
       meta: {

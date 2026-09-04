@@ -22,6 +22,7 @@
    - [Transactions & Statement Ledger](#52-transactions)
    - [Cash Wallet & Informal Cash Ingestion](#53-cash-wallet)
    - [Monthly Budget Cycle Planner](#54-monthly-budget)
+   - [Statutory Salary & Increase Intelligence Calculator](#55-salary-calculator)
 6. [Debt & Freedom Engine](#6-debt--freedom-engine)
    - [Debt Register (Snowball & Avalanche)](#61-debt-register)
    - [Payoff Timeline](#62-payoff-timeline)
@@ -33,7 +34,12 @@
    - [Reports, Leakages & Forensic Audit](#74-reports--leakages)
    - [SARS Tax HUD & Ground Truth Reconciliation](#75-sars-tax-hud)
 8. [System & Settings](#8-system--settings)
-   - [Settings & BYOK Multi-LLM Vault](#81-settings--byok)
+   - [Settings & Financial System Hub](#81-settings-hub)
+     - [Bank Feeds & Open Banking (Consumer Mode)](#811-bank-feeds)
+     - [Administrator Open Finance Gateway (Admin Mode)](#812-admin-gateway)
+     - [Continuous Agent Learning & Memory Rulebook](#813-agent-memory)
+     - [AI Models & BYOK Multi-LLM Vault](#814-ai-models)
+     - [Property & Deeds Office Registry](#815-property-data)
    - [System Readiness & Zero-Trust Verification](#82-system-readiness)
    - [Billing & Subscription Plans](#83-billing--plans)
    - [User Profile & Identity Credentials](#84-profile)
@@ -507,6 +513,47 @@ Each line item shows:
 
 ---
 
+### 5.5 Statutory Salary & Increase Intelligence Calculator
+
+**Navigation:** Sidebar → *Salary & Increase* (`/salary-calculator`)
+
+The **South African Statutory Salary & Increase Intelligence Calculator** provides actuarial precision over personal earnings, statutory deductions, marginal tax bracket creep, and retroactive lump-sum salary increments.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│               SOUTH AFRICAN STATUTORY SALARY & INCREASE CALCULATOR                     │
+├───────────────────────┬────────────────────────┬───────────────────────────────────────┤
+│ GROSS SALARY CONTROLS │ STATUTORY DEDUCTIONS   │ RETROACTIVE BACKPAY SIMULATOR         │
+├───────────────────────┼────────────────────────┼───────────────────────────────────────┤
+│ • Interactive Sliders │ • SARS 2026/2027 PAYE  │ • Backdated Months (1 to 12)          │
+│ • Custom Gross Input  │ • Primary Rebate (R17k)│ • Cumulative Gross Backpay            │
+│ • Annual & Monthly    │ • Section 6A Med Credit│ • Statutory Tax Withheld              │
+│ • Notch Adjustments   │ • UIF Cap (R177.12)    │ • Net Liquid Windfall                 │
+└───────────────────────┴────────────────────────┴───────────────────────────────────────┘
+```
+
+#### Key Capabilities & Features
+
+1. **SARS 2026/2027 Statutory Tax Modeling**:
+   - Accurately models the 7 South African personal income tax brackets (18% up to 45%).
+   - Deducts the annual statutory primary tax rebate (**R 17,235**).
+   - Enforces the statutory **UIF remuneration cap** (1% of remuneration, capped at **R 177.12 / month**).
+   - Deducts allowable pre-tax **Section 11F retirement contributions** (up to 27.5% of taxable income, capped at R 350,000 / year).
+   - Integrates **Section 6A Medical Scheme Fees Tax Credits** (R 364 for main member, R 364 for first dependant, R 246 for additional dependants).
+
+2. **Marginal Bracket Creep Analysis**:
+   - Displays your effective tax rate vs. marginal tax rate.
+   - Alerts you when a promotion or notch adjustment crosses into a higher tax bracket, showing the exact incremental net gain per additional Rand earned.
+
+3. **Retroactive Backpay Simulator**:
+   - Model retroactive salary increases (e.g. collective bargaining settlements or delayed promotions backdated across 1 to 12 months).
+   - Computes the gross backpay accrued, marginal tax withheld, and exact net lump-sum payout available for debt acceleration or emergency reserves.
+
+4. **Sinking Fund Cashflow Synchronization**:
+   - Allows users to model post-increase take-home salary baselines (such as the verified R 74,438.26/month level) and immediately channel the unlocked liquid cash surplus into active sinking funds (`/budget`).
+
+---
+
 ## 6. Debt & Freedom Engine
 
 The heart of MoneyManager — a suite of tools to systematically eliminate debt using proven mathematical strategies.
@@ -853,64 +900,163 @@ Comprehensive financial analytics with a focus on finding money "leaks" — unne
 
 **Navigation:** Sidebar → *System & Settings* (`/settings`)
 
-The **Settings & Financial System Hub** features an Apple-grade multi-tab HUD that brings together banking connections, AI model vaults, continuous agent learning, and property deeds registers:
+The **Settings & Financial System Hub** features an Apple-grade multi-tab HUD that centralizes consumer bank feeds, enterprise gateway configuration, continuous agent learning, AI model vaults, and property deeds registers:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              SETTINGS & FINANCIAL SYSTEM HUB                           │
-├───────────────────────┬────────────────────────┬─────────────────────┬─────────────────┤
-│ 🏦 BANK FEEDS & SYNC  │ 🤖 AI MODELS & BYOK    │ 🧠 AGENT MEMORIES   │ 🏡 PROPERTY DATA│
-├───────────────────────┼────────────────────────┼─────────────────────┼─────────────────┤
-│ • Stitch Open Banking │ • AES-256 Vault        │ • Memory Inspector  │ • WinDeed CIPC  │
-│ • 8 SA Bank Connectors│ • Multi-LLM Routing    │ • Correction Rules  │ • Lightstone AVM│
-│ • Live Feed Sync      │ • Gemini, Claude, GPT  │ • Learned Prefs     │ • Deeds Registry│
-│ • Inbound Scanner Hub │ • DeepSeek, Qwen, Kimi │ • Heuristic Tweaks  │ • Auto-Lookup   │
-└───────────────────────┴────────────────────────┴─────────────────────┴─────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   SETTINGS & FINANCIAL SYSTEM HUB                                      │
+├───────────────────────┬────────────────────────┬─────────────────────┬──────────────────┬──────────────┤
+│ 🏦 BANK FEEDS (USER)  │ 🛡️ ADMIN GATEWAY (SYS) │ 🧠 AGENT MEMORIES   │ 🤖 AI BYOK VAULT │ 🏡 PROPERTY  │
+├───────────────────────┼────────────────────────┼─────────────────────┼──────────────────┼──────────────┤
+│ • Stitch Live PKCE    │ • Client ID & Secret   │ • Memory Inspector  │ • AES-256 Vault  │ • WinDeed    │
+│ • 8 SA Bank Feeds     │ • Admin RBAC Protected │ • 6 Domain Filters  │ • Multi-LLM Route│ • Lightstone │
+│ • 1-Click Syncing     │ • AES-256 Credentials  │ • Custom Rule Modal │ • Gemini, Claude │ • Deeds AVM  │
+│ • Zero-Mock Policy    │ • 403 Security Gate    │ • Prompt Augment    │ • DeepSeek, GPT  │ • Auto-Comps │
+└───────────────────────┴────────────────────────┴─────────────────────┴──────────────────┴──────────────┘
 ```
 
-#### Tab 1: Bank Feeds & Open Banking (`?tab=banking`)
-* **Stitch Open Finance Connectors**: Connect all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
-* **Real-Time Account Sync**: One-click synchronization streams transactions directly into your ledger without manual file handling.
-* **Inbound Statement Scanner Hub (`EmailScannerHub`)**: Configure sovereign IMAP email scanning for e-statements, municipal rates, and utility invoices.
+---
 
-#### Tab 2: AI Models & BYOK Keys (`?tab=ai-models`)
-* **BYOK = Bring Your Own Key**: Store and edit encrypted API keys for Google Gemini, Anthropic Claude, OpenAI, DeepSeek, Qwen, GLM, Kimi, or local Ollama.
-* **Per-Agent Routing**: Route specialized tasks (OCR to Vision models, mathematical cascades to reasoning models).
+#### 8.1.1 Bank Feeds & Open Banking (Consumer Mode) (`?tab=banking`)
 
-#### Tab 3: Continuous Agent Learning (`?tab=agent-memory`)
-* **Agent Memory Store**: Inspect and manage long-term learned rules, merchant name calibrations, and pay cycle preferences.
+The **Bank Feeds Hub** allows consumers to connect their live South African commercial bank accounts directly via bank-grade Open Finance protocols.
 
-#### Tab 4: Property & Deeds Office (`?tab=property-data`)
-* **WinDeed & Lightstone Integration**: Configure credentials for automated deed lookups and property valuation models.
+##### Supported South African Banking Institutions
+MoneyManager integrates with all 8 major South African commercial banks with complete institutional neutrality (`FIX-022`):
+1. **Standard Bank South Africa** (`SBG`)
+2. **Capitec Bank** (`CAP`)
+3. **First National Bank (FNB)** (`FNB`)
+4. **Nedbank** (`NED`)
+5. **Investec Bank** (`INV`)
+6. **Absa Bank** (`ABSA`)
+7. **Discovery Bank** (`DISC`)
+8. **TymeBank** (`TYME`)
 
-#### Adding & Configuring LLM Keys
+##### Step-by-Step Connection Process
+1. Navigate to **System & Settings** → **Bank Feeds** (`/settings?tab=banking`).
+2. Click **"+ Connect Bank Account"**.
+3. In the **Select Financial Institution** modal, choose your bank.
+4. You will be redirected to your bank's official internet banking authentication portal via Stitch Open Finance.
+5. Enter your standard online banking login credentials on your bank's secure page.
+6. **Approve-It / Mobile In-App Multi-Factor Authentication**:
+   - Your bank automatically dispatches a secure authorization request to your registered mobile device (e.g. Standard Bank *Approve-It* push prompt, Capitec *Banking App* authorization, or FNB *InContact* approval).
+   - Open your mobile banking app and tap **Approve**.
+7. Once verified, you are redirected back to MoneyManager. Your connected accounts, real-time balances, and account types (Current, Credit Card, Savings) appear in your Banking Hub.
 
+> [!NOTE]
+> **No Developer Credentials Required**: End-users do **not** need to create or provide Stitch API credentials. The enterprise gateway is configured platform-wide by your system administrator.
+
+##### Ground-Truth Zero-Mock Policy (`FIX-021`)
+MoneyManager enforces a strict **Zero-Mock Policy**:
+- There are **no simulated accounts** or fake sandbox generators.
+- Your bank feeds start at 0 connected accounts until you authenticate with your real bank.
+- Uploaded PDF statements in the [Document Vault](file:///c:/Ezzy/Projects/Money/src/app/documents/page.tsx) remain strictly isolated and are never mixed into live API streams.
+
+##### Real-Time Transaction Sync
+- Each connected account card shows the account name, masked account number, balance, and last sync timestamp.
+- Click **"Sync Feed"** on any account to pull cleared transactions into your ledger on demand.
+
+---
+
+#### 8.1.2 Administrator Open Finance Gateway (Admin Mode) (`?tab=admin-gateway`)
+
+The **Administrator Open Finance Gateway** is a restricted infrastructure portal designed for system administrators (`role === "admin"`) to configure and monitor platform-level B2B Open Banking connections (`FIX-023`).
+
+##### Role-Based Access Control & Security Invariants
+- **Tab Visibility**: The `🛡️ Admin Gateway` tab is rendered exclusively for users whose database profile has `role === "admin"`.
+- **Security Gate for Direct URL Access**: If a non-administrator attempts to visit `/settings?tab=admin-gateway` directly, the application displays an obsidian security gate notifying them that gateway infrastructure is restricted to platform administrators, with a 1-click button returning them to `/settings?tab=banking`.
+- **Backend API Gating**: `POST /api/banking/config` verifies user session authorization and returns `403 Forbidden` if invoked by a non-administrator. `GET /api/banking/config` returns only `{ isConfigured: boolean }` to standard users, withholding masked secrets.
+
+##### Configuring the Stitch Open Finance Gateway
+1. Navigate to **System & Settings** → **Admin Gateway** (`/settings?tab=admin-gateway`).
+2. Log in to your organization's [Stitch Express Console](https://express.stitch.money).
+3. Under **API Credentials**, copy your **Client ID** and **Client Secret**.
+4. In the Stitch Console, configure your Authorized Redirect URI:
+   - Development: `http://localhost:3001/api/banking/auth/callback`
+   - Production: `https://yourdomain.com/api/banking/auth/callback`
+5. In MoneyManager, enter:
+   - **Stitch Client ID** (e.g., `client-id-...`)
+   - **Stitch Client Secret** (e.g., `secret-...`)
+   - **Redirect URI**
+6. Click **"Save Gateway Configuration"**.
+   - Credentials are encrypted at rest with **AES-256-CBC** using your server's `ENCRYPTION_KEY`.
+   - The status beacon switches to 🟢 **`ACTIVE & OPERATIONAL`**, enabling live OAuth bank connections for all registered users across the platform.
+
+---
+
+#### 8.1.3 Continuous Agent Learning & Memory Rulebook (`?tab=agent-memory`)
+
+The **Continuous Agent Learning** console (`/settings?tab=agent-memory`) is an Apple-caliber obsidian control center (`FIX-024`) where users and administrators inspect, refine, and teach custom behavioral rules to MoneyManager's cooperative AI swarm.
+
+##### Overview Metric Grid
+The top banner displays 4 real-time health cards:
+- **Active Memory Rules**: Total learned heuristics and domain calibrations.
+- **High Confidence ($\ge 0.8$)**: Rules with verified ground-truth reliability.
+- **Average Rule Confidence**: Overall confidence score across active memories.
+- **Active Domains**: Count of operational memory domains (out of 6).
+
+##### The 6 Specialized Memory Domains
+Memory records are organized into 6 focused categories:
+1. **`GEO` (Geospatial & Merchant Calibrations)**:
+   - Mappings from cryptic bank statement descriptors to verified physical rooftop locations (e.g., `SHELL MIDDELSTRAAT` $\to$ Pretoria Nieuw Muckleneuk; `ENGEN BAKERTON` $\to$ Astron Energy Welgedacht Rd).
+2. **`BUDGET` (Pay Cycle & Allocation Rules)**:
+   - Pay cycle anchors, mid-month weekend shifting rules, and fixed obligation priorities.
+3. **`DEBT` (Debt Acceleration & Waterfall Priorities)**:
+   - Custom repayment preferences (e.g. accelerating municipal utility arrears before lower-risk credit facilities).
+4. **`GOALS` (Sinking Fund & Buffer Thresholds)**:
+   - Target milestones, emergency reserve ceilings, and liquidity cushion constraints.
+5. **`DOCUMENT` (Statement & Payslip Layouts)**:
+   - Institution-specific PDF table structures, transaction headers, and deduction line mappings.
+6. **`PREFERENCE` (User Behavioral Rules)**:
+   - Communication tone, threshold warnings, and reporting formatting rules.
+
+##### Teaching a Custom Rule
+1. Click **"+ Teach Custom Rule"** in the upper right.
+2. In the glassmorphic modal:
+   - **Target Domain**: Select the domain category (`GEO`, `BUDGET`, `DEBT`, `GOALS`, `DOCUMENT`, `PREFERENCE`).
+   - **Trigger Pattern**: Enter the key or regex that activates the rule (e.g., `SEASON AND SPAR`, `SALARY_DATE_OVERRIDE`).
+   - **Learned Instruction**: Write the exact instruction the AI agents must follow (e.g., *"Interpret as Seasons Sport & Spa Resort in Hartbeespoort (North West), not a supermarket"*).
+   - **Confidence Score**: Set confidence level (0.1 to 1.0).
+3. Click **"Save Memory Rule"**. The rule is immediately persisted to `UserAgentMemory`.
+
+##### How AI Agents Apply Learned Rules (Zero-Mistake Flywheel)
+Before executing inference on any connected LLM (Google Gemini, Claude, GPT-4o), MoneyManager's agent orchestrator invokes `getPromptAugmentationMemories(userId)` and dynamically injects verified rules directly into the agent's system prompt:
+```markdown
+### 🧠 Continuous Multi-Agent Learned Memories & User Corrections (DO NOT REPEAT OLD MISTAKES):
+1. [GEO] Pattern: "SEASON AND SPAR" -> Correct Interpretation: Seasons Sport & Spa Resort in Hartbeespoort
+2. [GEO] Pattern: "ENGEN BAKERTON" -> Correct Interpretation: Astron Energy Welgedacht Rd & 3rd Ave
+3. [BUDGET] Pattern: "PRIMARY_PAY_CYCLE" -> Correct Interpretation: Mid-Month 15th to 15th Salary Cycle
+```
+This guarantees that once an error or calibration is registered, the AI swarm never repeats that mistake.
+
+##### Deleting Outdated Rules
+- Locate any rule card in the list.
+- Click the red **trash icon** (🗑️) to delete obsolete or superseded rules instantly.
+
+---
+
+#### 8.1.4 AI Models & BYOK Key Vault (`?tab=ai-models`)
+
+Store and edit encrypted API keys for your preferred frontier AI providers.
+
+##### Adding & Configuring LLM Keys
 1. Click **"+ Add LLM Provider Key"** in the top right.
-2. Select your provider preset (Google Gemini, Anthropic Claude, OpenAI, DeepSeek, Qwen, GLM, Kimi, or Custom).
-3. Select your target **Model Version** from the dropdown list or click *"Type custom model ID"* to enter unlisted/frontier IDs.
-4. Enter your **API Key** (automatically encrypted at rest with AES-256).
-5. Optionally set a custom **Base URL / API Endpoint** (e.g. `http://localhost:11434/v1` for local Ollama or private proxy).
+2. Select your provider preset (**Google Gemini**, **Anthropic Claude**, **OpenAI**, **DeepSeek**, **Qwen**, **GLM**, **Kimi**, or **Custom / Local Ollama**).
+3. Select your target **Model Version** from the dropdown list or type a custom model ID.
+4. Enter your **API Key** (automatically encrypted at rest with AES-256-CBC).
+5. Optionally set a custom **Base URL / API Endpoint** (e.g. `http://localhost:11434/v1` for local Ollama).
 6. Click **"Save LLM Key"** — the engine performs a live round-trip test and activates the key.
 
-#### Editing Existing Keys & Provider Settings
-
-You can update any existing provider key, model version, label, or activation status at any time:
-
+##### Editing Existing Keys & Provider Settings
 1. Locate the key row in the **Active BYOK LLM Keys** table.
 2. Click the blue **"Edit"** button (✏️).
-3. In the edit modal:
-   - **Update API Key:** Paste a new key, or leave it blank to retain your existing encrypted key.
-   - **Switch Model Version:** Choose a new model ID from the dropdown or type a custom version.
-   - **Rename Description:** Update the display label for clarity.
-   - **Toggle Status:** Switch between **`ACTIVE`** and **`DISABLED`**.
-4. Click **"Save Changes"** to re-validate and apply the updates instantly.
+3. Update the key, switch model versions, update labels, or toggle between **`ACTIVE`** and **`DISABLED`**.
+4. Click **"Save Changes"**.
 
-#### Syncing Environment Keys
+##### Syncing Environment Keys
+If you have pre-configured environment variables in your `.env` file (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`), click **"Sync .env Keys"** to automatically ingest and encrypt them into your private vault.
 
-If you have pre-configured environment variables in your `.env` file (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.), click **"Sync .env Keys"** to automatically ingest and encrypt them into your private vault.
-
-#### Agent Assignment Matrix
-
+##### Agent Assignment Matrix
 Assign dedicated AI engines to specialized financial workloads:
 
 | Agent | Optimal Recommended Model | Specialization |
@@ -921,10 +1067,12 @@ Assign dedicated AI engines to specialized financial workloads:
 | **Goals Agent** | Claude 3.7 Sonnet / GPT-4o | Multi-year milestone projection & runway modeling |
 | **Forensics Audit Agent** | Claude Opus 4.8 / DeepSeek V4 | Statement ground-truth reconciliation & leakage audits |
 
-#### Property Data Integration (Deeds Office)
+---
+
+#### 8.1.5 Property & Deeds Office Registry (`?tab=property-data`)
 
 Configure enterprise property valuation services to automatically pull deed records:
-- **Windeed:** Username and password for CIPC & Deeds Office lookup.
+- **WinDeed:** Username and password for CIPC & Deeds Office title deed lookup.
 - **Lightstone:** API Key for automated valuation models (AVM) and municipal boundary data.
 
 ---

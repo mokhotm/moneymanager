@@ -743,7 +743,7 @@ export async function executeDocumentSyncPipeline(
           title: `Statement Reconciled: ${budgetExecutedCount}/${budgetReconciliation.summary.totalItemsCount} Budget Items Tracked`,
           description: `Statement #${documentId} reconciled against active budget cycle (${budgetReconciliation.summary.cycleRangeFormatted}). Total executed obligations: R ${budgetReconciliation.summary.totalExecuted.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} (${budgetReconciliation.summary.executionPercentage.toFixed(1)}% cleared).`,
           rationale: "Automated statement clearance matching ensures zero leakage between planned budget and actual banking transactions.",
-          payload: { documentId, reconciliationSummary: budgetReconciliation.summary },
+          payload: { documentId, reconciliationSummary: budgetReconciliation.summary as any },
           status: "APPROVED",
           reviewedAt: new Date(),
         },

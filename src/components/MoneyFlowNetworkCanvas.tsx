@@ -159,35 +159,41 @@ export function MoneyFlowNetworkCanvas({
       { label: string; type: string; layer: number; amount: number; inAmount: number; outAmount: number }
     >();
 
+    const determineNodeLayer = (name: string, type: string, flowType: string): { layer: number; nodeType: string } => {
+      const lower = name.toLowerCase();
+      if (type === "INFLOW" || flowType === "INCOME" || lower.includes("salary") || lower.includes("inflow")) {
+        return { layer: 0, nodeType: "INFLOW" };
+      }
+      if (lower.includes("prestige")) {
+        return { layer: 1, nodeType: "ACCOUNT" };
+      }
+      if (
+        lower.includes("mymo") ||
+        lower.includes("titanium") ||
+        lower.includes("credit card") ||
+        lower.includes("cash wallet") ||
+        lower.includes("physical cash")
+      ) {
+        return { layer: 2, nodeType: "ACCOUNT" };
+      }
+      if (flowType === "INVESTMENT" || lower.includes("investment") || lower.includes("trust") || lower.includes("goal")) {
+        return { layer: 3, nodeType: "ALLOCATION" };
+      }
+      return { layer: 3, nodeType: "TERMINAL" };
+    };
+
     filteredFlows.forEach((f) => {
       const srcName = formatDisplayLabel(f.sourceRef || f.sourceType || "External Source", f.sourceType, f.flowType);
       const dstName = formatDisplayLabel(f.destinationRef || f.destinationType || "External Endpoint", f.destinationType, f.flowType);
 
       if (!nodeMap.has(srcName)) {
-        let layer = 1;
-        let type = "ACCOUNT";
-        if (f.flowType === "INCOME" || f.sourceType === "EXTERNAL" || srcName.includes("Salary Inflow")) {
-          layer = 0;
-          type = "INFLOW";
-        }
-        nodeMap.set(srcName, { label: srcName, type, layer, amount: 0, inAmount: 0, outAmount: 0 });
+        const { layer, nodeType } = determineNodeLayer(srcName, f.sourceType, f.flowType);
+        nodeMap.set(srcName, { label: srcName, type: nodeType, layer, amount: 0, inAmount: 0, outAmount: 0 });
       }
 
       if (!nodeMap.has(dstName)) {
-        let layer = 3;
-        let type = "TERMINAL";
-        if (
-          dstName === "Prestige Current Account (XXXX4469)" ||
-          dstName === "Physical Cash Wallet" ||
-          dstName.includes("Credit Card")
-        ) {
-          layer = 1;
-          type = "ACCOUNT";
-        } else if (f.flowType === "TRANSFER" || f.flowType === "INVESTMENT") {
-          layer = 2;
-          type = "ALLOCATION";
-        }
-        nodeMap.set(dstName, { label: dstName, type, layer, amount: 0, inAmount: 0, outAmount: 0 });
+        const { layer, nodeType } = determineNodeLayer(dstName, f.destinationType, f.flowType);
+        nodeMap.set(dstName, { label: dstName, type: nodeType, layer, amount: 0, inAmount: 0, outAmount: 0 });
       }
 
       const srcNode = nodeMap.get(srcName)!;

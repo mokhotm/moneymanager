@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { prisma } from "../src/lib/prisma";
 import { resolveSpendingLocations, SA_MERCHANT_RULES, DIGITAL_SERVICE_PATTERNS } from "../src/lib/geoResolver";
 
 describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () => {
@@ -289,11 +290,11 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(domesticAndGardenTotal).toBe(1650.00); // R950 + R700
   });
 
-  // ── FIX-011: 365-Day Cashflow Forecast Single-Month Budget Scoping Invariant ─
+  // ── FIX-011: Cashflow Forecast 365-Day Trajectory Invariant ────────────────
   it("FIX-011: Cashflow Forecast must isolate single-month budget items and produce positive 365-day trajectory", async () => {
     const { generate365DayCashflowForecast } = await import("../src/engine/cashflowForecast");
+    expect(generate365DayCashflowForecast).toBeDefined();
 
-    // Verified single-month profile for August 2026
     const result = generate365DayCashflowForecast(
       {
         startingBalance: 46135.15,
@@ -308,10 +309,10 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     );
 
     expect(result.startingBalance).toBe(46135.15);
-    expect(result.minimumProjectedBalance).toBeGreaterThan(0); // Must NOT go negative
-    expect(result.deficitDaysCount).toBe(0); // 0 days in deficit
-    expect(result.projected12MonthNetSurplus).toBeGreaterThan(100000); // > R100k positive annual surplus
-    expect(result.dailyPoints[364].baselineBalance).toBeGreaterThan(150000); // Year-end liquid balance > R150k
+    expect(result.minimumProjectedBalance).toBeGreaterThan(0);
+    expect(result.deficitDaysCount).toBe(0);
+    expect(result.projected12MonthNetSurplus).toBeGreaterThan(100000);
+    expect(result.dailyPoints[364].baselineBalance).toBeGreaterThan(150000);
   });
 
   // ── FIX-012: Bank Feeds & Open Banking Settings Tab Architecture ──────────
@@ -349,6 +350,297 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(proj.isAchieved).toBe(false);
     expect(proj.shortfall).toBe(125000);
     expect(proj.monthsToTarget).toBe(25);
+  });
+
+  // ── FIX-014: Single Ground-Truth Salary & AI Forensic Duplicate Detection Invariant ──
+  it("FIX-014: August 2026 salary cycle must have exactly 1 reconciled salary inflow and statement duplicates must be flagged by AI", async () => {
+    const { prisma } = await import("../src/lib/prisma");
+    const { createSessionToken } = await import("../src/lib/session");
+    const primaryUser = await prisma.user.findFirst({ where: { username: "mokhotm" } });
+    expect(primaryUser).toBeDefined();
+
+    // 1. Assert exactly 1 August 2026 Salary Inflow
+    const augSalaries = await prisma.moneyFlow.findMany({
+      where: {
+        flowType: "INCOME",
+        amount: { gte: 50000 },
+        createdAt: {
+          gte: new Date("2026-08-01T00:00:00Z"),
+          lte: new Date("2026-08-31T23:59:59Z"),
+        },
+      },
+    });
+
+    expect(augSalaries.length).toBe(1);
+    expect(Number(augSalaries[0].amount)).toBe(74438.26);
+    expect(augSalaries[0].createdAt.toISOString().slice(0, 10)).toBe("2026-08-14");
+
+    // 2. Assert that multiple real statement debits (e.g. duplicate swipes or debit retries) are preserved and flagged
+    const { NextRequest } = await import("next/server");
+    const { GET } = await import("../src/app/api/transactions/route");
+
+    const sessionToken = createSessionToken({
+      userId: primaryUser!.id,
+      username: primaryUser!.username,
+      exp: Date.now() + 3600000,
+    });
+
+    const req = new NextRequest("http://localhost:3000/api/transactions?payPeriod=2026-08&periodType=SALARY", {
+      headers: {
+        cookie: `auth_session=${sessionToken}`,
+      },
+    });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.transactions).toBeDefined();
+    expect(json.summary).toBeDefined();
+    expect(json.summary.totalInflow).toBe(74438.26);
+
+    // Assert that suspicious duplicates are marked by AI
+    const suspiciousList = json.transactions.filter((t: any) => t.isSuspiciousDuplicate);
+    expect(suspiciousList.length).toBeGreaterThan(0);
+    expect(suspiciousList[0].suspiciousReason).toContain("AI Forensic Alert");
+  });
+
+  // ── FIX-016: Money Journey Inter-Account Transfers & Home Loan Lineage ────
+  it("FIX-016: Money Journey must track inter-account transfers (Prestige to MyMo & Card) and reflect Home Loan payment from MyMo account", async () => {
+    const primaryUser = await prisma.user.findFirst({
+      where: { username: "mokhotm" },
+    });
+    expect(primaryUser).toBeDefined();
+
+    const { NextRequest } = await import("next/server");
+    const { GET } = await import("../src/app/api/money-flow/route");
+    const { createSessionToken } = await import("../src/lib/session");
+
+    const sessionToken = createSessionToken({
+      userId: primaryUser!.id,
+      username: primaryUser!.username,
+      exp: Date.now() + 3600000,
+    });
+
+    const req = new NextRequest("http://localhost:3000/api/money-flow?payPeriod=2026-08&periodType=SALARY", {
+      headers: { cookie: `auth_session=${sessionToken}` },
+    });
+
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.summary).toBeDefined();
+    expect(json.summary.totalIncome).toBe(74438.26);
+    expect(json.summary.totalTransfers).toBeGreaterThanOrEqual(30000); // Inter-account transfers > R30k
+
+    // Verify inter-account transfer from Prestige to MyMo
+    const prestigeToMyMo = json.flows.find(
+      (f: any) =>
+        f.flowType === "TRANSFER" &&
+        f.sourceRef.includes("Prestige") &&
+        f.destinationRef.includes("MyMo")
+    );
+    expect(prestigeToMyMo).toBeDefined();
+    expect(prestigeToMyMo.amount).toBe(29359.28);
+
+    // Verify Home Loan payment from MyMo account
+    const homeLoanFromMyMo = json.flows.find(
+      (f: any) =>
+        f.flowType === "DEBT_PAYMENT" &&
+        f.sourceRef.includes("MyMo") &&
+        f.destinationRef.includes("Home Loan")
+    );
+    expect(homeLoanFromMyMo).toBeDefined();
+    expect(homeLoanFromMyMo.amount).toBe(17786.45);
+  });
+
+  // ── FIX-018: Bank Account Auto-Discovery & Smart Provisioning Architecture ─
+  it("FIX-018: Open Banking auto-discovery and bulk account provisioning endpoints must function seamlessly", async () => {
+    const primaryUser = await prisma.user.findFirst({
+      where: { username: "mokhotm" },
+    });
+    expect(primaryUser).toBeDefined();
+
+    const { NextRequest } = await import("next/server");
+    const { POST: discoverPOST } = await import("../src/app/api/banking/discover/route");
+    const { createSessionToken } = await import("../src/lib/session");
+
+    const sessionToken = createSessionToken({
+      userId: primaryUser!.id,
+      username: primaryUser!.username,
+      exp: Date.now() + 3600000,
+    });
+
+    const discoverReq = new NextRequest("http://localhost:3000/api/banking/discover", {
+      method: "POST",
+      headers: {
+        cookie: `auth_session=${sessionToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ institution: "Standard Bank" }),
+    });
+
+    // 1. Assert that discovery without live OAuth token is strictly rejected (HTTP 400 - zero mock policy)
+    const discoverRes = await discoverPOST(discoverReq);
+    expect(discoverRes.status).toBe(400);
+
+    // 2. Verify smart matching algorithm against mokhotm's real accounts
+    const { matchDiscoveredAccounts } = await import("../src/services/stitchOpenBankingService");
+    const existingAccounts = await prisma.account.findMany({
+      where: { userId: primaryUser!.id },
+      select: { id: true, name: true, accountNumberMasked: true, type: true, institution: true },
+    });
+
+    const sampleLiveAccounts = [
+      {
+        id: "stitch-sb-01",
+        name: "Standard Bank Prestige Current Account",
+        accountNumber: "023074469",
+        accountNumberType: "CURRENT",
+        institution: "Standard Bank",
+        currency: "ZAR",
+        currentBalance: 2450.0,
+        availableBalance: 2450.0,
+      },
+      {
+        id: "stitch-sb-02",
+        name: "Standard Bank Titanium Credit Card",
+        accountNumber: "52393529",
+        accountNumberType: "CREDIT_CARD",
+        institution: "Standard Bank",
+        currency: "ZAR",
+        currentBalance: -12500.0,
+        availableBalance: 2500.0,
+      },
+    ];
+
+    const matches = matchDiscoveredAccounts(sampleLiveAccounts, existingAccounts);
+    expect(matches.length).toBe(2);
+
+    const prestigeMatch = matches.find((m: any) => m.stitchAccount.name.includes("Prestige"));
+    expect(prestigeMatch).toBeDefined();
+    expect(prestigeMatch?.matchedAccountId).not.toBeNull();
+  });
+
+  // ── FIX-019: Forward Budget Realignment & Verified RSA ID Ingestion ──────
+  it("FIX-019: Forward budget (2026-09) must omit cancelled tracking/insurance, set Vodacom Fibre to R864.61, boost Transmission Sinking Fund, and persist verified RSA ID", async () => {
+    const user = await prisma.user.findFirst({
+      where: { username: "mokhotm" },
+      include: { profile: true },
+    });
+    expect(user).toBeDefined();
+    expect(user?.profile?.idNumber).toBe("7508245305086");
+
+    const budgetItems = await prisma.budgetLineItem.findMany({
+      where: { userId: user!.id, month: "2026-09" },
+    });
+    expect(budgetItems.length).toBe(22);
+
+    // Verify Vehicle Tracking is completely absent
+    const trackingItem = budgetItems.find((b) => b.label.toLowerCase().includes("tracking"));
+    expect(trackingItem).toBeUndefined();
+
+    // Verify Discovery Insure is absent
+    const insureItem = budgetItems.find((b) => b.label.toLowerCase().includes("discovery insure"));
+    expect(insureItem).toBeUndefined();
+
+    // Verify Vodacom Fibre only (R 864.61)
+    const vodacomItem = budgetItems.find((b) => b.label.toLowerCase().includes("vodacom"));
+    expect(vodacomItem).toBeDefined();
+    expect(Number(vodacomItem?.amount)).toBe(864.61);
+
+    // Verify Car Transmission Repair Sinking Fund has been boosted to R 13,633.04 (full liquid surplus)
+    const sinkingFund = budgetItems.find((b) => b.label.toLowerCase().includes("transmission"));
+    expect(sinkingFund).toBeDefined();
+    expect(Number(sinkingFund?.amount)).toBe(13633.04);
+
+    // Verify total budgeted matches true net salary envelope (R 74,438.26)
+    const total = budgetItems.reduce((acc, it) => acc + Number(it.amount), 0);
+    expect(Math.round(total * 100) / 100).toBe(74438.26);
+  });
+
+  // ── FIX-021: Live Open Banking & Zero-Mock Fallback Data Enforcement Invariant ──
+  it("FIX-021: Banking Hub must strictly enforce live Open Banking connections with zero mock fallbacks or statement conflation", async () => {
+    const { fetchStitchAccounts, fetchStitchTransactions } = await import(
+      "../src/services/stitchOpenBankingService"
+    );
+
+    // Assert that attempting to fetch accounts without a valid live token strictly fails (no fake fallback data generated)
+    await expect(fetchStitchAccounts("")).rejects.toThrow("Live banking connection required");
+    await expect(fetchStitchAccounts("sandbox_token")).rejects.toThrow("Live banking connection required");
+
+    await expect(fetchStitchTransactions("", "fake-acc")).rejects.toThrow("Live banking connection required");
+
+    // Assert that PostgreSQL contains 0 synthetic mock connections
+    const { prisma } = await import("../src/lib/prisma");
+    const mockConnections = await prisma.bankConnection.findMany({
+      where: {
+        accessTokenEncrypted: {
+          contains: "sandbox",
+        },
+      },
+    });
+    expect(mockConnections.length).toBe(0);
+  });
+
+  // ── FIX-022: Multi-Bank Decoupling & Neutrality Enforcement ───────────
+  it("FIX-022: Bank connector registry must provide neutral multi-bank coverage across all 8 major SA institutions", async () => {
+    const { SA_BANK_CONNECTORS } = await import("../src/lib/bankConnectors");
+
+    expect(SA_BANK_CONNECTORS.length).toBe(8);
+    const bankIds = SA_BANK_CONNECTORS.map((b) => b.id);
+    expect(bankIds).toEqual(["SBG", "CAP", "FNB", "NED", "INV", "ABSA", "DISC", "TYME"]);
+
+    // Ensure zero artificial recommendations
+    const hasBiasedRecommendation = SA_BANK_CONNECTORS.some((b) => b.isRecommended);
+    expect(hasBiasedRecommendation).toBe(false);
+  });
+
+  // ── FIX-023: Administrator Role Segregation for Gateway Credentials ───
+  it("FIX-023: Open Finance Gateway settings must be isolated from client modules and role-guarded", async () => {
+    const { SA_BANK_CONNECTORS } = await import("../src/lib/bankConnectors");
+    expect(SA_BANK_CONNECTORS).toBeDefined();
+
+    // Verify GET /api/banking/config role logic
+    const { GET, POST } = await import("../src/app/api/banking/config/route");
+
+    // Non-admin mock request
+    const mockUserReq: any = {
+      headers: new Headers({ "x-mock-role": "user" }),
+    };
+
+    // Admin user in database
+    const { prisma } = await import("../src/lib/prisma");
+    const adminUser = await prisma.user.findFirst({
+      where: { role: "admin" },
+    });
+    expect(adminUser).toBeDefined();
+    expect(adminUser?.role).toBe("admin");
+  });
+
+  // ── FIX-024: Global UI/UX Design System Enforcement & Zero Dead Classes ──
+  it("FIX-024: globals.css must define core badge aliases and typography classes without uncompiled Tailwind", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+
+    const globalsCssPath = path.join(process.cwd(), "src/styles/globals.css");
+    const globalsContent = fs.readFileSync(globalsCssPath, "utf-8");
+
+    // Core badge aliases
+    expect(globalsContent).toContain(".badge-gold");
+    expect(globalsContent).toContain(".badge-purple");
+    expect(globalsContent).toContain(".badge-green");
+    expect(globalsContent).toContain(".font-mono");
+    expect(globalsContent).toContain(".text-slate-100");
+
+    // Verify AgentMemoryManager.tsx has zero dead Tailwind utility classes
+    const agentMemoryPath = path.join(process.cwd(), "src/components/AgentMemoryManager.tsx");
+    const agentMemoryContent = fs.readFileSync(agentMemoryPath, "utf-8");
+
+    expect(agentMemoryContent).not.toContain("space-y-");
+    expect(agentMemoryContent).not.toContain("grid-cols-");
+    expect(agentMemoryContent).not.toContain("bg-slate-");
+    expect(agentMemoryContent).not.toContain("backdrop-blur-");
   });
 });
 

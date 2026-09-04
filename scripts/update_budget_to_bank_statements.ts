@@ -223,7 +223,7 @@ async function main() {
     },
   ];
 
-  const targetMonths = ['2026-07', '2026-08', '2026-09', '2026-12'];
+  const targetMonths = ['2026-07', '2026-08'];
 
   for (const m of targetMonths) {
     await prisma.budgetLineItem.deleteMany({

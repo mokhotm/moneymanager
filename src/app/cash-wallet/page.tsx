@@ -386,6 +386,36 @@ export default function CashWalletPage() {
     }
   };
 
+  // Helper to match category across descriptions and IDs
+  const matchCategory = (itemCategory: string | undefined, itemDesc: string, targetCatId: string): boolean => {
+    if (!targetCatId || targetCatId === "ALL") return true;
+    if (itemCategory && itemCategory.toLowerCase() === targetCatId.toLowerCase()) return true;
+    const d = (itemDesc || "").toLowerCase();
+    const c = targetCatId.toLowerCase();
+    if (c === "domestic worker" || c === "domestic") {
+      return d.includes("domestic") || d.includes("cleaning") || d.includes("maid") || d.includes("housekeep") || d.includes("worker wage");
+    }
+    if (c === "garden services" || c === "garden") {
+      return d.includes("garden") || d.includes("lawn") || d.includes("yard") || d.includes("mowing");
+    }
+    if (c === "groceries" || c === "groceries & food") {
+      return d.includes("grocer") || d.includes("food") || d.includes("market") || d.includes("produce") || d.includes("woolworths") || d.includes("checkers") || d.includes("spar") || d.includes("pick n pay");
+    }
+    if (c === "transport" || c === "taxi & transport") {
+      return d.includes("transport") || d.includes("taxi") || d.includes("fuel") || d.includes("petrol") || d.includes("diesel") || d.includes("commute") || d.includes("uber");
+    }
+    if (c === "dining" || c === "coffee & dining") {
+      return d.includes("dining") || d.includes("coffee") || d.includes("café") || d.includes("restaurant") || d.includes("lunch") || d.includes("dinner") || d.includes("takeaway");
+    }
+    if (c === "parking" || c === "parking & tips") {
+      return d.includes("parking") || d.includes("tip") || d.includes("guard") || d.includes("car guard");
+    }
+    if (c === "discretionary") {
+      return d.includes("misc") || d.includes("discretionary") || d.includes("personal") || d.includes("cash expense");
+    }
+    return d.includes(c);
+  };
+
   // Compute metrics
   const metrics = useMemo(() => {
     if (!wallet) return { totalInflow: 0, totalOutflow: 0, domesticSpend: 0, gardenSpend: 0, unallocatedCount: 0 };
@@ -428,13 +458,13 @@ export default function CashWalletPage() {
     if (!wallet) return [];
     return wallet.recentFlows.filter((f) => {
       // 1. Flow Type Tab Filter
-      if (filterType === "INFLOW" && f.amount <= 0) return false;
-      if (filterType === "SPEND" && f.amount >= 0) return false;
-      if (filterType === "DOMESTIC_GARDEN" && !(f.description.includes("Domestic") || f.description.includes("Garden"))) return false;
+      if (filterType === "INFLOW" && !f.isIncoming && f.amount <= 0) return false;
+      if (filterType === "SPEND" && (f.isIncoming || f.amount >= 0)) return false;
+      if (filterType === "DOMESTIC_GARDEN" && !(f.description.toLowerCase().includes("domestic") || f.description.toLowerCase().includes("garden"))) return false;
 
       // 2. Specific Category Filter
       if (selectedCategory !== "ALL") {
-        const matchesCat = f.category === selectedCategory || f.description.toLowerCase().includes(selectedCategory.toLowerCase());
+        const matchesCat = matchCategory(f.category, f.description, selectedCategory);
         if (!matchesCat) return false;
       }
 
@@ -453,6 +483,46 @@ export default function CashWalletPage() {
       return true;
     });
   }, [wallet, filterType, selectedCategory, searchQuery]);
+
+  // Filtered unallocated/split batches
+  const filteredBatches = useMemo(() => {
+    if (!wallet || !wallet.unallocatedBatches) return [];
+    return wallet.unallocatedBatches.filter((batch) => {
+      // 1. Specific Category Filter
+      if (selectedCategory !== "ALL") {
+        const hasMatchingChild = (batch.childSplits || []).some((c) =>
+          matchCategory(undefined, c.description, selectedCategory)
+        );
+        if (!hasMatchingChild) return false;
+      }
+
+      // 2. Filter Type Tab
+      if (filterType === "DOMESTIC_GARDEN") {
+        const hasDomGarden = (batch.childSplits || []).some(
+          (c) => matchCategory(undefined, c.description, "Domestic Worker") || matchCategory(undefined, c.description, "Garden Services")
+        );
+        if (!hasDomGarden && batch.unallocatedAmount === 0) return false;
+      } else if (filterType === "SPEND") {
+        if (batch.allocatedAmount <= 0) return false;
+      }
+
+      // 3. Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesDate = batch.date.includes(q);
+        const matchesAccount = batch.sourceAccountName.toLowerCase().includes(q);
+        const matchesAmount = batch.originalAmount.toString().includes(q) || batch.unallocatedAmount.toString().includes(q);
+        const matchesChild = (batch.childSplits || []).some(
+          (c) => c.description.toLowerCase().includes(q) || c.amount.toString().includes(q)
+        );
+        if (!matchesDate && !matchesAccount && !matchesAmount && !matchesChild) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [wallet, selectedCategory, filterType, searchQuery]);
 
   return (
     <>
@@ -693,7 +763,9 @@ export default function CashWalletPage() {
 
                 {CATEGORIES.map((cat) => {
                   const Icon = cat.icon;
-                  const count = (wallet.recentFlows || []).filter((f) => f.category === cat.id || f.description.includes(cat.id)).length;
+                  const count = (wallet.recentFlows || []).filter((f) =>
+                    matchCategory(f.category, f.description, cat.id)
+                  ).length;
                   const isSelected = selectedCategory === cat.id;
 
                   return (
@@ -713,6 +785,8 @@ export default function CashWalletPage() {
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
+                        boxShadow: isSelected ? `0 0 14px ${cat.color}35` : "none",
+                        transition: "all 0.2s ease",
                       }}
                     >
                       <Icon size={13} style={{ color: cat.color }} />
@@ -721,6 +795,145 @@ export default function CashWalletPage() {
                   );
                 })}
               </div>
+
+              {/* Row 3: Active Filters Summary HUD Bar */}
+              {(selectedCategory !== "ALL" || searchQuery.trim() || filterType !== "ALL" || selectedMonth !== "ALL") && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    background: "rgba(245, 158, 11, 0.08)",
+                    border: "1px solid rgba(245, 158, 11, 0.25)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{ color: "#fbbf24", fontWeight: "800", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Filter size={13} /> Active Filter:
+                    </span>
+
+                    {selectedCategory !== "ALL" && (
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.1)",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          color: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        Category: {selectedCategory}
+                        <button
+                          onClick={() => setSelectedCategory("ALL")}
+                          style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )}
+
+                    {selectedMonth !== "ALL" && (
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.1)",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          color: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        Cycle: {selectedMonth}
+                        <button
+                          onClick={() => setSelectedMonth("ALL")}
+                          style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )}
+
+                    {searchQuery.trim() && (
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.1)",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          color: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        Search: &quot;{searchQuery}&quot;
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )}
+
+                    {filterType !== "ALL" && (
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.1)",
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          color: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        Tab: {filterType}
+                        <button
+                          onClick={() => setFilterType("ALL")}
+                          style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )}
+
+                    <span style={{ color: "#94a3b8" }}>
+                      ({filteredFlows.length} ledger item{filteredFlows.length === 1 ? "" : "s"}, {filteredBatches.length} ATM batch{filteredBatches.length === 1 ? "" : "es"})
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("ALL");
+                      setSelectedMonth("ALL");
+                      setFilterType("ALL");
+                      setSearchQuery("");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#f87171",
+                      cursor: "pointer",
+                      fontWeight: "700",
+                      fontSize: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <RotateCcw size={12} /> Clear All
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Top 4 Core Stat Cards Grid */}
@@ -811,14 +1024,16 @@ export default function CashWalletPage() {
                       Extracted Bank Statement ATM Withdrawals
                     </h3>
                     <p style={{ fontSize: "13px", color: "#94a3b8", margin: 0, marginTop: "2px" }}>
-                      Bank statements detected {wallet.unallocatedBatches.length} cash withdrawal batch(es). Split into itemized expenses to eliminate phantom leakage.
+                      {selectedCategory !== "ALL" || searchQuery || filterType !== "ALL"
+                        ? `Showing ${filteredBatches.length} of ${wallet.unallocatedBatches.length} withdrawal batch(es) matching active filter.`
+                        : `Bank statements detected ${wallet.unallocatedBatches.length} cash withdrawal batch(es). Split into itemized expenses to eliminate phantom leakage.`}
                     </p>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "600" }}>
-                    Unallocated Inflow:
+                    {selectedMonth === "ALL" ? "Total Unallocated Inflow:" : "Cycle Unallocated Inflow:"}
                   </span>
                   <span style={{ fontSize: "18px", fontWeight: "900", color: "#60a5fa", fontFamily: "var(--font-mono)" }}>
                     {formatZAR(wallet.totalUnallocatedCash || 0)}
@@ -826,78 +1041,150 @@ export default function CashWalletPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
-                {wallet.unallocatedBatches.map((batch) => (
-                  <div
-                    key={batch.id}
+              {filteredBatches.length === 0 ? (
+                <div
+                  style={{
+                    background: "rgba(15, 23, 42, 0.4)",
+                    border: "1px dashed rgba(255, 255, 255, 0.15)",
+                    borderRadius: "14px",
+                    padding: "28px",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ color: "#94a3b8", fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>
+                    No ATM withdrawal batches match {selectedCategory !== "ALL" ? `category "${selectedCategory}"` : `search "${searchQuery}"`}.
+                  </div>
+                  <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 14px 0" }}>
+                    {filteredFlows.length} matching item{filteredFlows.length === 1 ? "" : "s"} found in the cash ledger table below.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("ALL");
+                      setSearchQuery("");
+                      setFilterType("ALL");
+                    }}
                     style={{
-                      background: "rgba(15, 23, 42, 0.6)",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      borderRadius: "16px",
-                      padding: "18px",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      gap: "14px",
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      background: "rgba(255, 255, 255, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      color: "#f8fafc",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
                   >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "var(--font-mono)", fontWeight: "600" }}>
-                          📅 {batch.date}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            fontWeight: "800",
-                            padding: "3px 8px",
-                            borderRadius: "6px",
-                            background: batch.unallocatedAmount === 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                            color: batch.unallocatedAmount === 0 ? "#34d399" : "#fbbf24",
-                            border: `1px solid ${batch.unallocatedAmount === 0 ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
-                          }}
-                        >
-                          {batch.unallocatedAmount === 0 ? "100% Reconciled" : "Pending Split"}
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: "15px", fontWeight: "700", color: "#f8fafc", marginBottom: "4px" }}>
-                        {batch.sourceAccountName}
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
-                        <span style={{ fontSize: "24px", fontWeight: "900", color: "#60a5fa", fontFamily: "var(--font-mono)" }}>
-                          {formatZAR(batch.originalAmount)}
-                        </span>
-                        <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                          (R{batch.unallocatedAmount.toFixed(2)} unallocated)
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => openSplitModal(batch)}
+                    <RotateCcw size={12} /> Show All ATM Batches
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+                  {filteredBatches.map((batch) => (
+                    <div
+                      key={batch.id}
                       style={{
-                        padding: "10px 16px",
-                        borderRadius: "10px",
-                        background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                        color: "#ffffff",
-                        border: "none",
-                        fontSize: "13px",
-                        fontWeight: "700",
-                        cursor: "pointer",
+                        background: "rgba(15, 23, 42, 0.6)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "16px",
+                        padding: "18px",
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        gap: "14px",
                       }}
                     >
-                      <Split size={14} /> ⚡ Split &amp; Assign to Cash Expenses
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "var(--font-mono)", fontWeight: "600" }}>
+                            📅 {batch.date}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "800",
+                              padding: "3px 8px",
+                              borderRadius: "6px",
+                              background: batch.unallocatedAmount === 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                              color: batch.unallocatedAmount === 0 ? "#34d399" : "#fbbf24",
+                              border: `1px solid ${batch.unallocatedAmount === 0 ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
+                            }}
+                          >
+                            {batch.unallocatedAmount === 0 ? "100% Reconciled" : "Pending Split"}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: "15px", fontWeight: "700", color: "#f8fafc", marginBottom: "4px" }}>
+                          {batch.sourceAccountName}
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
+                          <span style={{ fontSize: "24px", fontWeight: "900", color: "#60a5fa", fontFamily: "var(--font-mono)" }}>
+                            {formatZAR(batch.originalAmount)}
+                          </span>
+                          <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                            (R{batch.unallocatedAmount.toFixed(2)} unallocated)
+                          </span>
+                        </div>
+
+                        {/* Child Splits Chips */}
+                        {batch.childSplits && batch.childSplits.length > 0 && (
+                          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px", background: "rgba(7, 11, 20, 0.5)", padding: "10px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                            <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                              Allocated Expenses ({batch.childSplits.length}):
+                            </span>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                              {batch.childSplits.map((cs) => {
+                                const isDom = cs.description.toLowerCase().includes("domestic");
+                                const isGdn = cs.description.toLowerCase().includes("garden");
+                                return (
+                                  <span
+                                    key={cs.id}
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "700",
+                                      padding: "3px 8px",
+                                      borderRadius: "6px",
+                                      background: isDom ? "rgba(56, 189, 248, 0.15)" : isGdn ? "rgba(52, 211, 153, 0.15)" : "rgba(251, 191, 36, 0.15)",
+                                      color: isDom ? "#38bdf8" : isGdn ? "#34d399" : "#fbbf24",
+                                      border: `1px solid ${isDom ? "rgba(56, 189, 248, 0.3)" : isGdn ? "rgba(52, 211, 153, 0.3)" : "rgba(251, 191, 36, 0.3)"}`,
+                                    }}
+                                  >
+                                    {cs.description}: {formatZAR(cs.amount)}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => openSplitModal(batch)}
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: "10px",
+                          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                          color: "#ffffff",
+                          border: "none",
+                          fontSize: "13px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)",
+                        }}
+                      >
+                        <Split size={14} /> ⚡ Split &amp; Assign to Cash Expenses
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1360,15 +1647,33 @@ export default function CashWalletPage() {
                 <tbody>
                   {filteredFlows.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ padding: "32px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
-                        No cash flows match the selected filter.
+                      <td colSpan={4} style={{ padding: "48px 24px", textAlign: "center" }}>
+                        <div style={{ color: "#94a3b8", fontSize: "15px", fontWeight: "700", marginBottom: "6px" }}>
+                          No cash flows match the selected filter.
+                        </div>
+                        <p style={{ color: "#64748b", fontSize: "13px", margin: "0 0 16px 0" }}>
+                          Try adjusting your category, pay cycle, or search query.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setSelectedCategory("ALL");
+                            setSelectedMonth("ALL");
+                            setFilterType("ALL");
+                            setSearchQuery("");
+                          }}
+                          className="btn btn-secondary"
+                          style={{ padding: "8px 16px", fontSize: "12px" }}
+                        >
+                          <RotateCcw size={12} /> Reset All Filters
+                        </button>
                       </td>
                     </tr>
                   ) : (
                     filteredFlows.map((f) => {
-                      const isDomestic = f.description.includes("Domestic");
-                      const isGarden = f.description.includes("Garden");
-                      const isAtm = f.amount > 0;
+                      const isDomestic = matchCategory(f.category, f.description, "Domestic Worker");
+                      const isGarden = matchCategory(f.category, f.description, "Garden Services");
+                      const isGroceries = matchCategory(f.category, f.description, "Groceries");
+                      const isAtm = f.isIncoming || f.amount > 0;
 
                       return (
                         <tr
@@ -1394,6 +1699,8 @@ export default function CashWalletPage() {
                                   ? "rgba(56, 189, 248, 0.15)"
                                   : isGarden
                                   ? "rgba(52, 211, 153, 0.15)"
+                                  : isGroceries
+                                  ? "rgba(251, 191, 36, 0.15)"
                                   : "rgba(239, 68, 68, 0.15)",
                                 color: isAtm
                                   ? "#60a5fa"
@@ -1401,6 +1708,8 @@ export default function CashWalletPage() {
                                   ? "#38bdf8"
                                   : isGarden
                                   ? "#34d399"
+                                  : isGroceries
+                                  ? "#fbbf24"
                                   : "#f87171",
                                 border: `1px solid ${
                                   isAtm
@@ -1409,17 +1718,20 @@ export default function CashWalletPage() {
                                     ? "rgba(56, 189, 248, 0.3)"
                                     : isGarden
                                     ? "rgba(52, 211, 153, 0.3)"
+                                    : isGroceries
+                                    ? "rgba(251, 191, 36, 0.3)"
                                     : "rgba(239, 68, 68, 0.3)"
                                 }`,
                               }}
                             >
-                              {f.type}
+                              {isAtm ? "ATM WITHDRAWAL" : f.category || f.type}
                             </span>
                           </td>
                           <td style={{ padding: "16px", color: "#f8fafc", fontSize: "14px", fontWeight: "600" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               {isDomestic && <Home size={15} style={{ color: "#38bdf8" }} />}
                               {isGarden && <Flower2 size={15} style={{ color: "#34d399" }} />}
+                              {isGroceries && <ShoppingCart size={15} style={{ color: "#fbbf24" }} />}
                               {isAtm && <ArrowDownRight size={15} style={{ color: "#60a5fa" }} />}
                               {f.description}
                             </div>
@@ -1447,6 +1759,7 @@ export default function CashWalletPage() {
           </div>
         </>
       ) : null}
+      </div>
 
       {/* 🌟 VECTOR 8: INTERACTIVE MULTI-ITEM CASH SPLIT MODAL */}
       {selectedBatchForSplit && (
@@ -1768,7 +2081,7 @@ export default function CashWalletPage() {
           </div>
         </div>
       )}
-      </div>
     </>
   );
 }
+

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { SA_BANK_CONNECTORS, encryptToken, decryptToken, fetchStitchAccounts } from "@/services/stitchOpenBankingService";
+import {
+  SA_BANK_CONNECTORS,
+  encryptToken,
+  decryptToken,
+  fetchStitchAccounts,
+} from "@/services/stitchOpenBankingService";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,6 +15,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Query genuine live bank connections only
     const connections = await prisma.bankConnection.findMany({
       where: { account: { userId: user.id } },
       include: {
@@ -27,74 +33,58 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Fetch user accounts without connection
-    const unlinkedAccounts = await prisma.account.findMany({
-      where: {
-        userId: user.id,
-        bankConnection: null,
-      },
-      select: {
-        id: true,
-        name: true,
-        institution: true,
-        accountNumberMasked: true,
-        type: true,
-        openingBalance: true,
-      },
-    });
+    const formattedConnections = await Promise.all(
+      connections.map(async (conn) => {
+        // Count transactions synced from the live bank connection into MoneyFlow
+        const txCount = await prisma.moneyFlow.count({
+          where: {
+            OR: [
+              { sourceRef: conn.accountId },
+              { destinationRef: conn.accountId },
+            ],
+          },
+        });
 
-    // Check virtual synced documents for sync counts
-    const syncedDocs = await prisma.document.findMany({
-      where: {
-        relatedEntityType: "ACCOUNT",
-        documentType: "BANK_STATEMENT",
-      },
-      select: {
-        relatedEntityId: true,
-        parsedData: true,
-        uploadedAt: true,
-      },
-    });
+        return {
+          id: conn.id,
+          accountId: conn.accountId,
+          accountName: conn.account.name,
+          institution: conn.account.institution,
+          accountNumberMasked: conn.account.accountNumberMasked || "••••",
+          accountType: conn.account.type,
+          currentBalance: Number(conn.account.openingBalance),
+          providerType: conn.providerType,
+          providerName: conn.providerName,
+          consentStatus: conn.consentStatus,
+          lastSyncedAt: conn.lastSyncedAt ? conn.lastSyncedAt.toISOString() : null,
+          syncFrequency: conn.syncFrequency,
+          isLiveBankSync: true,
+          totalSyncedTransactions: txCount,
+        };
+      })
+    );
 
-    const docMap = new Map<string, any>();
-    for (const doc of syncedDocs) {
-      if (doc.relatedEntityId) {
-        docMap.set(doc.relatedEntityId, doc.parsedData);
-      }
-    }
-
-    const formattedConnections = connections.map((conn) => {
-      const parsed = docMap.get(conn.accountId) as any;
-      const isLiveBankSync = parsed?.isBankApiSync === true;
-      const totalTxs = parsed?.transactions?.length ?? 0;
-
-      return {
-        id: conn.id,
-        accountId: conn.accountId,
-        accountName: conn.account.name,
-        institution: conn.account.institution,
-        accountNumberMasked: conn.account.accountNumberMasked || "••••",
-        accountType: conn.account.type,
-        currentBalance: Number(conn.account.openingBalance),
-        providerType: conn.providerType,
-        providerName: conn.providerName,
-        consentStatus: conn.consentStatus,
-        lastSyncedAt: conn.lastSyncedAt ? conn.lastSyncedAt.toISOString() : null,
-        syncFrequency: conn.syncFrequency,
-        isLiveBankSync,
-        totalSyncedTransactions: totalTxs,
-      };
-    });
+    const isGatewayConfigured = Boolean(
+      process.env.STITCH_CLIENT_ID && process.env.STITCH_CLIENT_SECRET
+    );
 
     return NextResponse.json({
       connections: formattedConnections,
-      unlinkedAccounts,
       availableConnectors: SA_BANK_CONNECTORS,
-      isSandboxMode: !process.env.STITCH_CLIENT_SECRET,
+      isGatewayConfigured,
+      userRole: user.role,
+      gatewayInfo: {
+        provider: "Stitch Open Finance (FSCA Regulated)",
+        status: isGatewayConfigured ? "CONFIGURED" : "AWAITING_CREDENTIALS",
+        supportedInstitutions: SA_BANK_CONNECTORS.length,
+      },
     });
   } catch (error: any) {
     console.error("Banking API GET error:", error);
-    return NextResponse.json({ error: error.message || "Failed to load bank connections" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to load live bank connections" },
+      { status: 500 }
+    );
   }
 }
 
@@ -112,6 +102,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "accountId is required" }, { status: 400 });
     }
 
+    if (!token) {
+      return NextResponse.json(
+        { error: "Live access token is required. No mock or fallback tokens allowed." },
+        { status: 400 }
+      );
+    }
+
     // Verify account ownership
     const account = await prisma.account.findFirst({
       where: { id: accountId, userId: user.id },
@@ -121,8 +118,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Account not found or access denied" }, { status: 404 });
     }
 
-    const accessToken = token || `sandbox_${institution.toLowerCase().replace(/\s+/g, "_")}_token`;
-    const encryptedToken = encryptToken(accessToken);
+    const encryptedToken = encryptToken(token);
 
     const connection = await prisma.bankConnection.upsert({
       where: { accountId },
@@ -152,7 +148,7 @@ export async function POST(req: NextRequest) {
       accountName: connection.account.name,
       institution: connection.account.institution,
       status: connection.consentStatus,
-      message: `Successfully linked ${connection.account.name} via Stitch Open Banking!`,
+      message: `Successfully linked ${connection.account.name} via live Open Banking!`,
     });
   } catch (error: any) {
     console.error("Banking API POST error:", error);

@@ -26,6 +26,8 @@ export default function TransactionsPage() {
     budgetedOutflow?: number;
     unbudgetedOutflow?: number;
     budgetAdherenceRate?: number;
+    suspiciousDuplicateCount?: number;
+    suspiciousDuplicateTotal?: number;
   } | null>(null);
   const [activePeriod, setActivePeriod] = useState<string>("2026-08");
   const [activePeriodType, setActivePeriodType] = useState<string>("SALARY");
@@ -37,6 +39,8 @@ export default function TransactionsPage() {
   const budgetedOutflow = summaryData?.budgetedOutflow ?? 0;
   const unbudgetedOutflow = summaryData?.unbudgetedOutflow ?? 0;
   const adherence = summaryData?.budgetAdherenceRate !== undefined ? summaryData.budgetAdherenceRate : 0;
+  const suspiciousCount = summaryData?.suspiciousDuplicateCount ?? 0;
+  const suspiciousTotal = summaryData?.suspiciousDuplicateTotal ?? 0;
 
   return (
     <>
@@ -71,9 +75,29 @@ export default function TransactionsPage() {
               />
               Budget Engine Reconciled
             </span>
+            {suspiciousCount > 0 && (
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontWeight: 700,
+                  background: "rgba(245, 158, 11, 0.14)",
+                  color: "#fbbf24",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  padding: "2px 10px",
+                  borderRadius: "99px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "0 0 12px rgba(245, 158, 11, 0.2)",
+                }}
+              >
+                ⚠️ {suspiciousCount} Potential Duplicate{suspiciousCount > 1 ? "s" : ""} Flagged
+              </span>
+            )}
           </h1>
           <p className="page-subtitle">
-            Reconciled line-item transaction feed across all linked accounts with real-time budget highlighting
+            Reconciled line-item transaction feed across all linked accounts with real-time budget highlighting and AI duplicate fraud detection
           </p>
         </div>
 
@@ -98,6 +122,52 @@ export default function TransactionsPage() {
       </div>
 
       <div className="page-body">
+        {/* Suspicious Duplicate Notice Banner */}
+        {suspiciousCount > 0 && (
+          <div
+            style={{
+              marginBottom: "20px",
+              padding: "14px 20px",
+              borderRadius: "16px",
+              background:
+                "linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(20, 25, 45, 0.85) 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.35)",
+              boxShadow: "0 4px 20px -5px rgba(245, 158, 11, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "12px",
+                  background: "rgba(245, 158, 11, 0.2)",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fbbf24",
+                  flexShrink: 0,
+                }}
+              >
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#fbbf24" }}>
+                  AI Forensic Anomaly Detection: {suspiciousCount} Potential Duplicate Debits Flagged ({formatZAR(suspiciousTotal)})
+                </div>
+                <div style={{ fontSize: "11.5px", color: "#94a3b8", marginTop: "2px" }}>
+                  Identical amounts detected within short time windows on your statement. Review the flagged items below to confirm validity or dispute duplicate charges.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Core Financial Stat Cards Grid */}
         <div className="stat-grid mb-6">
           {/* Stat 1: Total Reconciled Inflow */}

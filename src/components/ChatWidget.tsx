@@ -462,7 +462,16 @@ export default function ChatWidget() {
             ))}
 
             {loading && (
-              <div className="flex items-center gap-2.5 p-3 rounded-xl" style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.35)", margin: "4px 0" }}>
+              <div
+                className="flex items-center gap-3"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "var(--radius-md)",
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  margin: "4px 0",
+                }}
+              >
                 <Loader2
                   size={20}
                   className="animate-spin text-amber-400"

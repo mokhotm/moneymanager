@@ -30,7 +30,7 @@ Built with an **Obsidian Glass design philosophy**, **cooperative multi-agent AI
 
 ---
 
-## 2. The 7 Strategic Pillars & Technical Specifications
+## 2. Strategic Pillars & Technical Specifications
 
 ---
 
@@ -240,10 +240,68 @@ graph TD
 
 ---
 
-### Pillar 10: South African Open Banking & Inbound Scanner Hub (`/settings?tab=banking`)
-* **Stitch Open Finance Directory**: Native connectors for all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
-* **Hybrid Statement Scanner**: Inbound IMAP email scanner automatically captures e-statements, municipal utility rates, and telco invoices.
-* **Sovereign Key & Token Vault**: AES-256-CBC token encryption at rest.
+---
+
+### Pillar 10: South African Open Banking, Administrator Gateway & Inbound Scanner Hub (`/settings?tab=banking` & `/settings?tab=admin-gateway`)
+
+#### 10.1 Architecture & OAuth 2.0 PKCE Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Consumer / Account Holder
+    participant Client as Browser (BankingTab)
+    participant Server as MoneyManager Server (/api/banking)
+    participant Stitch as Stitch Open Finance API
+    participant BankCore as Bank Portal & Core Systems (SBG/CAP/FNB/NED/etc)
+    participant Mobile as User Mobile Banking App
+
+    User->>Client: Clicks "+ Connect Bank Account"
+    Client->>Client: Selects Bank (e.g. Standard Bank, Capitec, FNB)
+    Client->>Server: GET /api/banking/auth/connect?bankId=SBG
+    Server->>Stitch: Generate OAuth 2.0 PKCE Challenge & Scopes
+    Server-->>Client: Return Stitch Authorization URL
+    Client->>BankCore: Redirect to Bank Official Login
+    BankCore->>Mobile: Dispatches Mobile Multi-Factor (Approve-It / Push Auth)
+    User->>Mobile: Confirms Biometric / In-App Authorization
+    BankCore->>Stitch: Issues Authorization Grant
+    Stitch->>Server: Redirects to /api/banking/auth/callback?code=...
+    Server->>Stitch: Exchange Authorization Code for Bearer Token
+    Server->>Stitch: Query GraphQL (accounts, balances, institutions)
+    Server->>Server: Encrypt Token with AES-256-CBC into BankConnection
+    Server-->>Client: Redirect to /settings?tab=banking&connected=true
+```
+
+#### 10.2 Architectural Pillars & Security Invariants
+* **Multi-Bank Neutrality (`FIX-022`)**:
+  - Native support for all 8 major South African commercial banking institutions: Standard Bank (`SBG`), Capitec (`CAP`), First National Bank (`FNB`), Nedbank (`NED`), Investec (`INV`), Absa (`ABSA`), Discovery Bank (`DISC`), and TymeBank (`TYME`).
+  - Strict neutrality across institutions without proprietary third-party lock-ins or hardcoded vendor recommendations.
+* **Administrator Role Segregation (`FIX-023`)**:
+  - **Administrator Gateway Hub (`/settings?tab=admin-gateway`)**: System infrastructure configuration (`STITCH_CLIENT_ID`, `STITCH_CLIENT_SECRET`, and redirect URIs) is restricted to users with `role: "admin"`.
+  - **Backend Role-Based Access Control**: `POST /api/banking/config` verifies administrator privileges and rejects non-admin requests with `403 Forbidden`. `GET /api/banking/config` returns `{ isConfigured: boolean }` to standard users without leaking masked secrets.
+  - **Clean Consumer Experience**: Standard consumers at `/settings?tab=banking` are presented with an intuitive, non-technical bank connection flow free of infrastructure API credentials.
+* **Zero-Mock Policy & Ground-Truth Invariant (`FIX-021`)**:
+  - Prohibits synthetic fallback data generators (`generateSandboxBankData` deleted).
+  - Physical decoupling of uploaded PDF statement records (`Document`) from live API connections (`BankConnection`).
+  - Live API errors strictly bubble up to inform the user when authentication or connectivity requires attention.
+* **Hybrid Statement Scanner (`EmailScannerHub`)**:
+  - Inbound IMAP email scanner automatically captures e-statements, municipal utility rates, and telco invoices directly from financial institutions.
+
+---
+
+### Pillar 11: South African Statutory Salary & Increase Intelligence Engine (`src/engine/salaryCalculator.ts`, `/salary-calculator`)
+
+#### 11.1 Statutory Tax Formulation (SARS 2026/2027)
+Net salary calculation incorporates full South African statutory tax tables and pre-tax deductions:
+$$\text{Taxable Income} = \text{Gross Salary} - \min(\text{Retirement Contribution}, 0.275 \times \text{Gross}, \text{R 350,000 / yr})$$
+$$\text{PAYE Liability} = \text{TaxBracket}(\text{Taxable Income}) - \text{Primary Rebate (R 17,235)} - \text{Section 6A Medical Credits}$$
+$$\text{UIF Contribution} = \min(0.01 \times \text{Gross}, \text{R 177.12 / mo})$$
+$$\text{Net Take-Home Pay} = \text{Gross} - \text{PAYE} - \text{UIF} - \text{Medical Aid} - \text{Retirement} - \text{Other Deductions}$$
+
+#### 11.2 Key Capabilities & Simulation
+* **Section 6A Medical Scheme Fees Tax Credits**: R 364/mo for the primary member, R 364/mo for the first dependant, and R 246/mo for each additional dependant.
+* **Marginal Bracket Creep Analysis**: Visualizes when an incremental notch increase pushes portions of income into higher marginal tax brackets (up to 45%).
+* **Retroactive Lump-Sum Backpay Simulator**: Models backdated pay increases over 1 to 12 months, calculating accumulated gross backpay, statutory tax withholdings, and net liquid windfall for debt acceleration.
+* **Sinking Fund Cashflow Rebalance (`FIX-020`)**: Synchronizes verified net salary increases (e.g. R 74,438.26) directly into forward budget surplus and sinking fund allocations.
 
 ---
 
@@ -401,16 +459,27 @@ Prior to executing inference on any LLM provider (Google Gemini 3.7 Flash, Anthr
 3. [BUDGET] Pattern: "PRIMARY_PAY_CYCLE" -> Correct Interpretation: Mid-Month 15th to 15th Salary Cycle
 ```
 
+### 7.3 Apple-Grade Memory Management Interface (`src/components/AgentMemoryManager.tsx`, `FIX-024`)
+The Continuous Agent Learning hub (`/settings?tab=agent-memory`) provides an obsidian control console adhering to Apple-caliber aesthetic standards:
+* **Metric Grid Overview**:
+  - Displays 4 key health cards: *Active Memory Rules*, *High Confidence Rules ($\ge 0.8$)*, *Average Rule Confidence*, and *Active Domains Count*.
+* **Interactive Domain Filters & Live Counts**:
+  - Real-time segmented pill filters (`ALL`, `GEO`, `BUDGET`, `DEBT`, `GOALS`, `DOCUMENT`, `PREFERENCE`) showing matching memory counts per domain.
+* **Granular Rule Inspection & Governance**:
+  - Individual memory cards show trigger pattern, exact agent instruction, confidence badge, usage counter, and creation timestamp. Users can delete obsolete or conflicting rules with instant UI updates.
+* **Custom Rule Authoring Modal**:
+  - A glassmorphic modal allows direct authoring of domain rules, pattern triggers, instructions, and confidence scores (0.1–1.0) with immediate synchronization to PostgreSQL `UserAgentMemory`.
+
 ---
 
 ## 8. Phased Implementation Milestones
 
 | Milestone | Target Horizon | Deliverables |
 | :--- | :--- | :--- |
-| **Phase 1: Ingestion & 365-Day Foresight** | Q1 | Inbound e-statement parser, 365-day balance projection canvas, Stitch/Plaid hybrid open-banking layer |
-| **Phase 2: Multi-Entity & Tax Intelligence** | Q2 | Multi-Entity workspace switcher (Personal/SME/Trust), SARS/IRS tax deduction engine, 1-click audit pack export |
+| **Phase 1: Ingestion & 365-Day Foresight** | Q1 | Inbound e-statement parser, 365-day balance projection canvas, Stitch live Open Finance PKCE layer |
+| **Phase 2: Multi-Entity & Tax Intelligence** | Q2 | Multi-Entity workspace switcher (Personal/SME/Trust), SARS statutory tax & salary increase calculator, 1-click audit pack export |
 | **Phase 3: RAG Memory & Asset Automation** | Q3 | 5-Year vector semantic document Q&A, Lightstone deeds API, TransUnion vehicle depreciation curves, XIRR/TWR portfolio drift |
-| **Phase 4: Continuous Agent Learning & Admin** | Q4 | Continuous Agent Memory Flywheel, Enterprise Admin Portal (/admin), PGlite/IndexedDB local-first sync, Tauri native desktop apps |
+| **Phase 4: Continuous Agent Learning & Admin** | Q4 | Continuous Agent Memory Flywheel, Enterprise Admin Portal (/admin), Administrator Open Finance Gateway (/settings?tab=admin-gateway), 21-test Vitest regression engine |
 
 ---
 

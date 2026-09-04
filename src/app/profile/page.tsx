@@ -153,7 +153,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="page-body" style={{ textAlign: "center", padding: "100px 0" }}>
-        <div className="inline-flex items-center justify-center p-4 rounded-2xl mb-4" style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.2)" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "16px", borderRadius: "16px", marginBottom: "16px", background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.2)" }}>
           <Zap className="animate-spin text-gold" size={28} />
         </div>
         <div style={{ fontSize: "14px", color: "#94a3b8", fontFamily: "var(--font-mono, monospace)" }}>
@@ -745,7 +745,15 @@ export default function ProfilePage() {
               </div>
 
               {/* Feature Checklist Matrix */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "12px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                }}
+              >
                 {[
                   {
                     name: "Max Accounts & Debt Portfolio",
@@ -783,8 +791,10 @@ export default function ProfilePage() {
                 ].map((feat, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 rounded-xl"
+                    className="flex items-center justify-between"
                     style={{
+                      padding: "12px 16px",
+                      borderRadius: "var(--radius-md)",
                       background: feat.active ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
                       border: feat.active ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid rgba(239, 68, 68, 0.25)",
                       fontSize: "12px",

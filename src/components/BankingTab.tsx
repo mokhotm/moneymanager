@@ -1,24 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   RefreshCw,
+  Plus,
   CheckCircle2,
   AlertTriangle,
-  Zap,
-  Plus,
-  Trash2,
+  ExternalLink,
   ShieldCheck,
   Activity,
+  Trash2,
+  Lock,
+  Radio,
+  Sliders,
+  Check,
+  AlertCircle,
+  HelpCircle,
+  Clock,
+  Zap,
+  KeyRound,
+  Eye,
+  EyeOff,
   ArrowUpRight,
   Landmark,
-  Layers,
-  Sparkles,
+  Search,
 } from "lucide-react";
-import { EmailScannerHub } from "@/components/EmailScannerHub";
+import { SABankConnector } from "@/services/stitchOpenBankingService";
 
-interface BankConnectionDTO {
+export interface BankConnectionDTO {
   id: string;
   accountId: string;
   accountName: string;
@@ -35,55 +45,36 @@ interface BankConnectionDTO {
   totalSyncedTransactions: number;
 }
 
-interface UnlinkedAccountDTO {
-  id: string;
-  name: string;
-  institution: string;
-  accountNumberMasked: string | null;
-  type: string;
-  openingBalance: number;
-}
-
-interface SABankConnector {
-  id: string;
-  institution: string;
-  displayName: string;
-  primaryColor: string;
-  logoText: string;
-  supportedProducts: string[];
-  status: string;
-  isRecommended: boolean;
-}
-
 export function BankingTab() {
   const [connections, setConnections] = useState<BankConnectionDTO[]>([]);
-  const [unlinkedAccounts, setUnlinkedAccounts] = useState<UnlinkedAccountDTO[]>([]);
   const [connectors, setConnectors] = useState<SABankConnector[]>([]);
-  const [isSandboxMode, setIsSandboxMode] = useState<boolean>(true);
+  const [isGatewayConfigured, setIsGatewayConfigured] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSyncingAll, setIsSyncingAll] = useState<boolean>(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [userRole, setUserRole] = useState<string>("user");
 
-  // Link Modal State
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
-  const [selectedConnector, setSelectedConnector] = useState<SABankConnector | null>(null);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [isLinking, setIsLinking] = useState<boolean>(false);
+  // Live connecting state
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+
+  // Bank Picker Modal state
+  const [isBankPickerOpen, setIsBankPickerOpen] = useState<boolean>(false);
+  const [bankSearchQuery, setBankSearchQuery] = useState<string>("");
 
   const loadBankingData = async () => {
     setIsLoading(true);
     try {
       const res = await fetch("/api/banking");
-      if (!res.ok) throw new Error("Failed to fetch banking connections");
+      if (!res.ok) throw new Error("Failed to fetch live banking connections");
       const data = await res.json();
       setConnections(data.connections || []);
-      setUnlinkedAccounts(data.unlinkedAccounts || []);
       setConnectors(data.availableConnectors || []);
-      setIsSandboxMode(data.isSandboxMode ?? true);
+      setIsGatewayConfigured(Boolean(data.isGatewayConfigured));
+      if (data.userRole) setUserRole(data.userRole);
     } catch (err: any) {
       console.error(err);
-      setFeedback({ ok: false, message: err.message || "Failed to load bank sync data." });
+      setFeedback({ ok: false, message: err.message || "Failed to load live bank connections." });
     } finally {
       setIsLoading(false);
     }
@@ -91,11 +82,65 @@ export function BankingTab() {
 
   useEffect(() => {
     loadBankingData();
+
+    // Check URL search params for OAuth feedback
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const successMsg = urlParams.get("success");
+      const errorMsg = urlParams.get("error");
+      if (successMsg) {
+        setFeedback({ ok: true, message: successMsg });
+        window.history.replaceState({}, document.title, window.location.pathname + "?tab=banking");
+      } else if (errorMsg) {
+        setFeedback({ ok: false, message: errorMsg });
+        window.history.replaceState({}, document.title, window.location.pathname + "?tab=banking");
+      }
+    }
   }, []);
 
   const triggerFeedback = (fb: { ok: boolean; message: string }) => {
     setFeedback(fb);
-    setTimeout(() => setFeedback(null), 5000);
+    setTimeout(() => setFeedback(null), 6000);
+  };
+
+  // Launch live OAuth connection to selected bank
+  const handleConnectBank = async (institutionId?: string) => {
+    setIsConnecting(true);
+    setIsBankPickerOpen(false);
+    try {
+      const res = await fetch("/api/banking/auth/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ institutionId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        if (data.isConfigured === false) {
+          if (userRole === "admin") {
+            throw new Error("Stitch Open Finance gateway not configured. Please configure your API keys in Settings > Admin Gateway.");
+          } else {
+            throw new Error("Live bank feed is awaiting administrator gateway activation. Please contact your system administrator.");
+          }
+        }
+        throw new Error(data.error || "Failed to initiate live bank connection");
+      }
+
+      if (data.authUrl) {
+        const selectedBank = institutionId ? connectors.find((c) => c.id === institutionId) : null;
+        const bankName = selectedBank ? selectedBank.institution : "your bank";
+        triggerFeedback({
+          ok: true,
+          message: `Redirecting to ${bankName}'s official authentication portal...`,
+        });
+        window.location.href = data.authUrl;
+      }
+    } catch (err: any) {
+      triggerFeedback({ ok: false, message: err.message });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleSyncAll = async () => {
@@ -110,11 +155,11 @@ export function BankingTab() {
       if (!res.ok) throw new Error(data.error || "Sync failed");
       triggerFeedback({
         ok: true,
-        message: data.message || "All bank accounts synchronized successfully!",
+        message: data.message || "All live bank accounts synchronized successfully!",
       });
       await loadBankingData();
     } catch (err: any) {
-      triggerFeedback({ ok: false, message: err.message || "Error syncing bank feeds." });
+      triggerFeedback({ ok: false, message: err.message || "Error syncing live bank feeds." });
     } finally {
       setIsSyncingAll(false);
     }
@@ -159,65 +204,6 @@ export function BankingTab() {
     }
   };
 
-  const handleOpenLinkModal = (connector?: SABankConnector) => {
-    setSelectedConnector(connector || connectors[0] || null);
-    if (unlinkedAccounts.length > 0) {
-      setSelectedAccountId(unlinkedAccounts[0].id);
-    }
-    setIsLinkModalOpen(true);
-  };
-
-  const handleConfirmLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAccountId) {
-      alert("Please select an account to link.");
-      return;
-    }
-
-    setIsLinking(true);
-    try {
-      const res = await fetch("/api/banking", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          accountId: selectedAccountId,
-          institution: selectedConnector?.institution || "Standard Bank",
-          syncFrequency: "DAILY",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to link account");
-
-      setIsLinkModalOpen(false);
-      triggerFeedback({
-        ok: true,
-        message: data.message || "Bank account linked successfully! Ingesting initial transactions...",
-      });
-
-      // Auto-trigger first sync
-      await fetch("/api/banking/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ connectionId: data.id }),
-      });
-
-      await loadBankingData();
-    } catch (err: any) {
-      alert(err.message || "Failed to link bank account.");
-    } finally {
-      setIsLinking(false);
-    }
-  };
-
-  const formatZAR = (amount: number) => {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
       {/* Action Toolbar */}
@@ -225,215 +211,255 @@ export function BankingTab() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "var(--text-primary)", margin: 0, letterSpacing: "-0.4px" }}>
-              South African Bank Feeds &amp; Open Banking
+              Live Open Banking Feeds
             </h2>
-            <span className="badge blue">Stitch Open Finance</span>
+            <span className="badge blue">Stitch FSCA Open Finance</span>
           </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "13.5px", margin: "4px 0 0 0" }}>
-            Automated real-time statement feeds for South African banks, paired with multi-agent document ingestion.
+            Real-time API feeds directly from South African financial institutions. Zero mock data, zero statement fallbacks.
           </p>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
+            type="button"
             onClick={handleSyncAll}
             disabled={isSyncingAll || connections.length === 0}
             className="btn btn-secondary btn-sm"
           >
             <RefreshCw size={14} className={isSyncingAll ? "animate-spin" : ""} />
-            <span>{isSyncingAll ? "Syncing All Feeds..." : "Sync All Feeds"}</span>
+            <span>{isSyncingAll ? "Syncing Feeds..." : "Sync All Feeds"}</span>
           </button>
 
           <button
-            onClick={() => handleOpenLinkModal()}
+            type="button"
+            onClick={() => setIsBankPickerOpen(true)}
+            disabled={isConnecting}
             className="btn btn-primary btn-sm"
           >
             <Plus size={14} />
-            <span>Connect SA Bank</span>
+            <span>{isConnecting ? "Connecting..." : "Connect Bank Account"}</span>
           </button>
         </div>
       </div>
 
-      {/* Feedback Alert Toast */}
+      {/* Feedback Toast */}
       {feedback && (
-        <div className={`urgency-banner ${feedback.ok ? "amber" : ""}`} style={{ borderColor: feedback.ok ? "var(--green)" : "var(--red)", borderLeftColor: feedback.ok ? "var(--green)" : "var(--red)" }}>
-          <div className="urgency-banner-icon" style={{ color: feedback.ok ? "var(--green)" : "var(--red)" }}>
-            {feedback.ok ? <CheckCircle2 size={22} /> : <AlertTriangle size={22} />}
-          </div>
-          <div>
-            <div className="urgency-banner-title">
-              {feedback.ok ? "System Synchronized" : "Bank Feed Alert"}
-            </div>
-            <div className="urgency-banner-text">{feedback.message}</div>
-          </div>
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: "var(--radius-md)",
+            background: feedback.ok ? "var(--green-dim)" : "var(--red-dim)",
+            border: `1px solid ${feedback.ok ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+            color: feedback.ok ? "var(--green)" : "var(--red)",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            fontSize: "13.5px",
+            fontWeight: "600",
+          }}
+        >
+          {feedback.ok ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+          <span>{feedback.message}</span>
         </div>
       )}
 
-      {/* Key Metrics Cards using Global .stat-grid & .stat-card classes */}
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="stat-label">Active Bank Feeds</div>
-          <div className="stat-value gold" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {connections.length}
-            <span className="badge active" style={{ fontSize: "10px" }}>Live Feed</span>
+      {/* Live Gateway Security Notice */}
+      <div
+        className="card"
+        style={{
+          padding: "18px 22px",
+          background: "linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(13, 20, 36, 0.95) 100%)",
+          borderColor: "rgba(16, 185, 129, 0.25)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 16,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: "rgba(16, 185, 129, 0.12)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ShieldCheck size={20} color="#10b981" />
           </div>
-          <div className="stat-sub">
-            Standard Bank Prestige, MyMo &amp; Titanium Card
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+              Ground-Truth Live Open Banking Protocol
+            </div>
+            <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 2 }}>
+              MoneyManager strictly communicates with FSCA-licensed Open Finance APIs (OAuth 2.0). Raw online banking credentials and passwords are never intercepted or stored.
+            </div>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-label">Hybrid Ingestion Architecture</div>
-          <div className="stat-value" style={{ fontSize: "20px", color: "var(--cyan)", display: "flex", alignItems: "center", gap: "8px" }}>
-            <Zap size={22} style={{ color: "var(--gold)" }} />
-            API + Document Fallback
-          </div>
-          <div className="stat-sub">
-            Live bank feeds + PDF OCR vision for invoices &amp; municipal
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">Open Finance Engine</div>
-          <div className="stat-value" style={{ fontSize: "20px", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
-            <ShieldCheck size={22} style={{ color: "var(--green)" }} />
-            Stitch Open Banking
-          </div>
-          <div className="stat-sub" style={{ color: isSandboxMode ? "var(--gold)" : "var(--green)" }}>
-            {isSandboxMode ? "⚡ Sandbox & Live Simulator Active" : "🔒 Production Stitch OAuth"}
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: 99,
+              background: isGatewayConfigured ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
+              color: isGatewayConfigured ? "#34d399" : "#fbbf24",
+              border: isGatewayConfigured ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(245, 158, 11, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: isGatewayConfigured ? "#10b981" : "#f59e0b",
+              }}
+            />
+            {isGatewayConfigured ? "Gateway Ready" : "Awaiting Credentials"}
+          </span>
         </div>
       </div>
 
-      {/* Section 1: Active Connected Bank Accounts */}
-      <div className="card">
-        <div className="card-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      {/* Section 1: Active Connected Bank Feeds */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
             <Activity size={18} style={{ color: "var(--green)" }} />
-            <h3 className="card-title" style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
-              Connected Bank Feeds ({connections.length})
-            </h3>
-          </div>
-          <span style={{ fontSize: "12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-            Read-Only Consent Active
+            Active Live Bank Feeds ({connections.length})
+          </h3>
+          <span style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
+            Real-time balance &amp; transaction synchronization
           </span>
         </div>
 
         {isLoading ? (
-          <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }} className="animate-pulse">
-            Loading bank feed connections…
+          <div className="card" style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
+            <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 12px", color: "var(--gold)" }} />
+            <p style={{ margin: 0, fontSize: "14px" }}>Loading live bank connections...</p>
           </div>
         ) : connections.length === 0 ? (
           <div
+            className="card"
             style={{
-              background: "var(--bg-surface)",
+              padding: "44px 24px",
+              textAlign: "center",
+              background: "var(--bg-card)",
               border: "1px dashed var(--border)",
               borderRadius: "var(--radius-lg)",
-              padding: "48px 24px",
-              textAlign: "center",
             }}
           >
-            <Building2 size={48} style={{ color: "var(--text-muted)", margin: "0 auto 16px" }} />
-            <h4 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "6px" }}>
-              No Bank Accounts Linked via API Yet
+            <Building2 size={40} style={{ color: "var(--text-muted)", margin: "0 auto 14px", opacity: 0.6 }} />
+            <h4 style={{ fontSize: "16px", fontWeight: "800", color: "var(--text-primary)", margin: "0 0 8px 0" }}>
+              No Live Bank Feeds Connected
             </h4>
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "480px", margin: "0 auto 20px" }}>
-              Connect your South African bank accounts (Standard Bank, Capitec, FNB, Nedbank) to stream live transactions directly without manual statement uploads.
+            <p style={{ fontSize: "13.5px", color: "var(--text-secondary)", maxWidth: "520px", margin: "0 auto 20px", lineHeight: 1.6 }}>
+              In accordance with our strict zero-mock policy, this page only displays genuine accounts connected via the live Open Banking API. Uploaded PDF statements remain securely isolated in your Document Vault.
             </p>
-            <button onClick={() => handleOpenLinkModal()} className="btn btn-primary btn-sm">
-              + Connect Your First Bank
+            <button
+              type="button"
+              onClick={() => setIsBankPickerOpen(true)}
+              className="btn btn-primary"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <Plus size={16} />
+              <span>Connect Bank Account (Live OAuth)</span>
             </button>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
             {connections.map((conn) => (
               <div
                 key={conn.id}
+                className="card"
                 style={{
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-lg)",
                   padding: "20px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
-                  transition: "all var(--transition)",
+                  gap: "16px",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-lg)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "var(--radius-md)",
-                        background: "var(--gold-dim)",
-                        border: "1px solid var(--border)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "var(--gold-light)",
-                        fontWeight: "900",
-                        fontSize: "13px",
-                      }}
-                    >
-                      SBG
-                    </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                     <div>
-                      <div style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
+                      <div style={{ fontSize: "14.5px", fontWeight: "800", color: "var(--text-primary)" }}>
                         {conn.accountName}
                       </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span>{conn.institution}</span>
-                        <span>•</span>
-                        <span style={{ fontFamily: "var(--font-mono)" }}>{conn.accountNumberMasked}</span>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        {conn.institution} &middot; {conn.accountNumberMasked}
                       </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: "800",
+                        padding: "2px 8px",
+                        borderRadius: "99px",
+                        background: "rgba(16, 185, 129, 0.15)",
+                        color: "#34d399",
+                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                      }}
+                    >
+                      LIVE ACTIVE
+                    </span>
+                  </div>
+
+                  <div style={{ marginTop: "14px" }}>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>
+                      Live Balance
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: "800",
+                        fontFamily: "var(--font-mono)",
+                        color: conn.currentBalance < 0 ? "var(--red)" : "var(--green)",
+                        marginTop: "4px",
+                      }}
+                    >
+                      R {conn.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
 
-                  <span className={`badge ${conn.consentStatus === "ACTIVE" ? "active" : "danger"}`}>
-                    {conn.consentStatus === "ACTIVE" ? "Live Feed" : conn.consentStatus}
-                  </span>
-                </div>
-
-                <div style={{ margin: "14px 0", padding: "14px", background: "var(--bg-input)", border: "1px solid var(--border-light)", borderRadius: "var(--radius-md)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Current Tracked Balance</span>
-                    <span
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: "800",
-                        color: conn.currentBalance >= 0 ? "var(--text-primary)" : "var(--red)",
-                        fontFamily: "var(--font-mono)",
-                      }}
-                    >
-                      {formatZAR(conn.currentBalance)}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: "var(--text-muted)" }}>
-                    <span>Last Synced: {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString("en-ZA") : "Just now"}</span>
-                    <span>{conn.totalSyncedTransactions} Transactions</span>
+                  <div style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "10px" }}>
+                    Last Synced: {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString() : "Never"}
+                    <br />
+                    Live Transactions Ingested: <strong>{conn.totalSyncedTransactions}</strong>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", paddingTop: "10px", borderTop: "1px solid var(--border-light)" }}>
+                <div style={{ display: "flex", gap: "8px", paddingTop: "12px", borderTop: "1px solid var(--border-light)" }}>
                   <button
+                    type="button"
                     onClick={() => handleSyncSingle(conn.id, conn.accountName)}
                     disabled={syncingId === conn.id}
                     className="btn btn-secondary btn-sm"
-                    style={{ fontSize: "12px" }}
+                    style={{ flex: 1 }}
                   >
-                    <RefreshCw size={13} className={syncingId === conn.id ? "animate-spin" : ""} />
-                    <span>{syncingId === conn.id ? "Syncing..." : "Sync Feed"}</span>
+                    <RefreshCw size={12} className={syncingId === conn.id ? "animate-spin" : ""} />
+                    <span>{syncingId === conn.id ? "Syncing..." : "Sync Now"}</span>
                   </button>
-
                   <button
+                    type="button"
                     onClick={() => handleDisconnect(conn.id, conn.accountName)}
-                    className="btn btn-danger btn-sm"
-                    style={{ fontSize: "12px", padding: "6px 10px" }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: "var(--red)", borderColor: "rgba(239, 68, 68, 0.3)" }}
+                    title="Disconnect bank feed"
                   >
-                    <Trash2 size={13} />
-                    <span>Disconnect</span>
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -442,199 +468,289 @@ export function BankingTab() {
         )}
       </div>
 
-      {/* Section 2: South African Bank Connectors Directory */}
-      <div className="card">
-        <div className="card-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Building2 size={18} style={{ color: "var(--cyan)" }} />
-            <h3 className="card-title" style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
-              Supported South African Commercial Banks (8)
-            </h3>
-          </div>
-          <span style={{ fontSize: "12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-            Stitch Open Finance Hub
+      {/* Section 2: Supported South African Bank Connectors */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <Landmark size={18} color="#f59e0b" />
+            Supported South African Bank Connectors
+          </h3>
+          <span style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
+            Direct Open Finance API Integrations
           </span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
-          {connectors.map((c) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
+          {connectors.map((bank) => (
             <div
-              key={c.id}
+              key={bank.id}
+              className="card"
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-lg)",
                 padding: "18px",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
                 gap: "14px",
-                transition: "all var(--transition)",
+                background: "var(--bg-card)",
+                border: bank.isRecommended ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid var(--border)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "var(--radius-md)",
-                    background: c.primaryColor || "var(--bg-card)",
-                    color: "#ffffff",
-                    fontWeight: "900",
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                  }}
-                >
-                  {c.logoText}
-                </div>
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
-                    {c.displayName}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "var(--radius-sm)",
+                        background: bank.primaryColor,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#ffffff",
+                        fontWeight: 800,
+                        fontSize: 11,
+                      }}
+                    >
+                      {bank.logoText}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>
+                        {bank.institution}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {bank.displayName}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: "11px", color: c.status === "ACTIVE" ? "var(--green)" : "var(--text-muted)", fontWeight: "600" }}>
-                    {c.status === "ACTIVE" ? "✓ Open Banking Active" : "Stitch Beta"}
-                  </div>
-                </div>
-              </div>
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                {c.supportedProducts.slice(0, 2).map((p) => (
-                  <span
-                    key={p}
-                    style={{
-                      fontSize: "10px",
-                      padding: "2px 8px",
-                      borderRadius: "var(--radius-sm)",
-                      background: "var(--border-light)",
-                      color: "var(--text-secondary)",
-                      border: "1px solid var(--border)",
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
-                    {p}
-                  </span>
-                ))}
+                  {bank.isRecommended && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        background: "rgba(245, 158, 11, 0.15)",
+                        color: "#fbbf24",
+                      }}
+                    >
+                      Recommended
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {bank.supportedProducts.slice(0, 3).map((prod: string) => (
+                    <span
+                      key={prod}
+                      style={{
+                        fontSize: 10,
+                        color: "var(--text-muted)",
+                        background: "rgba(255, 255, 255, 0.03)",
+                        padding: "2px 6px",
+                        borderRadius: 3,
+                        border: "1px solid var(--border-light)",
+                      }}
+                    >
+                      {prod}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               <button
-                onClick={() => handleOpenLinkModal(c)}
-                className={`btn btn-sm ${c.isRecommended ? "btn-primary" : "btn-secondary"}`}
-                style={{ width: "100%", justifyContent: "center" }}
+                type="button"
+                onClick={() => handleConnectBank(bank.id)}
+                disabled={isConnecting}
+                className="btn btn-secondary btn-sm"
+                style={{ width: "100%", justifyContent: "space-between" }}
               >
-                <span>Connect {c.displayName}</span>
-                <ArrowUpRight size={13} />
+                <span>Connect Live Feed</span>
+                <ArrowUpRight size={14} />
               </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Section 3: Inbound Email Statement Scanner Hub */}
-      <div>
-        <EmailScannerHub />
-      </div>
-
-      {/* Connect Bank Modal using Global Form & Modal styling */}
-      {isLinkModalOpen && (
+      {/* ─── Universal Bank Selection Modal ──────────────────────────── */}
+      {isBankPickerOpen && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 9999,
             background: "rgba(0, 0, 0, 0.75)",
-            backdropFilter: "var(--glass-blur)",
+            backdropFilter: "blur(8px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            zIndex: 1000,
             padding: "20px",
           }}
         >
           <div
             className="card"
             style={{
+              maxWidth: 640,
               width: "100%",
-              maxWidth: "520px",
-              background: "var(--bg-modal)",
-              border: "1px solid var(--border-hover)",
-              boxShadow: "var(--shadow-modal)",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.8)",
+              overflow: "hidden",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <Landmark size={22} style={{ color: "var(--gold)" }} />
-                <h3 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
-                  Link {selectedConnector?.displayName || "Bank Account"}
-                </h3>
+            {/* Modal Header */}
+            <div style={{ padding: "24px 28px 18px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <Landmark size={20} color="#f59e0b" />
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
+                    Select Financial Institution
+                  </h3>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
+                  Choose your bank to initiate a secure, direct Open Banking authentication session.
+                </p>
               </div>
               <button
-                onClick={() => setIsLinkModalOpen(false)}
-                style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "18px", cursor: "pointer" }}
+                type="button"
+                onClick={() => {
+                  setIsBankPickerOpen(false);
+                  setBankSearchQuery("");
+                }}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 22, lineHeight: 1 }}
               >
-                ✕
+                &times;
               </button>
             </div>
 
-            <form onSubmit={handleConfirmLink} className="form-group" style={{ gap: "16px" }}>
-              <div>
-                <label className="form-label required">
-                  Select Internal Account to Link with API Feed
-                </label>
-                {unlinkedAccounts.length === 0 ? (
-                  <div style={{ fontSize: "13px", color: "var(--text-muted)", padding: "12px", background: "var(--bg-input)", borderRadius: "var(--radius-md)" }}>
-                    All accounts are already linked or no accounts exist.
-                  </div>
-                ) : (
-                  <select
-                    value={selectedAccountId}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                    className="form-select"
-                    required
-                  >
-                    {unlinkedAccounts.map((acc) => (
-                      <option key={acc.id} value={acc.id}>
-                        {acc.name} ({acc.institution}) — {acc.type}
-                      </option>
-                    ))}
-                  </select>
-                )}
+            {/* Search Input */}
+            <div style={{ padding: "16px 28px 12px", borderBottom: "1px solid var(--border-light)" }}>
+              <div style={{ position: "relative" }}>
+                <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Search bank name (e.g. Capitec, FNB, Standard Bank, Investec)..."
+                  value={bankSearchQuery}
+                  onChange={(e) => setBankSearchQuery(e.target.value)}
+                  style={{ paddingLeft: 40 }}
+                  autoFocus
+                />
               </div>
+            </div>
 
-              <div
-                style={{
-                  padding: "14px",
-                  background: "var(--cyan-dim)",
-                  border: "1px solid rgba(6, 182, 212, 0.3)",
-                  borderRadius: "var(--radius-md)",
+            {/* Bank List */}
+            <div style={{ padding: "16px 28px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, maxHeight: "420px" }}>
+              {connectors.filter((b) => {
+                const q = bankSearchQuery.toLowerCase();
+                return (
+                  b.institution.toLowerCase().includes(q) ||
+                  b.displayName.toLowerCase().includes(q) ||
+                  b.id.toLowerCase().includes(q)
+                );
+              }).length === 0 ? (
+                <div style={{ textAlign: "center", padding: "30px 20px", color: "var(--text-muted)", fontSize: 13.5 }}>
+                  No banking institutions match &ldquo;{bankSearchQuery}&rdquo;
+                </div>
+              ) : (
+                connectors
+                  .filter((b) => {
+                    const q = bankSearchQuery.toLowerCase();
+                    return (
+                      b.institution.toLowerCase().includes(q) ||
+                      b.displayName.toLowerCase().includes(q) ||
+                      b.id.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((bank) => (
+                    <div
+                      key={bank.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 16px",
+                        borderRadius: "var(--radius-md)",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid var(--border-light)",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <div
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: "var(--radius-sm)",
+                            background: bank.primaryColor,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#ffffff",
+                            fontWeight: 800,
+                            fontSize: 12,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {bank.logoText}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                            {bank.institution}
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                            {bank.displayName}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleConnectBank(bank.id)}
+                        disabled={isConnecting}
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                      >
+                        <span>Connect</span>
+                        <ArrowUpRight size={13} />
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "14px 28px",
+                borderTop: "1px solid var(--border)",
+                background: "rgba(0, 0, 0, 0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
+                <ShieldCheck size={14} color="#10b981" />
+                FSCA-Regulated Open Finance • OAuth 2.0
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBankPickerOpen(false);
+                  setBankSearchQuery("");
                 }}
+                className="btn btn-secondary btn-sm"
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--cyan)", fontSize: "12.5px", fontWeight: "700", marginBottom: "4px" }}>
-                  <ShieldCheck size={16} /> Stitch Open Banking Authorization
-                </div>
-                <div style={{ fontSize: "11.5px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                  You will be connected via Stitch financial API with read-only transaction consent. Your banking credentials are encrypted and never stored on MoneyManager servers.
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
-                <button
-                  type="button"
-                  onClick={() => setIsLinkModalOpen(false)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLinking || unlinkedAccounts.length === 0}
-                  className="btn btn-primary btn-sm"
-                >
-                  {isLinking ? "Authorizing with Stitch..." : "Authorize & Connect Bank"}
-                </button>
-              </div>
-            </form>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

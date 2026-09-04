@@ -567,14 +567,16 @@ a:hover {
   background: currentColor;
 }
 
-.badge.confirmed  { background: var(--green-dim); color: var(--green); border-color: rgba(16, 185, 129, 0.3); }
-.badge.estimated  { background: var(--amber-dim); color: var(--amber); border-color: rgba(245, 158, 11, 0.3); }
-.badge.unknown    { background: rgba(100, 116, 139, 0.2); color: var(--text-secondary); border-color: rgba(100, 116, 139, 0.3); }
-.badge.danger     { background: var(--red-dim); color: var(--red); border-color: rgba(244, 63, 94, 0.3); }
-.badge.gold       { background: var(--gold-dim); color: var(--gold-light); border-color: rgba(245, 158, 11, 0.3); }
-.badge.blue       { background: var(--blue-dim); color: var(--blue); border-color: rgba(59, 130, 246, 0.3); }
-.badge.active     { background: var(--green-dim); color: var(--green); border-color: rgba(16, 185, 129, 0.3); }
-.badge.paid-off   { background: rgba(100, 116, 139, 0.2); color: var(--text-muted); }
+.badge.confirmed, .badge-confirmed, .badge-green, .badge.green  { background: var(--green-dim); color: var(--green); border-color: rgba(16, 185, 129, 0.3); }
+.badge.estimated, .badge-estimated, .badge-amber, .badge.amber  { background: var(--amber-dim); color: var(--amber); border-color: rgba(245, 158, 11, 0.3); }
+.badge.unknown, .badge-unknown, .badge-secondary    { background: rgba(100, 116, 139, 0.2); color: var(--text-secondary); border-color: rgba(100, 116, 139, 0.3); }
+.badge.danger, .badge-danger, .badge-red, .badge.red      { background: var(--red-dim); color: var(--red); border-color: rgba(244, 63, 94, 0.3); }
+.badge.gold, .badge-gold, .badge-warning       { background: var(--gold-dim); color: var(--gold-light); border-color: rgba(245, 158, 11, 0.3); }
+.badge.blue, .badge-blue         { background: var(--blue-dim); color: var(--blue); border-color: rgba(59, 130, 246, 0.3); }
+.badge.purple, .badge-purple     { background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
+.badge.cyan, .badge-cyan         { background: rgba(6, 182, 212, 0.15); color: #38bdf8; border-color: rgba(6, 182, 212, 0.3); }
+.badge.active, .badge-active, .badge-success     { background: var(--green-dim); color: var(--green); border-color: rgba(16, 185, 129, 0.3); }
+.badge.paid-off, .badge-paid-off { background: rgba(100, 116, 139, 0.2); color: var(--text-muted); }
 
 /* ─── Clean Modern Tables ────────────────────────────────── */
 .table-wrapper {
@@ -869,8 +871,19 @@ select option {
 .text-green { color: var(--green); }
 .text-red   { color: var(--red); }
 .text-amber { color: var(--amber); }
+.text-purple { color: #c084fc; }
+.text-cyan { color: #38bdf8; }
+.text-emerald { color: #34d399; }
+.text-slate-100 { color: #f1f5f9; }
+.text-slate-200 { color: #e2e8f0; }
+.text-slate-300 { color: #cbd5e1; }
+.text-slate-400 { color: #94a3b8; }
+.text-slate-500 { color: #64748b; }
 .font-bold { font-weight: 700; }
 .font-semibold { font-weight: 600; }
+.font-mono { font-family: var(--font-mono); }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
 
 /* ─── Keyframe Animations ────────────────────────────────── */
 @keyframes fadeIn {

@@ -5,7 +5,7 @@ import { syncGoalToBudget } from "@/lib/goalBudgetSync";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getEffectiveUserId(req);
@@ -13,7 +13,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const goalId = params.id;
+    const { id: goalId } = await params;
     if (!goalId) {
       return NextResponse.json({ error: "Goal ID is required" }, { status: 400 });
     }

@@ -64,6 +64,11 @@ export interface BankingTransaction {
   budgetAmount?: number | null;
   isBudgeted: boolean;
   budgetStatus: "MATCHED" | "UNBUDGETED" | "INCOME" | "INTERNAL_TRANSFER";
+  // AI Forensic Suspicious Duplicate Fields
+  isSuspiciousDuplicate?: boolean;
+  suspiciousReason?: string;
+  duplicateCount?: number;
+  duplicateGroupId?: string;
 }
 
 interface BudgetItemRef {
@@ -915,6 +920,25 @@ export function BankingTransactionsCard({
               <button
                 onClick={() => {
                   setActiveBudgetFilter(
+                    activeBudgetFilter === "SUSPICIOUS_ONLY" ? "ALL" : "SUSPICIOUS_ONLY"
+                  );
+                }}
+                style={getPillButtonStyle(
+                  activeBudgetFilter === "SUSPICIOUS_ONLY",
+                  "#f59e0b"
+                )}
+                id="filter-suspicious-only"
+              >
+                <AlertCircle size={12} style={{ color: "#fbbf24" }} />
+                <span>
+                  Suspicious Duplicates
+                  {summary?.suspiciousDuplicateCount ? ` (${summary.suspiciousDuplicateCount})` : ""}
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveBudgetFilter(
                     activeBudgetFilter === "BUDGETED_ONLY" ? "ALL" : "BUDGETED_ONLY"
                   );
                 }}
@@ -1329,6 +1353,28 @@ export function BankingTransactionsCard({
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                             {tx.merchantName}
                           </span>
+                          {tx.isSuspiciousDuplicate && (
+                            <span
+                              style={{
+                                fontSize: "10px",
+                                fontWeight: 800,
+                                padding: "2px 8px",
+                                borderRadius: "99px",
+                                background: "rgba(245, 158, 11, 0.16)",
+                                border: "1px solid rgba(245, 158, 11, 0.45)",
+                                color: "#fbbf24",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                boxShadow: "0 0 10px rgba(245, 158, 11, 0.25)",
+                                flexShrink: 0,
+                              }}
+                              title={tx.suspiciousReason}
+                            >
+                              <AlertCircle size={10} style={{ color: "#fbbf24" }} />
+                              AI Duplicate ({tx.duplicateCount}x)
+                            </span>
+                          )}
                           {isBudgeted && (
                             <span
                               style={{
@@ -1684,6 +1730,78 @@ export function BankingTransactionsCard({
             </div>
 
             <div style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              {/* ── AI Forensic Duplicate Detection Alert ── */}
+              {selectedTx.isSuspiciousDuplicate && (
+                <div
+                  style={{
+                    padding: "16px 20px",
+                    borderRadius: "16px",
+                    background:
+                      "linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(20, 25, 45, 0.9) 100%)",
+                    border: "1px solid rgba(245, 158, 11, 0.45)",
+                    boxShadow: "0 0 20px rgba(245, 158, 11, 0.15)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "10px",
+                        background: "rgba(245, 158, 11, 0.2)",
+                        border: "1px solid rgba(245, 158, 11, 0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fbbf24",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "13.5px", fontWeight: 800, color: "#fbbf24" }}>
+                        AI Forensic Detection: Potential Duplicate Transaction ({selectedTx.duplicateCount}x)
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#94a3b8" }}>
+                        Identical charge detected on your statement within a short time window
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#e2e8f0",
+                      lineHeight: 1.5,
+                      background: "rgba(0, 0, 0, 0.25)",
+                      padding: "10px 14px",
+                      borderRadius: "10px",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                    }}
+                  >
+                    {selectedTx.suspiciousReason}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#fbbf24",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      opacity: 0.9,
+                    }}
+                  >
+                    <span>💡</span>
+                    <span>
+                      <strong>Recommendation:</strong> Verify whether this was charged twice by the merchant or if a debit order was re-presented. If fraudulent or incorrect, contact your bank to dispute the debit.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* ── Add to Budget CTA (unbudgeted only) ── */}
               {!selectedTx.isBudgeted && selectedTx.direction === "OUTFLOW" && !addBudgetSuccess && (

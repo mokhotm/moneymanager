@@ -50,9 +50,10 @@ function getSecretKey(): Buffer {
 }
 
 /**
- * Encrypt access token at rest
+ * Encrypt access token at rest using AES-256-CBC
  */
 export function encryptToken(token: string): string {
+  if (!token) return "";
   const cipher = crypto.createCipheriv("aes-256-cbc", getSecretKey(), Buffer.alloc(16, 0));
   let encrypted = cipher.update(token, "utf8", "hex");
   encrypted += cipher.final("hex");
@@ -74,183 +75,81 @@ export function decryptToken(encrypted: string): string {
   }
 }
 
-/**
- * South African Bank connector registry
- */
-export const SA_BANK_CONNECTORS = [
-  {
-    id: "SBG",
-    institution: "Standard Bank",
-    displayName: "Standard Bank of South Africa",
-    primaryColor: "#0033aa",
-    logoText: "SBG",
-    supportedProducts: ["Prestige Account", "MyMo Account", "Titanium Credit Card", "Home Loan", "Revolving Credit"],
-    status: "ACTIVE",
-    isRecommended: true,
-  },
-  {
-    id: "CAP",
-    institution: "Capitec Bank",
-    displayName: "Capitec Global One & Business",
-    primaryColor: "#00487c",
-    logoText: "CAP",
-    supportedProducts: ["Global One Transactional", "Live Better Savings", "Credit Card"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-  {
-    id: "FNB",
-    institution: "First National Bank (FNB)",
-    displayName: "FNB FirstRand Bank",
-    primaryColor: "#009688",
-    logoText: "FNB",
-    supportedProducts: ["Fusion Account", "eBucks Cheque", "Aspire / Premier", "Credit Card"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-  {
-    id: "NED",
-    institution: "Nedbank",
-    displayName: "Nedbank Greenbacks",
-    primaryColor: "#006633",
-    logoText: "NED",
-    supportedProducts: ["MiGoals Current Account", "Platinum Credit Card", "Personal Loan"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-  {
-    id: "INV",
-    institution: "Investec",
-    displayName: "Investec Private Bank",
-    primaryColor: "#1e293b",
-    logoText: "INV",
-    supportedProducts: ["Private Bank Account", "Programmable Banking Card", "Prime Money Market"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-  {
-    id: "ABSA",
-    institution: "ABSA Bank",
-    displayName: "ABSA Group Limited",
-    primaryColor: "#b91c1c",
-    logoText: "ABSA",
-    supportedProducts: ["Transact Plus", "Premium Banking", "Flexi Core Credit Card"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-  {
-    id: "DISC",
-    institution: "Discovery Bank",
-    displayName: "Discovery Bank Vitality Money",
-    primaryColor: "#7c3aed",
-    logoText: "DISC",
-    supportedProducts: ["Vitality Transaction Account", "Purple / Black Card", "Dynamic Interest Savings"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-  {
-    id: "TYME",
-    institution: "TymeBank",
-    displayName: "TymeBank South Africa",
-    primaryColor: "#ea580c",
-    logoText: "TYME",
-    supportedProducts: ["EveryDay Account", "GoalSave Pockets"],
-    status: "ACTIVE",
-    isRecommended: false,
-  },
-];
+export { type SABankConnector, SA_BANK_CONNECTORS } from "../lib/bankConnectors";
+
 
 /**
- * Generate Realistic Mock Data for South African Banking Sandbox
+ * Stitch OAuth 2.0 PKCE Authorization URL Builder
+ * Initiates the user's redirect to the official bank Open Banking authentication portal
  */
-export function generateSandboxBankData(institution: string, accountName?: string): StitchAccountData[] {
-  const isStandardBank = institution.toLowerCase().includes("standard");
-
-  if (isStandardBank) {
-    return [
-      {
-        id: "sb-prestige-023074469",
-        name: "Standard Bank Prestige Current Account",
-        accountNumber: "023074469",
-        accountNumberType: "CURRENT",
-        institution: "Standard Bank",
-        currency: "ZAR",
-        currentBalance: -331.75,
-        availableBalance: 2468.25,
-        transactions: [
-          { id: "tx-sb-01", date: "2026-08-18", description: "SHELL LAEZONIA Halfw", amount: -100.00, runningBalance: -331.75 },
-          { id: "tx-sb-02", date: "2026-08-18", description: "BK CASTLE GATE U Gaute", amount: -267.70, runningBalance: -231.75 },
-          { id: "tx-sb-03", date: "2026-08-17", description: "Google One Londo", amount: -429.99, runningBalance: 35.95 },
-          { id: "tx-sb-04", date: "2026-08-15", description: "ATM CASH WITHDRAWAL SPRINGS GATE", amount: -4000.00, runningBalance: 465.94 },
-          { id: "tx-sb-05", date: "2026-08-15", description: "FUND TRANSFERS MARSH", amount: 1000.00, runningBalance: 4465.94 },
-          { id: "tx-sb-06", date: "2026-08-25", description: "SALARY REMUNERATION NETT SALARY", amount: 74438.26, runningBalance: 78904.20 },
-        ],
-      },
-      {
-        id: "sb-mymo-025936506",
-        name: "Standard Bank MyMo Spending Account",
-        accountNumber: "025936506",
-        accountNumberType: "TRANSACTIONAL",
-        institution: "Standard Bank",
-        currency: "ZAR",
-        currentBalance: 812.50,
-        availableBalance: 812.50,
-        transactions: [
-          { id: "tx-mymo-01", date: "2026-08-17", description: "SBG HOME LOAN INSTALMENT 3529", amount: -17786.45, runningBalance: 812.50 },
-          { id: "tx-mymo-02", date: "2026-08-17", description: "EKURHULENI COMBINED RATES & ARREARS", amount: -4073.83, runningBalance: 18598.95 },
-          { id: "tx-mymo-03", date: "2026-08-17", description: "HOERSKOOL DR JURGENS TUITION", amount: -2000.00, runningBalance: 22672.78 },
-          { id: "tx-mymo-04", date: "2026-08-17", description: "VODACOM CONTRACT RECHARGE", amount: -1499.00, runningBalance: 24672.78 },
-          { id: "tx-mymo-05", date: "2026-08-17", description: "ATM CASH WITHDRAWAL", amount: -4000.00, runningBalance: 26171.78 },
-          { id: "tx-mymo-06", date: "2026-08-17", description: "TRANSFER FROM SALARY 4469", amount: 30000.00, runningBalance: 30171.78 },
-        ],
-      },
-      {
-        id: "sb-card-5239xxxx5510",
-        name: "Standard Bank Titanium Credit Card",
-        accountNumber: "52395510",
-        accountNumberType: "CREDIT_CARD",
-        institution: "Standard Bank",
-        currency: "ZAR",
-        currentBalance: -13713.32,
-        availableBalance: 13.00,
-        transactions: [
-          { id: "tx-card-01", date: "2026-08-18", description: "SASOL SCHURVEBERG Centu", amount: -200.00, runningBalance: -13713.32 },
-          { id: "tx-card-02", date: "2026-08-15", description: "C*McD Harties Harti", amount: -574.20, runningBalance: -13513.32 },
-          { id: "tx-card-03", date: "2026-08-15", description: "C*AE BAPSFONTEIN JOHAN", amount: -200.00, runningBalance: -12939.12 },
-          { id: "tx-card-04", date: "2026-08-14", description: "FUND TRANSFERS MARSH", amount: 1000.00, runningBalance: -12739.12 },
-        ],
-      },
-    ];
+export function generateStitchAuthUrl(state: string, institutionId?: string): string {
+  const clientId = process.env.STITCH_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("STITCH_CLIENT_ID is not configured in server environment or BYOK vault.");
   }
 
-  // Default sandbox accounts for other SA banks
-  return [
-    {
-      id: `sandbox-${institution.toLowerCase().replace(/\s+/g, "-")}-main`,
-      name: `${institution} Primary Checking Account`,
-      accountNumber: "9081249102",
-      accountNumberType: "CURRENT",
-      institution,
-      currency: "ZAR",
-      currentBalance: 5430.00,
-      availableBalance: 5430.00,
-      transactions: [
-        { id: "tx-gen-01", date: "2026-08-20", description: "CHECKERS HYPER GROCERIES", amount: -1245.50, runningBalance: 5430.00 },
-        { id: "tx-gen-02", date: "2026-08-18", description: "ENGEN QUICKSHOP FUEL", amount: -650.00, runningBalance: 6675.50 },
-        { id: "tx-gen-03", date: "2026-08-15", description: "DIS-CHEM PHARMACY", amount: -320.00, runningBalance: 7325.50 },
-      ],
-    },
-  ];
+  const redirectUri = process.env.STITCH_REDIRECT_URI || "http://localhost:3001/api/banking/auth/callback";
+  const scope = encodeURIComponent("openid user.accounts user.balances user.transactions");
+  const authEndpoint = process.env.STITCH_AUTH_ENDPOINT || "https://stitch.money/connect/authorize";
+
+  let url = `${authEndpoint}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${encodeURIComponent(state)}&prompt=consent`;
+  if (institutionId) {
+    url += `&institution=${encodeURIComponent(institutionId)}`;
+  }
+  return url;
 }
 
 /**
- * Fetch accounts from Stitch GraphQL API or Sandbox Mock
+ * Exchange Authorization Code for Live Access Token via Stitch OAuth
  */
-export async function fetchStitchAccounts(accessToken: string, institution: string = "Standard Bank"): Promise<StitchAccountData[]> {
-  const isSandbox = !process.env.STITCH_CLIENT_SECRET || accessToken.startsWith("sandbox_");
+export async function exchangeStitchToken(code: string): Promise<{ accessToken: string; refreshToken?: string; expiresIn: number }> {
+  const clientId = process.env.STITCH_CLIENT_ID;
+  const clientSecret = process.env.STITCH_CLIENT_SECRET;
+  const redirectUri = process.env.STITCH_REDIRECT_URI || "http://localhost:3001/api/banking/auth/callback";
 
-  if (isSandbox) {
-    return generateSandboxBankData(institution);
+  if (!clientId || !clientSecret) {
+    throw new Error("Live Stitch credentials (STITCH_CLIENT_ID / STITCH_CLIENT_SECRET) not configured.");
+  }
+
+  const tokenEndpoint = process.env.STITCH_TOKEN_ENDPOINT || "https://secure.stitch.money/connect/token";
+
+  const res = await fetch(tokenEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: redirectUri,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Stitch Token Exchange failed (HTTP ${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresIn: data.expires_in || 3600,
+  };
+}
+
+/**
+ * Fetch accounts directly from live Stitch GraphQL API
+ * Throws explicit error if not authenticated (NO mock or fallback data).
+ */
+export async function fetchStitchAccounts(accessToken: string, defaultInstitution: string = "Connected Bank"): Promise<StitchAccountData[]> {
+  if (!accessToken || accessToken.startsWith("sandbox_")) {
+    throw new Error(
+      "Live banking connection required. Please connect your bank account via Stitch Open Banking OAuth."
+    );
   }
 
   const endpoint = process.env.STITCH_GRAPHQL_ENDPOINT || "https://api.stitch.money/graphql";
@@ -273,54 +172,50 @@ export async function fetchStitchAccounts(accessToken: string, institution: stri
     }
   `;
 
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ query }),
-      signal: AbortSignal.timeout(15000),
-    });
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ query }),
+    signal: AbortSignal.timeout(15000),
+  });
 
-    if (!res.ok) {
-      throw new Error(`Stitch API error HTTP ${res.status}: ${await res.text()}`);
-    }
-
-    const payload = await res.json();
-    const accounts = payload?.data?.user?.bankAccounts || [];
-
-    return accounts.map((acc: any) => ({
-      id: acc.id,
-      name: acc.name,
-      accountNumber: acc.accountNumber,
-      accountNumberType: acc.accountNumberType || "CURRENT",
-      institution: acc.institution?.name || institution,
-      currency: acc.currency || "ZAR",
-      currentBalance: (acc.currentBalance || 0) / 100, // Stitch balances are in cents
-      availableBalance: (acc.availableBalance || 0) / 100,
-    }));
-  } catch (err: any) {
-    console.warn(`Stitch live fetch failed (${err.message}). Falling back to Sandbox data.`);
-    return generateSandboxBankData(institution);
+  if (!res.ok) {
+    throw new Error(`Live Stitch API error HTTP ${res.status}: ${await res.text()}`);
   }
+
+  const payload = await res.json();
+  if (payload.errors && payload.errors.length > 0) {
+    throw new Error(`Stitch GraphQL Error: ${payload.errors.map((e: any) => e.message).join(", ")}`);
+  }
+
+  const accounts = payload?.data?.user?.bankAccounts || [];
+
+  return accounts.map((acc: any) => ({
+    id: acc.id,
+    name: acc.name,
+    accountNumber: acc.accountNumber,
+    accountNumberType: acc.accountNumberType || "CURRENT",
+    institution: acc.institution?.name || defaultInstitution,
+    currency: acc.currency || "ZAR",
+    currentBalance: (acc.currentBalance || 0) / 100, // Stitch amounts in cents
+    availableBalance: (acc.availableBalance || 0) / 100,
+  }));
 }
 
 /**
- * Fetch transactions for a specific Stitch account
+ * Fetch real live transactions for a specific bank account from Stitch GraphQL API
+ * Throws explicit error if not authenticated (NO mock or fallback data).
  */
 export async function fetchStitchTransactions(
   accessToken: string,
   stitchAccountId: string,
-  institution: string = "Standard Bank"
+  defaultInstitution: string = "Connected Bank"
 ): Promise<StitchTransactionData[]> {
-  const isSandbox = !process.env.STITCH_CLIENT_SECRET || accessToken.startsWith("sandbox_");
-
-  if (isSandbox) {
-    const accounts = generateSandboxBankData(institution);
-    const matched = accounts.find((a) => a.id === stitchAccountId) || accounts[0];
-    return matched?.transactions || [];
+  if (!accessToken || accessToken.startsWith("sandbox_")) {
+    throw new Error("Live banking connection required. No valid live access token provided.");
   }
 
   const endpoint = process.env.STITCH_GRAPHQL_ENDPOINT || "https://api.stitch.money/graphql";
@@ -345,42 +240,39 @@ export async function fetchStitchTransactions(
     }
   `;
 
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ query, variables: { accountId: stitchAccountId } }),
-      signal: AbortSignal.timeout(15000),
-    });
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ query, variables: { accountId: stitchAccountId } }),
+    signal: AbortSignal.timeout(15000),
+  });
 
-    if (!res.ok) {
-      throw new Error(`Stitch transactions API error HTTP ${res.status}`);
-    }
-
-    const payload = await res.json();
-    const edges = payload?.data?.node?.transactions?.edges || [];
-
-    return edges.map(({ node }: any) => ({
-      id: node.id,
-      date: node.date?.slice(0, 10),
-      description: node.description || node.reference || "Bank Transaction",
-      amount: (node.amount || 0) / 100, // Stitch amounts in cents
-      runningBalance: node.runningBalance ? node.runningBalance / 100 : undefined,
-      reference: node.reference,
-    }));
-  } catch (err: any) {
-    console.warn(`Stitch transactions live fetch failed (${err.message}). Using fallback data.`);
-    const accounts = generateSandboxBankData(institution);
-    const matched = accounts.find((a) => a.id === stitchAccountId) || accounts[0];
-    return matched?.transactions || [];
+  if (!res.ok) {
+    throw new Error(`Live Stitch transactions API error HTTP ${res.status}`);
   }
+
+  const payload = await res.json();
+  if (payload.errors && payload.errors.length > 0) {
+    throw new Error(`Stitch GraphQL Error: ${payload.errors.map((e: any) => e.message).join(", ")}`);
+  }
+
+  const edges = payload?.data?.node?.transactions?.edges || [];
+
+  return edges.map(({ node }: any) => ({
+    id: node.id,
+    date: node.date?.slice(0, 10),
+    description: node.description || node.reference || "Bank Transaction",
+    amount: (node.amount || 0) / 100, // Stitch amounts in cents
+    runningBalance: node.runningBalance ? node.runningBalance / 100 : undefined,
+    reference: node.reference,
+  }));
 }
 
 /**
- * Execute automated bank synchronization for an active BankConnection
+ * Execute automated bank synchronization for an active BankConnection via live API
  */
 export async function syncBankConnection(connectionId: string): Promise<BankSyncResult> {
   const connection = await prisma.bankConnection.findUnique({
@@ -389,152 +281,205 @@ export async function syncBankConnection(connectionId: string): Promise<BankSync
   });
 
   if (!connection) {
-    throw new Error(`Bank connection ${connectionId} not found`);
+    throw new Error(`Live bank connection ${connectionId} not found`);
   }
 
   if (connection.consentStatus !== "ACTIVE") {
-    throw new Error(`Bank connection consent is ${connection.consentStatus}`);
+    throw new Error(`Live bank connection consent is ${connection.consentStatus}`);
   }
 
-  const plainToken = decryptToken(connection.accessTokenEncrypted) || "sandbox_token";
-  const institution = connection.providerName || connection.account.institution || "Standard Bank";
+  const plainToken = decryptToken(connection.accessTokenEncrypted);
+  if (!plainToken) {
+    throw new Error("Missing or unreadable live bank access token.");
+  }
 
-  // 1. Fetch live or sandbox account data
+  const institution = connection.providerName || connection.account.institution || "Connected Bank";
+
+  // 1. Fetch live account data from bank API
   const accounts = await fetchStitchAccounts(plainToken, institution);
   const matchedStitchAccount =
-    accounts.find((a) => a.name.toLowerCase().includes(connection.account.name.toLowerCase())) ||
+    accounts.find((a) => a.id === connection.accountId || a.name.toLowerCase() === connection.account.name.toLowerCase()) ||
     accounts[0];
 
-  const currentBalance = matchedStitchAccount?.currentBalance ?? Number(connection.account.openingBalance);
-  const availableBalance = matchedStitchAccount?.availableBalance ?? currentBalance;
+  if (!matchedStitchAccount) {
+    throw new Error(`Account not found on live bank API feed.`);
+  }
 
-  // 2. Fetch latest transactions
+  const currentBalance = matchedStitchAccount.currentBalance;
+  const availableBalance = matchedStitchAccount.availableBalance;
+
+  // 2. Fetch live transactions from bank API
   const stitchTransactions = await fetchStitchTransactions(
     plainToken,
-    matchedStitchAccount?.id || connection.accountId,
+    matchedStitchAccount.id,
     institution
   );
 
-  // 3. Ingest into Virtual Synced Document & MoneyFlow table with Deduplication
-  const syncDocEntityId = `bank-sync-${connection.accountId}`;
-  let existingDoc = await prisma.document.findFirst({
-    where: {
-      relatedEntityId: connection.accountId,
-      relatedEntityType: "ACCOUNT",
-      documentType: "BANK_STATEMENT",
-    },
-    orderBy: { uploadedAt: "desc" },
-  });
-
-  const existingTransactions: any[] = (existingDoc?.parsedData as any)?.transactions || [];
-  const existingSignatures = new Set(
-    existingTransactions.map((t: any) => `${t.date}_${t.amount}_${(t.description || "").slice(0, 15).toLowerCase()}`)
-  );
-
-  let newCount = 0;
+  // 3. Ingest live transactions into MoneyFlow with strict deduplication
+  let newTxCount = 0;
   let dupCount = 0;
-  const mergedTransactions = [...existingTransactions];
 
-  for (const stx of stitchTransactions) {
-    const sig = `${stx.date}_${Math.abs(stx.amount)}_${stx.description.slice(0, 15).toLowerCase()}`;
-    if (existingSignatures.has(sig)) {
+  for (const stTx of stitchTransactions) {
+    const txAmount = new Decimal(Math.abs(stTx.amount));
+    const flowType = stTx.amount >= 0 ? "INCOME" : "OTHER";
+    const txDate = new Date(stTx.date);
+
+    // Deduplication check: same account, date, amount, description
+    const existing = await prisma.moneyFlow.findFirst({
+      where: {
+        OR: [
+          { sourceRef: connection.accountId },
+          { destinationRef: connection.accountId },
+        ],
+        amount: txAmount,
+        flowType,
+        createdAt: {
+          gte: new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate(), 0, 0, 0),
+          lte: new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate(), 23, 59, 59),
+        },
+      },
+    });
+
+    if (existing) {
       dupCount++;
       continue;
     }
 
-    newCount++;
-    existingSignatures.add(sig);
-    mergedTransactions.push({
-      date: stx.date,
-      description: stx.description,
-      amount: Math.abs(stx.amount),
-      type: stx.amount < 0 ? "DEBIT" : "CREDIT",
-      balance: stx.runningBalance ?? currentBalance,
-      reference: stx.reference,
-      source: "OPEN_BANKING_API",
-      bankName: institution,
-      accountNumberMasked: connection.account.accountNumberMasked || "SYNCED",
-    });
-
-    // Create MoneyFlow entry for cash lineage
-    try {
-      await prisma.moneyFlow.create({
-        data: {
-          originTransactionId: stx.id,
-          sourceType: "BANK_ACCOUNT",
-          sourceRef: connection.account.id,
-          destinationType: stx.amount < 0 ? "MERCHANT" : "BANK_ACCOUNT",
-          destinationRef: stx.description.slice(0, 50),
-          amount: new Decimal(Math.abs(stx.amount)),
-          currentAmount: new Decimal(Math.abs(stx.amount)),
-          flowType: stx.amount < 0 ? "CARD_PURCHASE" : "INCOME_DEPOSIT",
-          status: "ACTIVE",
-          confidence: "CONFIRMED",
-        },
-      });
-    } catch {
-      // Non-fatal if flow creation fails
-    }
-  }
-
-  // 4. Update or create the Document record for downstream budget reconciliation
-  if (existingDoc) {
-    await prisma.document.update({
-      where: { id: existingDoc.id },
+    await prisma.moneyFlow.create({
       data: {
-        parsedData: {
-          transactions: mergedTransactions,
-          isBankApiSync: true,
-          lastSyncedAt: new Date().toISOString(),
-          totalTransactionsCount: mergedTransactions.length,
-        },
-        parseStatus: "COMPLETED",
-        parsed: true,
+        sourceType: "ACCOUNT",
+        sourceRef: connection.accountId,
+        destinationType: "EXTERNAL",
+        flowType,
+        amount: txAmount,
+        currentAmount: txAmount,
+        status: "ACTIVE",
+        confidence: "CONFIRMED",
+        createdAt: txDate,
       },
     });
-  } else {
-    existingDoc = await prisma.document.create({
-      data: {
-        relatedEntityType: "ACCOUNT",
-        relatedEntityId: connection.accountId,
-        documentType: "BANK_STATEMENT",
-        fileUrl: `https://bank-sync.internal/${connection.accountId}`,
-        parsed: true,
-        parseStatus: "COMPLETED",
-        parsedData: {
-          transactions: mergedTransactions,
-          isBankApiSync: true,
-          lastSyncedAt: new Date().toISOString(),
-          totalTransactionsCount: mergedTransactions.length,
-        },
-      },
-    });
+    newTxCount++;
   }
 
-  // 5. Update BankConnection timestamp & Account balance
-  const now = new Date();
+  // 4. Update live connection timestamp
   await prisma.bankConnection.update({
     where: { id: connectionId },
-    data: { lastSyncedAt: now },
+    data: { lastSyncedAt: new Date() },
   });
 
+  // 5. Update live balance on account
   await prisma.account.update({
     where: { id: connection.accountId },
     data: { openingBalance: new Decimal(currentBalance) },
   });
 
   return {
-    connectionId,
+    connectionId: connection.id,
     accountId: connection.accountId,
     institution,
     accountName: connection.account.name,
     accountNumberMasked: connection.account.accountNumberMasked || "••••",
     currentBalance,
     availableBalance,
-    newTransactionsCount: newCount,
+    newTransactionsCount: newTxCount,
     duplicateTransactionsCount: dupCount,
-    totalSyncedCount: mergedTransactions.length,
-    syncTimestamp: now.toISOString(),
+    totalSyncedCount: stitchTransactions.length,
+    syncTimestamp: new Date().toISOString(),
     status: "SUCCESS",
   };
+}
+
+/**
+ * Smart matching for discovered live accounts
+ */
+export interface DiscoveredAccountMatch {
+  stitchAccount: StitchAccountData;
+  matchedAccountId: string | null;
+  matchType: "EXACT_NUMBER" | "FUZZY_NAME" | "NEW_DISCOVERY";
+  suggestedAccountType: "CURRENT" | "SAVINGS" | "CREDIT_CARD" | "LOAN";
+}
+
+export function matchDiscoveredAccounts(
+  discovered: StitchAccountData[],
+  existingAccounts: Array<{
+    id: string;
+    name: string;
+    accountNumberMasked?: string | null;
+    type: string;
+    institution: string;
+  }>
+): DiscoveredAccountMatch[] {
+  return discovered.map((stitchAcc) => {
+    // 1. Exact match on masked number
+    const last4 = stitchAcc.accountNumber ? stitchAcc.accountNumber.slice(-4) : "";
+    const numMatch = existingAccounts.find(
+      (a) =>
+        last4 &&
+        a.accountNumberMasked &&
+        a.accountNumberMasked.replace(/[^0-9]/g, "").endsWith(last4)
+    );
+
+    if (numMatch) {
+      return {
+        stitchAccount: stitchAcc,
+        matchedAccountId: numMatch.id,
+        matchType: "EXACT_NUMBER",
+        suggestedAccountType: numMatch.type as any,
+      };
+    }
+
+    // 2. Fuzzy name match
+    const nameLower = stitchAcc.name.toLowerCase();
+    const nameMatch = existingAccounts.find((a) => {
+      const aLower = a.name.toLowerCase();
+      return (
+        nameLower.includes(aLower) ||
+        aLower.includes(nameLower) ||
+        (nameLower.includes("prestige") && aLower.includes("prestige")) ||
+        (nameLower.includes("mymo") && aLower.includes("mymo")) ||
+        (nameLower.includes("titanium") && aLower.includes("titanium")) ||
+        (nameLower.includes("home loan") && aLower.includes("home loan")) ||
+        (nameLower.includes("revolving") && aLower.includes("revolving"))
+      );
+    });
+
+    if (nameMatch) {
+      return {
+        stitchAccount: stitchAcc,
+        matchedAccountId: nameMatch.id,
+        matchType: "FUZZY_NAME",
+        suggestedAccountType: nameMatch.type as any,
+      };
+    }
+
+    // 3. New discovery
+    return {
+      stitchAccount: stitchAcc,
+      matchedAccountId: null,
+      matchType: "NEW_DISCOVERY",
+      suggestedAccountType: mapStitchAccountTypeToPrisma(
+        stitchAcc.accountNumberType,
+        stitchAcc.name
+      ),
+    };
+  });
+}
+
+export function mapStitchAccountTypeToPrisma(
+  stitchType?: string,
+  accountName?: string
+): "CURRENT" | "SAVINGS" | "CREDIT_CARD" | "LOAN" {
+  const name = (accountName || "").toLowerCase();
+  const type = (stitchType || "").toUpperCase();
+
+  if (name.includes("credit card") || name.includes("titanium") || type.includes("CREDIT")) {
+    return "CREDIT_CARD";
+  }
+  if (name.includes("home loan") || name.includes("bond") || name.includes("revolving") || type.includes("LOAN")) {
+    return "LOAN";
+  }
+  if (name.includes("savings") || name.includes("pocket") || type.includes("SAVINGS")) {
+    return "SAVINGS";
+  }
+  return "CURRENT";
 }

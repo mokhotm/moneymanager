@@ -20,13 +20,13 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 │ • Holiday Shifts  │ • 1-Click Mapping │ • Expandable View │ • Friction & Leakage Radar │
 │ • Statement Sync  │ • Live KPI Sync   │ • Mask GPU Clip   │ • 6-Month Trajectory Graph │
 ├───────────────────┼───────────────────┼───────────────────┼────────────────────────────┤
-│   OPEN BANKING &  │  GOALS & BUDGET   │  AI FEASIBILITY   │  6-PILLAR PRE-DEPLOYMENT   │
-│   BANK FEEDS TAB  │  SURPLUS WATERFALL│  ACTUARIAL AGENT  │       AUDIT ENGINE         │
+│   OPEN FINANCE &  │  GOALS & BUDGET   │  AI FEASIBILITY   │  CONTINUOUS MULTI-AGENT    │
+│   ADMIN GATEWAY   │  SURPLUS WATERFALL│  ACTUARIAL AGENT  │       LEARNING HUB         │
 ├───────────────────┼───────────────────┼───────────────────┼────────────────────────────┤
-│ • Stitch Open Fin │ • Dynamic Surplus │ • Feasibility Sc. │ • Account & Entity Parity  │
-│ • 8 SA Bank Feeds │ • Priority Order  │ • Debt Drag Ratio │ • Statement Continuity     │
-│ • Inbound Scanner │ • 2-Way Syncing   │ • Safe Allocation │ • Spending Location Radar  │
-│ • AES-256 Tokens  │ • Micro-Progress  │ • BYOK Multi-LLM  │ • Zero-Regression Suite    │
+│ • Stitch Live PKCE│ • Dynamic Surplus │ • Feasibility Sc. │ • Apple-Caliber Obsidian UI│
+│ • 8 SA Bank Feeds │ • Priority Order  │ • Debt Drag Ratio │ • 6 Specialized Domains    │
+│ • Admin Isolation │ • 2-Way Syncing   │ • Safe Allocation │ • Dynamic Prompt Inject    │
+│ • Zero-Mock Policy│ • Micro-Progress  │ • BYOK Multi-LLM  │ • Zero-Mistake Flywheel    │
 └───────────────────┴───────────────────┴───────────────────┴────────────────────────────┘
 ```
 
@@ -88,14 +88,21 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 
 ---
 
-### 4. South African Open Banking & Bank Feeds Hub (`/settings?tab=banking`)
-- **Stitch Open Finance SA Connector Directory**:
-  - Native integration for all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
-  - Encrypted token storage with AES-256-CBC and real-time on-demand transaction feed synchronization.
+### 4. South African Open Banking & Administrator Gateway (`/settings?tab=banking` & `/settings?tab=admin-gateway`)
+- **Stitch Open Finance SA Multi-Bank Connector Directory**:
+  - Native, neutral integration for all 8 South African Commercial Banks (Standard Bank, Capitec, FNB, Nedbank, Investec, Absa, Discovery Bank, TymeBank).
+  - Eliminates proprietary third-party lock-ins and treats all licensed South African institutions with absolute neutrality (`FIX-022`).
+- **Administrator Role Segregation (`FIX-023`)**:
+  - **Admin Gateway Portal (`/settings?tab=admin-gateway`)**: System infrastructure credentials (`STITCH_CLIENT_ID`, `STITCH_CLIENT_SECRET`, and redirect URIs) are isolated to a dedicated tab visible exclusively to users with `role: "admin"`.
+  - **Backend RBAC Gating**: `POST /api/banking/config` enforces strict administrator checks, rejecting non-admin attempts with `403 Forbidden`. `GET /api/banking/config` withholds sensitive credentials from non-administrators.
+  - **Consumer Banking Hub (`/settings?tab=banking`)**: End-users enjoy a clean personal finance interface with zero exposure to developer API keys. If the gateway is not yet activated, users receive an informative notice directing them to contact their administrator.
+- **Zero-Mock Policy & Ground-Truth Invariant (`FIX-021`)**:
+  - 100% genuine live Open Banking via OAuth 2.0 PKCE. All synthetic mock fallbacks, fake transaction generators, and sandbox account stubs have been completely deleted.
+  - Uploaded PDF statements remain isolated in the Document Vault and are never conflated with live API feeds.
+- **Authentic Bank Authorization Workflow**:
+  - Connecting an account generates an official OAuth authorization challenge redirecting the user to their bank's authenticated portal. The user confirms via their bank's standard multi-factor authentication (e.g. Standard Bank Approve-It, Capitec App approval, FNB InContact).
 - **Hybrid Ingestion Architecture (`EmailScannerHub`)**:
   - Combines live Open Banking API feeds with multi-agent inbound IMAP email scanning for e-statements, municipal rates, telco invoices, and payslips.
-- **Unified Settings Tab HUD**:
-  - Seamlessly embedded in `/settings?tab=banking` alongside AI Models & BYOK Keys, Continuous Agent Learning, and Property Data.
 
 ---
 
@@ -151,7 +158,31 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
 
 ---
 
-### 10. Master Pre-Deployment 6-Pillar Audit Engine (`scripts/run_all_audits.ts`)
+### 10. South African Statutory Salary & Increase Intelligence Calculator (`/salary-calculator`, `src/engine/salaryCalculator.ts`)
+- **SARS 2026/2027 Statutory Tax Modeling**:
+  - Computes exact PAYE tax across all 7 statutory tax brackets (18% to 45%), incorporating the primary rebate (R 17,235).
+  - Includes **Section 6A Medical Scheme Fees Tax Credits** (R 364 for main member, R 364 for first dependant, R 246 for additional dependants).
+  - Enforces statutory **UIF remuneration caps** (1% capped at R 177.12 / month).
+  - Calculates pre-tax **Section 11F retirement deductions** (27.5% allowable ceiling capped at R 350,000/year).
+- **Interactive Notch Adjustment & Retroactive Backpay Simulation**:
+  - Live gross salary slider modeling annual and monthly salary adjustments.
+  - Calculates marginal tax bracket creep, incremental net take-home pay, and models backdated lump-sum salary increments across 1 to 12 months.
+
+---
+
+### 11. Continuous Multi-Agent Learning & Feedback Flywheel (`/settings?tab=agent-memory`)
+- **Apple-Caliber Obsidian Interface (`FIX-024`)**:
+  - Transformed into a premium obsidian control center with a glowing BrainCircuit header, live feedback badge, and 4-card metric grid (Active Rules, High Confidence, Average Confidence, Domain Count).
+- **6 Specialized Memory Domains**:
+  - Categorizes learned facts across `GEO` (merchants & coordinates), `BUDGET` (pay cycles & envelopes), `DEBT` (payoff preferences), `GOALS` (sinking funds & buffers), `DOCUMENT` (statement layouts), and `PREFERENCE` (user behavior).
+- **Dynamic Prompt Augmentation**:
+  - The orchestrator injects verified learned rules directly into agent system prompts prior to LLM inference (`getPromptAugmentationMemories`), ensuring agents never repeat past mistakes.
+- **Interactive Rule Authoring Modal**:
+  - End-users and administrators can teach custom rules via a glassmorphic modal with domain selectors, pattern triggers, instructions, and confidence ratings.
+
+---
+
+### 12. Master Pre-Deployment 6-Pillar Audit Engine (`scripts/run_all_audits.ts`)
 - **Mandatory Pre-Deployment Audit Gates**:
   1. **Pillar 1: Database Entity & Account Integrity** — Verifies primary user accounts and active debt facilities.
   2. **Pillar 2: Transaction History & Continuous Statement Parity** — Validates 1,360+ statement flows from bank PDFs.
@@ -159,9 +190,9 @@ Built with an **Apple-grade Obsidian Glass design philosophy** (`backdrop-filter
   4. **Pillar 4: Pay Cycle & Budget Reconciliation Engine** — Validates monthly budget execution against statement debit orders and EFTs.
   5. **Pillar 5: Debt Waterfall & Liability Schedules** — Confirms amortization, interest rates, and cascade payoff progress for all 10 debt instruments.
   6. **Pillar 6: Remote AWS EC2 Production & API Health** — Executes live smoke tests and authenticated API probes.
-- **Zero-Regression Policy & Issues Register**:
+- **Zero-Regression Policy & Automated Test Engine**:
   - All bug fixes recorded in [`CORRECTED_ISSUES_REGISTER.md`](file:///c:/Ezzy/Projects/Money/CORRECTED_ISSUES_REGISTER.md).
-  - 13 automated tests in [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts).
+  - **21 automated regression tests** in [`tests/regressionAuditSuite.test.ts`](file:///c:/Ezzy/Projects/Money/tests/regressionAuditSuite.test.ts) covering `FIX-001` through `FIX-024`.
 
 ---
 

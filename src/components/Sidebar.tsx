@@ -31,6 +31,7 @@ import {
   ShieldAlert,
   Building2,
   Mail,
+  Calculator,
 } from "lucide-react";
 
 interface NavGroup {
@@ -61,6 +62,7 @@ const navGroups: NavGroup[] = [
       { href: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
       { href: "/cash-wallet", icon: Wallet, label: "Cash Wallet", badge: "Split" },
       { href: "/budget", icon: Receipt, label: "Monthly Budget" },
+      { href: "/salary-calculator", icon: Calculator, label: "Salary & Increase", badge: "Global" },
     ],
   },
   {

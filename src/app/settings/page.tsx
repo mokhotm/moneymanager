@@ -36,9 +36,11 @@ import {
   Building2,
   FileText,
   Activity,
+  ShieldAlert,
 } from "lucide-react";
 import { AgentMemoryManager } from "@/components/AgentMemoryManager";
 import { BankingTab } from "@/components/BankingTab";
+import { AdminGatewaySettings } from "@/components/AdminGatewaySettings";
 
 interface ProviderConfig {
   id: string;
@@ -333,7 +335,7 @@ const AGENT_LABELS = {
   },
 };
 
-type SettingsTab = "banking" | "ai-models" | "agent-memory" | "property-data";
+type SettingsTab = "banking" | "ai-models" | "agent-memory" | "property-data" | "admin-gateway";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -341,14 +343,14 @@ function SettingsContent() {
   const tabParam = searchParams.get("tab") as SettingsTab | null;
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
-    if (tabParam && ["banking", "ai-models", "agent-memory", "property-data"].includes(tabParam)) {
+    if (tabParam && ["banking", "ai-models", "agent-memory", "property-data", "admin-gateway"].includes(tabParam)) {
       return tabParam;
     }
     return "banking";
   });
 
   useEffect(() => {
-    if (tabParam && ["banking", "ai-models", "agent-memory", "property-data"].includes(tabParam)) {
+    if (tabParam && ["banking", "ai-models", "agent-memory", "property-data", "admin-gateway"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -359,6 +361,7 @@ function SettingsContent() {
   };
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string>("user");
   const [configs, setConfigs] = useState<ProviderConfig[]>([]);
   const [assignments, setAssignments] = useState<AgentAssignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -498,6 +501,7 @@ function SettingsContent() {
       const authRes = await fetch("/api/auth/me").then((r) => r.json());
       const authed = authRes.authenticated === true;
       setIsAuthenticated(authed);
+      if (authRes.user?.role) setUserRole(authRes.user.role);
 
       if (authed) {
         const [cRes, aRes, pRes] = await Promise.all([
@@ -911,6 +915,43 @@ function SettingsContent() {
             <Building2 size={16} />
             <span>Property &amp; Deeds Office</span>
           </button>
+
+          {/* TAB: ADMIN GATEWAY (Admin Only) */}
+          {userRole === "admin" && (
+            <button
+              onClick={() => handleTabChange("admin-gateway")}
+              style={{
+                padding: "10px 18px",
+                borderRadius: "10px",
+                border: activeTab === "admin-gateway" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
+                background: activeTab === "admin-gateway" ? "rgba(245, 158, 11, 0.15)" : "transparent",
+                color: activeTab === "admin-gateway" ? "#fbbf24" : "#94a3b8",
+                fontSize: "13px",
+                fontWeight: "700",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Key size={16} />
+              <span>Admin Gateway</span>
+              <span
+                style={{
+                  fontSize: "10px",
+                  padding: "2px 6px",
+                  borderRadius: "8px",
+                  background: "rgba(245, 158, 11, 0.2)",
+                  color: "#fbbf24",
+                  fontWeight: "800",
+                }}
+              >
+                ADMIN
+              </span>
+            </button>
+          )}
         </div>
 
         {/* TAB 1: BANK FEEDS & OPEN BANKING */}
@@ -918,6 +959,58 @@ function SettingsContent() {
           <div>
             <BankingTab />
           </div>
+        )}
+
+        {/* TAB 5: ADMIN GATEWAY SETTINGS */}
+        {activeTab === "admin-gateway" && (
+          userRole === "admin" ? (
+            <div>
+              <AdminGatewaySettings />
+            </div>
+          ) : (
+            <div
+              className="card"
+              style={{
+                padding: "48px 24px",
+                textAlign: "center",
+                background: "rgba(15, 23, 42, 0.7)",
+                borderRadius: "16px",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                maxWidth: 600,
+                margin: "40px auto",
+              }}
+            >
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  background: "rgba(239, 68, 68, 0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <ShieldAlert size={28} color="#ef4444" />
+              </div>
+              <h3 style={{ color: "#f8fafc", fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>
+                Administrator Access Required
+              </h3>
+              <p style={{ color: "#94a3b8", fontSize: "13.5px", lineHeight: "1.6", maxWidth: "480px", margin: "0 auto 24px" }}>
+                Open Finance gateway configuration is strictly reserved for system administrators. Institutional API keys and client credentials cannot be accessed or modified by standard user accounts.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleTabChange("banking")}
+                className="btn btn-secondary"
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px" }}
+              >
+                <Landmark size={15} />
+                <span>Return to Bank Feeds</span>
+              </button>
+            </div>
+          )
         )}
 
         {/* TAB 2: AI MODELS & BYOK KEYS */}

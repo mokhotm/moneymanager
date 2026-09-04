@@ -23,3 +23,5 @@ cookies.txt
 transactions_db.json
 full_database_dump.json
 *.zip
+scratch_*.ts
+sync_*.sql
