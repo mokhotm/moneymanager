@@ -90,6 +90,22 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchData();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get("status");
+      const tierName = params.get("tier");
+      if (status === "success") {
+        setNotification({
+          message: `🎉 Payment successfully confirmed! Your subscription${tierName ? ` to ${tierName}` : ""} has been activated.`,
+          type: "success",
+        });
+      } else if (status === "cancelled") {
+        setNotification({
+          message: "Checkout session was cancelled. Your current plan remains unchanged.",
+          type: "error",
+        });
+      }
+    }
   }, []);
 
   const fetchData = async () => {
@@ -134,16 +150,13 @@ export default function BillingPage() {
         throw new Error(data.error || "Failed to initiate checkout");
       }
 
-      // Simulate payment gateway redirect & callback
-      setNotification({
-        message: `Checkout session created! Redirecting to secure gateway (${data.checkoutUrl.slice(0, 40)}...)`,
-        type: "success",
-      });
-
       if (data.checkoutUrl) {
+        setNotification({
+          message: `Redirecting to secure gateway...`,
+          type: "success",
+        });
         window.location.href = data.checkoutUrl;
       }
-
     } catch (err: any) {
       setNotification({ message: err.message || "Checkout failed", type: "error" });
     } finally {

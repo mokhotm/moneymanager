@@ -717,6 +717,52 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(globalsContent).toContain(".sidebar-group-content.collapsed");
     expect(globalsContent).toContain(".sidebar-group-content.expanded");
   });
+
+  // ── FIX-027: Payment Gateway Architecture & Dynamic Provider Factory ──
+  it("FIX-027: Payment Gateway dynamic provider factory must resolve valid providers, generate checkout sessions, and verify HMAC signatures", async () => {
+    const { getPaymentGatewayProvider, SandboxPaymentGateway, StitchPaymentGateway, PaystackPaymentGateway } = await import("../src/services/billing/paymentGateway");
+    const { BillingService } = await import("../src/services/billing/billingService");
+
+    // 1. Factory must resolve to a valid PaymentGatewayProvider
+    const provider = await getPaymentGatewayProvider();
+    expect(provider).toBeDefined();
+    expect(typeof provider.createHostedCheckoutSession).toBe("function");
+    expect(typeof provider.verifyWebhookSignature).toBe("function");
+
+    // 2. Sandbox provider must generate hosted session URL and session ID
+    const sandbox = new SandboxPaymentGateway("test_whsec_key");
+    const session = await sandbox.createHostedCheckoutSession(199, "ZAR", {
+      pendingPaymentId: "pay_test_fix027",
+      tierId: "Pro Wealth Accelerator",
+      billingPeriod: "MONTHLY",
+    });
+
+    expect(session.url).toBeDefined();
+    expect(session.url).toContain("sandbox-checkout");
+    expect(session.url).toContain("sessionId=");
+    expect(session.sessionId).toBe("pay_test_fix027");
+
+    // 3. Webhook signature generation and timing-safe verification
+    const payload = JSON.stringify({ pendingPaymentId: "pay_test_fix027", status: "SUCCESS" });
+    const signature = sandbox.signPayload(payload, "test_whsec_key");
+    expect(signature).toBeDefined();
+    expect(signature.length).toBe(64); // SHA-256 hex length
+
+    const isValid = sandbox.verifyWebhookSignature(payload, signature, "test_whsec_key");
+    expect(isValid).toBe(true);
+
+    const isTampered = sandbox.verifyWebhookSignature(payload + "tampered", signature, "test_whsec_key");
+    expect(isTampered).toBe(false);
+
+    // 4. Stitch and Paystack gateway classes must be instantiated and expose required methods
+    const stitchGw = new StitchPaymentGateway();
+    expect(typeof stitchGw.createHostedCheckoutSession).toBe("function");
+    expect(typeof stitchGw.verifyWebhookSignature).toBe("function");
+
+    const paystackGw = new PaystackPaymentGateway("sk_test_mock_123");
+    expect(typeof paystackGw.createHostedCheckoutSession).toBe("function");
+    expect(typeof paystackGw.verifyWebhookSignature).toBe("function");
+  });
 });
 
 

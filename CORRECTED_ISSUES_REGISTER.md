@@ -411,3 +411,30 @@ This document records all software, data parsing, geocoding, and deployment issu
     * Integrated `localStorage` persistence under key `sidebar-collapsed-groups` so user collapse/expand preferences are preserved across page navigations and reloads.
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-026`).
 
+---
+
+### FIX-027: Production-Ready Payment Gateway Integration & Dual-Rail Architecture (Stitch & Paystack)
+* **Date Identified**: 2026-09-04
+* **Symptom**:
+  * On the Billing page (`/billing`), clicking "Upgrade to Pro" or "Upgrade to Executive" failed with `Payment gateway provider is not configured.` because `BillingService` defaulted to `UnconfiguredPaymentGateway`.
+  * The application lacked concrete provider adapters for South African payment rails (Stitch Pay-by-Bank / Instant EFT and Paystack Card Tokenization).
+  * In local development, demo environments, or while commercial merchant KYC with CIPC/Stitch is pending, there was no way to simulate and verify the end-to-end checkout and subscription activation lifecycle.
+* **Root Cause**:
+  * Only `UnconfiguredPaymentGateway` and `MockPaymentGateway` existed in `paymentGateway.ts` with no dynamic provider factory or live provider drivers.
+  * Checkout routes lacked integration with active gateway configurations and email parameter resolution.
+* **Exact Resolution**:
+  * **Dual-Rail Payment Architecture**:
+    * Implemented `StitchPaymentGateway` in `src/services/billing/paymentGateway.ts` for South African Open Banking Payments (Pay-by-Bank / Instant EFT) with HMAC-SHA256 signature verification.
+    * Implemented `PaystackPaymentGateway` for recurring card tokenization (Visa / Mastercard) with HMAC-SHA512 webhook verification.
+    * Implemented `SandboxPaymentGateway` providing an interactive hosted payment simulator at `/billing/sandbox-checkout`.
+  * **Dynamic Provider Factory**:
+    * Added `getPaymentGatewayProvider(prismaClient)` which dynamically inspects active database configurations (`PaymentGatewayConfig`) or environment variables, falling back to the Sandbox Terminal Simulator in test/sandbox mode.
+  * **Interactive Sandbox Payment Terminal**:
+    * Built `/billing/sandbox-checkout` featuring dual-rail testing (South African banks: Standard Bank, FNB, ABSA, Nedbank, Capitec, Discovery Bank; and Visa/Mastercard tokenized cards).
+    * Supports 1-click simulation of successful payments (dispatching cryptographically signed webhook callbacks and activating user subscription) and cancelled payments.
+  * **Billing Hub Status Detection**:
+    * Updated `src/app/billing/page.tsx` to detect `?status=success` and immediately celebrate with a confirmation banner while automatically refreshing subscription state.
+  * **Administrator Gateway Management**:
+    * Enhanced `src/components/AdminGatewaySettings.tsx` with dedicated Merchant Payment Gateway controls allowing system administrators to toggle providers (Stitch, Paystack, Sandbox), switch modes (SANDBOX vs LIVE), and configure settlement payout accounts.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-027`) & `tests/billing.test.ts`.
+

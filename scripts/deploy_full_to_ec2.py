@@ -49,7 +49,7 @@ run_local("node node_modules/vitest/vitest.mjs run tests/spendingLocationRadar.t
 # STEP 2: GIT PUSH
 print("\n[Step 2] Staging, committing and pushing latest changes to GitHub...")
 subprocess.run("git add .", shell=True)
-subprocess.run('git commit -m "feat: Collapsible and Expandable Sidebar Navigation Groups, LocalStorage State Persistence & Active Spatial Continuity (FIX-026)"', shell=True)
+subprocess.run('git commit -m "feat: Production-Ready Payment Gateway Architecture & Dual-Rail Integration (Stitch & Paystack) (FIX-027)"', shell=True)
 run_local("git push origin main", "Push to GitHub mokhotm/moneymanager")
 
 # STEP 3: REMOTE CODE UPDATE

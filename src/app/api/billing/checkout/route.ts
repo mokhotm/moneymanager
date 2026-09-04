@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BillingService } from '@/services/billing/billingService';
 import { BillingPeriod } from '@prisma/client';
 import { getEffectiveUserId } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 
-const billingService = new BillingService();
+const billingService = new BillingService(prisma);
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,10 +28,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'tierId is required' }, { status: 400 });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+
     const result = await billingService.createCheckout({
       userId,
       tierId,
       billingPeriod: billingPeriod === 'ANNUAL' ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY,
+      email: user?.email || undefined,
     });
 
     return NextResponse.json(result);

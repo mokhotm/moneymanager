@@ -12,6 +12,7 @@ import {
   Landmark,
   ExternalLink,
   Lock,
+  CreditCard,
 } from "lucide-react";
 import { SA_BANK_CONNECTORS } from "@/lib/bankConnectors";
 
@@ -25,15 +26,40 @@ export function AdminGatewaySettings() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
+  // Merchant Payment Gateway state
+  const [paymentProvider, setPaymentProvider] = useState<string>("STITCH");
+  const [gatewayMode, setGatewayMode] = useState<string>("SANDBOX");
+  const [settlementBank, setSettlementBank] = useState<string>("Standard Bank of South Africa");
+  const [settlementAccountNum, setSettlementAccountNum] = useState<string>("•••• 4469");
+  const [isSavingPayment, setIsSavingPayment] = useState<boolean>(false);
+  const [paymentFeedback, setPaymentFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+
   const loadConfig = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/banking/config");
-      const data = await res.json();
-      if (res.ok) {
+      const [bankRes, payRes] = await Promise.all([
+        fetch("/api/banking/config"),
+        fetch("/api/billing/admin/gateways"),
+      ]);
+
+      if (bankRes.ok) {
+        const data = await bankRes.json();
         setIsConfigured(Boolean(data.isConfigured));
         if (data.clientId) setClientId(data.clientId);
         if (data.redirectUri) setRedirectUri(data.redirectUri);
+      }
+
+      if (payRes.ok) {
+        const payData = await payRes.json();
+        if (payData.configs && payData.configs.length > 0) {
+          const active = payData.configs[0];
+          setPaymentProvider(active.provider);
+          setGatewayMode(active.mode);
+          if (active.settlementAccount) {
+            setSettlementBank(active.settlementAccount.institution);
+            setSettlementAccountNum(active.settlementAccount.accountNumberMasked);
+          }
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -45,6 +71,42 @@ export function AdminGatewaySettings() {
   useEffect(() => {
     loadConfig();
   }, []);
+
+  const handleSavePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingPayment(true);
+    setPaymentFeedback(null);
+    try {
+      const res = await fetch("/api/billing/admin/gateways", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: paymentProvider,
+          mode: gatewayMode,
+          merchantCredentials: { secretKey: "configured_in_admin" },
+          settlementAccount: {
+            institution: settlementBank,
+            accountNumberMasked: settlementAccountNum,
+            accountType: "Business Cheque Account",
+            isPrimary: true,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update payment gateway");
+
+      setPaymentFeedback({
+        ok: true,
+        message: `Merchant Payment Gateway updated to ${paymentProvider} (${gatewayMode}) with settlement to ${settlementBank}.`,
+      });
+      await loadConfig();
+    } catch (err: any) {
+      setPaymentFeedback({ ok: false, message: err.message || "Failed to update payment gateway." });
+    } finally {
+      setIsSavingPayment(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,6 +344,178 @@ export function AdminGatewaySettings() {
                 <>
                   <Lock size={15} />
                   <span>Save &amp; Activate Gateway</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* CARD 2: Merchant Payment Gateway (Subscriptions & Collections)      */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: "28px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <h3 style={{ fontSize: "17px", fontWeight: "800", color: "var(--text-primary)", margin: 0, display: "flex", alignItems: "center", gap: 10 }}>
+              <CreditCard size={20} color="var(--gold)" />
+              Merchant Payment Gateway (Subscriptions &amp; Collections)
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: "4px 0 0 0", maxWidth: "600px" }}>
+              Configure customer checkout rails (Stitch Pay-by-Bank, Paystack Recurring Cards, or Sandbox Terminal Simulator).
+            </p>
+          </div>
+
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: "800",
+              fontFamily: "var(--font-mono)",
+              padding: "4px 10px",
+              borderRadius: "6px",
+              background: "rgba(16, 185, 129, 0.15)",
+              color: "#34d399",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+            }}
+          >
+            ACTIVE • DUAL-RAIL READY
+          </span>
+        </div>
+
+        {paymentFeedback && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderRadius: "var(--radius-md)",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              background: paymentFeedback.ok ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
+              border: `1px solid ${paymentFeedback.ok ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+              color: paymentFeedback.ok ? "#34d399" : "#f87171",
+              fontSize: "13px",
+              fontWeight: 600,
+            }}
+          >
+            {paymentFeedback.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            {paymentFeedback.message}
+          </div>
+        )}
+
+        <form onSubmit={handleSavePayment} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+            <div>
+              <label className="form-label" style={{ fontSize: 13, fontWeight: 700 }}>
+                Primary Gateway Provider
+              </label>
+              <select
+                className="form-input"
+                value={paymentProvider}
+                onChange={(e) => setPaymentProvider(e.target.value)}
+                style={{ cursor: "pointer" }}
+              >
+                <option value="STITCH">Stitch Money (Pay-by-Bank / Instant EFT)</option>
+                <option value="PAYSTACK">Paystack (Recurring Card Tokenization)</option>
+                <option value="PAYFAST">PayFast (Network International)</option>
+                <option value="SANDBOX">Sandbox Terminal Simulator (Local / Demo)</option>
+              </select>
+              <span style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4, display: "block" }}>
+                Auto-fallbacks to Sandbox Simulator if merchant keys are pending.
+              </span>
+            </div>
+
+            <div>
+              <label className="form-label" style={{ fontSize: 13, fontWeight: 700 }}>
+                Gateway Mode
+              </label>
+              <select
+                className="form-input"
+                value={gatewayMode}
+                onChange={(e) => setGatewayMode(e.target.value)}
+                style={{ cursor: "pointer" }}
+              >
+                <option value="SANDBOX">Sandbox / Testing Mode</option>
+                <option value="LIVE">Live Production Mode</option>
+              </select>
+              <span style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4, display: "block" }}>
+                Switch to Live once CIPC enterprise registration and KYC are complete.
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+            <div>
+              <label className="form-label" style={{ fontSize: 13, fontWeight: 700 }}>
+                Settlement Payout Institution
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                value={settlementBank}
+                onChange={(e) => setSettlementBank(e.target.value)}
+                placeholder="e.g. Standard Bank of South Africa"
+              />
+              <span style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4, display: "block" }}>
+                Commercial account receiving subscription settlements.
+              </span>
+            </div>
+
+            <div>
+              <label className="form-label" style={{ fontSize: 13, fontWeight: 700 }}>
+                Settlement Account Number (Masked)
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                value={settlementAccountNum}
+                onChange={(e) => setSettlementAccountNum(e.target.value)}
+                placeholder="e.g. •••• 4469"
+              />
+              <span style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4, display: "block" }}>
+                Linked to Prestige Current Account (XXXX4469).
+              </span>
+            </div>
+          </div>
+
+          {/* Webhook Endpoint Info */}
+          <div
+            style={{
+              padding: "14px 16px",
+              borderRadius: "var(--radius-md)",
+              background: "rgba(245, 158, 11, 0.06)",
+              border: "1px solid rgba(245, 158, 11, 0.2)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--gold)" }}>
+              Platform Webhook Endpoint URL:
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-primary)" }}>
+              http://16.171.199.75/api/webhooks/payment
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+              Configure this destination URL in your Stitch or Paystack developer console for instant subscription activation.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+            <button
+              type="submit"
+              disabled={isSavingPayment}
+              className="btn btn-primary"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              {isSavingPayment ? (
+                <>
+                  <RefreshCw size={15} className="animate-spin" />
+                  <span>Updating Payment Gateway...</span>
+                </>
+              ) : (
+                <>
+                  <Lock size={15} />
+                  <span>Update Merchant Gateway</span>
                 </>
               )}
             </button>

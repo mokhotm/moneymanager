@@ -1,14 +1,21 @@
 import { PrismaClient, PaymentStatus, SubscriptionStatus, BillingPeriod, UrgencyFlag } from '@prisma/client';
-import { PaymentGatewayProvider, UnconfiguredPaymentGateway } from './paymentGateway';
+import { PaymentGatewayProvider, getPaymentGatewayProvider } from './paymentGateway';
 import crypto from 'crypto';
 
 export class BillingService {
   private prisma: PrismaClient;
-  private gateway: PaymentGatewayProvider;
+  private gateway: PaymentGatewayProvider | null;
 
   constructor(prismaClient?: PrismaClient, gatewayProvider?: PaymentGatewayProvider) {
     this.prisma = prismaClient || new PrismaClient();
-    this.gateway = gatewayProvider || new UnconfiguredPaymentGateway();
+    this.gateway = gatewayProvider || null;
+  }
+
+  async getGateway(): Promise<PaymentGatewayProvider> {
+    if (!this.gateway) {
+      this.gateway = await getPaymentGatewayProvider(this.prisma);
+    }
+    return this.gateway;
   }
 
   /**
@@ -68,7 +75,8 @@ export class BillingService {
       },
     });
 
-    const session = await this.gateway.createHostedCheckoutSession(amount, 'ZAR', {
+    const gateway = await this.getGateway();
+    const session = await gateway.createHostedCheckoutSession(amount, 'ZAR', {
       pendingPaymentId: pendingPayment.id,
       idempotencyKey,
       userId: params.userId,
@@ -93,7 +101,8 @@ export class BillingService {
     if (!secret) {
       return { success: false, statusCode: 500, error: 'Webhook secret is not configured' };
     }
-    const isValid = this.gateway.verifyWebhookSignature(payloadRaw, signature, secret);
+    const gateway = await this.getGateway();
+    const isValid = gateway.verifyWebhookSignature(payloadRaw, signature, secret);
     if (!isValid) {
       return { success: false, statusCode: 401, error: 'Invalid webhook signature' };
     }
