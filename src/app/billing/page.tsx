@@ -46,6 +46,40 @@ interface CurrentSubscription {
   };
 }
 
+const TIER_FEATURES: Record<string, { subtitle: string; features: string[] }> = {
+  "Starter Free": {
+    subtitle: "Essential debt tracking & manual line items.",
+    features: [
+      "Up to 3 Bank & Asset Accounts",
+      "5 Debt Trackers & Snowball Engine",
+      "Monthly Budget Allocation Engine",
+      "Multi-Currency & Line-Item Tracking",
+    ],
+  },
+  "Pro Wealth Accelerator": {
+    subtitle: "Complete dual-track debt cascade & AI radar engine.",
+    features: [
+      "Unlimited Accounts & Debts",
+      "Dual-Track Consumer vs Mortgage Engine",
+      "GPS Geotagged Merchant Spending Radar",
+      "BYOK Custom LLM Engine Key Vault",
+      "Multi-Agent AI (Document OCR & Vector RAG)",
+      "365-Day Cashflow Forecasting",
+    ],
+  },
+  "Executive Enterprise": {
+    subtitle: "Multi-family wealth workspace & automated valuation feeds.",
+    features: [
+      "Everything in Pro Tier",
+      "Real Estate & Automated Property Valuation",
+      "Direct OpenBanking Feeds (8 SA Banks via Stitch)",
+      "Dedicated AI Financial Advisory Coach",
+      "Multi-Entity Workspaces (Personal, Business, Trust)",
+      "Priority Concierge Support & Forensic Auditing",
+    ],
+  },
+};
+
 export default function BillingPage() {
   const [tiers, setTiers] = useState<SubscriptionTier[]>([]);
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
@@ -59,35 +93,33 @@ export default function BillingPage() {
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const [tiersRes, subRes] = await Promise.all([
         fetch("/api/billing/tiers"),
         fetch("/api/billing/subscription"),
       ]);
 
-      const tiersData = await tiersRes.json();
-      const subData = await subRes.json();
+      if (tiersRes.ok) {
+        const tiersData = await tiersRes.json();
+        setTiers(tiersData.tiers || []);
+      }
 
-      if (tiersData.tiers) setTiers(tiersData.tiers);
-      if (subData) setSubscription(subData);
+      if (subRes.ok) {
+        const subData = await subRes.json();
+        setSubscription(subData);
+      }
     } catch (err) {
-      console.error("Error loading billing data:", err);
+      console.error("Failed to load billing data:", err);
+      setNotification({ message: "Failed to load subscription details", type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
-    if (tier.name.toLowerCase().includes("free")) {
-      setNotification({ message: "You are currently on the Starter Free tier.", type: "success" });
-      return;
-    }
-
-    setProcessingTierId(tier.id);
-    setNotification(null);
-
     try {
+      setProcessingTierId(tier.id);
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -304,6 +336,7 @@ export default function BillingPage() {
                 borderRadius: "6px",
                 background: "rgba(16, 185, 129, 0.2)",
                 color: "#34d399",
+                fontWeight: "800",
               }}
             >
               Save 17%
@@ -318,9 +351,19 @@ export default function BillingPage() {
           const isCurrent = subscription?.tier?.name?.toLowerCase().includes(tier.name.toLowerCase().split(" ")[0]);
           const isPopular = tier.name.toLowerCase().includes("pro") || tier.name.toLowerCase().includes("wealth");
           const ent = parseEntitlements(tier);
-          const price = billingPeriod === "ANNUAL" && tier.priceAnnual != null
-            ? Math.round(Number(tier.priceAnnual) / 12)
+          const price = billingPeriod === "ANNUAL" && tier.priceAnnual != null && Number(tier.priceAnnual) > 0
+            ? Math.floor(Number(tier.priceAnnual) / 12)
             : Number(tier.priceMonthly);
+
+          const tierConfig = TIER_FEATURES[tier.name] || {
+            subtitle: "Enterprise wealth platform tier.",
+            features: [
+              `${ent.maxAccounts === Infinity || ent.maxAccounts === "UNLIMITED" ? "Unlimited" : (ent.maxAccounts || 3)} Bank & Asset Accounts`,
+              `${ent.maxDebts === Infinity || ent.maxDebts === "UNLIMITED" ? "Unlimited" : (ent.maxDebts || 5)} Debt Trackers`,
+              "Dual-Track Snowball Waterfall Engine",
+              "GPS Geotagged Spending Radar",
+            ],
+          };
 
           return (
             <div
@@ -371,11 +414,14 @@ export default function BillingPage() {
                     / month
                   </span>
                 </div>
-                {billingPeriod === "ANNUAL" && tier.priceAnnual != null && tier.priceAnnual > 0 && (
-                  <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
-                    Billed R{Number(tier.priceAnnual)} annually
+                {billingPeriod === "ANNUAL" && tier.priceAnnual != null && Number(tier.priceAnnual) > 0 && (
+                  <div style={{ fontSize: "12px", color: isPopular ? "#fbbf24" : "#60a5fa", marginTop: "4px", fontWeight: 600 }}>
+                    Billed R{Number(tier.priceAnnual).toLocaleString()} annually
                   </div>
                 )}
+                <p style={{ fontSize: "12.5px", color: "#94a3b8", marginTop: "10px", marginBottom: "0" }}>
+                  {tierConfig.subtitle}
+                </p>
               </div>
 
               {/* Feature Checklist */}
@@ -384,48 +430,14 @@ export default function BillingPage() {
                   Includes:
                 </div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#f1f5f9" }}>
-                    <div style={{ color: "#34d399" }}>
-                      <Check size={16} />
-                    </div>
-                    {ent.maxAccounts === Infinity || ent.maxAccounts === "UNLIMITED" ? "Unlimited Accounts" : `${ent.maxAccounts || 3} Bank & Asset Accounts`}
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#f1f5f9" }}>
-                    <div style={{ color: "#34d399" }}>
-                      <Check size={16} />
-                    </div>
-                    {ent.maxDebts === Infinity || ent.maxDebts === "UNLIMITED" ? "Unlimited Debt Trackers" : `${ent.maxDebts || 5} Debt Trackers`}
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.dualTrackWaterfall ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.dualTrackWaterfall ? "#34d399" : "#475569" }}>
-                      <Check size={16} />
-                    </div>
-                    Dual-Track Snowball Waterfall Engine
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.spendingLocationRadar ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.spendingLocationRadar ? "#34d399" : "#475569" }}>
-                      <Check size={16} />
-                    </div>
-                    GPS Geotagged Spending Radar
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.byokLLM ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.byokLLM ? "#34d399" : "#475569" }}>
-                      <Check size={16} />
-                    </div>
-                    BYOK Custom LLM Engine Key Vault
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.multiAgentOCR ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.multiAgentOCR ? "#34d399" : "#475569" }}>
-                      <Check size={16} />
-                    </div>
-                    Multi-Agent OCR Document Ingestion
-                  </li>
-                  <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: ent.windeedValuations ? "#f1f5f9" : "#64748b" }}>
-                    <div style={{ color: ent.windeedValuations ? "#34d399" : "#475569" }}>
-                      <Check size={16} />
-                    </div>
-                    Windeed Deeds Office Property Valuations
-                  </li>
+                  {tierConfig.features.map((feat, idx) => (
+                    <li key={idx} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#f1f5f9" }}>
+                      <div style={{ color: isPopular ? "#fbbf24" : "#34d399", flexShrink: 0 }}>
+                        <Check size={16} />
+                      </div>
+                      {feat}
+                    </li>
+                  ))}
                 </ul>
               </div>
 

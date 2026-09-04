@@ -642,6 +642,53 @@ describe("Corrected Issues Regression Suite (Zero-Regression Enforcement)", () =
     expect(agentMemoryContent).not.toContain("bg-slate-");
     expect(agentMemoryContent).not.toContain("backdrop-blur-");
   });
+
+  // ── FIX-025: Alignment of Subscription Tiers & Pricing Between Login and Billing Hubs ──
+  it("FIX-025: Subscription tiers and pricing must be 100% harmonized between Login and Billing hubs", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const { TIER_SPECIFICATIONS } = await import("../src/lib/subscriptionGate");
+    const { prisma } = await import("../src/lib/prisma");
+
+    // 1. Verify TIER_SPECIFICATIONS has exact canonical pricing
+    expect(TIER_SPECIFICATIONS.STARTER_FREE.priceZar).toBe(0);
+    expect(TIER_SPECIFICATIONS.STARTER_FREE.priceAnnualZar).toBe(0);
+    expect(TIER_SPECIFICATIONS.PRO_WEALTH.priceZar).toBe(199);
+    expect(TIER_SPECIFICATIONS.PRO_WEALTH.priceAnnualZar).toBe(1990);
+    expect(TIER_SPECIFICATIONS.EXECUTIVE_ENTERPRISE.priceZar).toBe(499);
+    expect(TIER_SPECIFICATIONS.EXECUTIVE_ENTERPRISE.priceAnnualZar).toBe(4990);
+
+    // 2. Query active tiers in database - must have exactly 3 canonical tiers, no legacy Free/Plus/Premium
+    const activeTiers = await prisma.subscriptionTier.findMany({
+      where: { isActive: true },
+      orderBy: { priceMonthly: "asc" },
+    });
+    const activeTierNames = activeTiers.map((t) => t.name);
+    expect(activeTierNames).toEqual(["Starter Free", "Pro Wealth Accelerator", "Executive Enterprise"]);
+
+    // 3. Verify Login page code matches canonical pricing, ZAR default, and Save 17% discount
+    const loginPagePath = path.join(process.cwd(), "src/app/login/page.tsx");
+    const loginPageContent = fs.readFileSync(loginPagePath, "utf-8");
+
+    expect(loginPageContent).toContain('const [currency, setCurrency] = useState<SupportedCurrency>("ZAR");');
+    expect(loginPageContent).toContain("Save 17%");
+    expect(loginPageContent).toContain('"R 199"');
+    expect(loginPageContent).toContain('"R 165"');
+    expect(loginPageContent).toContain('"R 499"');
+    expect(loginPageContent).toContain('"R 415"');
+    expect(loginPageContent).toContain("Billed R 1,990 annually");
+    expect(loginPageContent).toContain("Billed R 4,990 annually");
+
+    // 4. Verify Billing page code matches canonical pricing and features
+    const billingPagePath = path.join(process.cwd(), "src/app/billing/page.tsx");
+    const billingPageContent = fs.readFileSync(billingPagePath, "utf-8");
+
+    expect(billingPageContent).toContain("Save 17%");
+    expect(billingPageContent).toContain("Math.floor(Number(tier.priceAnnual) / 12)");
+    expect(billingPageContent).toContain("Up to 3 Bank & Asset Accounts");
+    expect(billingPageContent).toContain("Dual-Track Consumer vs Mortgage Engine");
+    expect(billingPageContent).toContain("Direct OpenBanking Feeds (8 SA Banks via Stitch)");
+  });
 });
 
 

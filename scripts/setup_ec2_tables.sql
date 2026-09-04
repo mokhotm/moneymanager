@@ -67,3 +67,6 @@ CREATE TABLE IF NOT EXISTS "UserAgentMemory" (
 CREATE UNIQUE INDEX IF NOT EXISTS "UserAgentMemory_userId_domain_key_key" ON "UserAgentMemory"("userId", "domain", "key");
 CREATE INDEX IF NOT EXISTS "UserAgentMemory_userId_domain_idx" ON "UserAgentMemory"("userId", "domain");
 
+-- Deactivate legacy subscription tiers on EC2
+UPDATE "SubscriptionTier" SET "isActive" = false WHERE "name" IN ('Free', 'Plus', 'Premium');
+

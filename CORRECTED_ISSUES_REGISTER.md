@@ -354,3 +354,37 @@ This document records all software, data parsing, geocoding, and deployment issu
   * **Workspace UI Audit**: Systematically audited key application routes (`/`, `/debts`, `/budget`, `/salary-calculator`, `/settings?tab=banking`, `/settings?tab=agent-memory`, `/settings?tab=property-data`, `/profile`), verifying zero visual regressions and 100% design fidelity.
 * **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-024`).
 
+---
+
+### FIX-025: Alignment of Subscription Tiers & Pricing Between Login and Billing Hubs
+* **Date Identified**: 2026-09-04
+* **Symptom**:
+  * The pricing information presented on the landing / login page (`/login#pricing`) and the in-app billing page (`/billing`) was completely out of alignment:
+    * **Currency Mismatch**: Login page was hardcoded to default to US Dollars (`$0`, `$12`, `$29`), whereas Billing page rendered in South African Rand (`R0`, `R199`, `R499`).
+    * **Tier Count & Legacy Pollution**: `/billing` displayed 6 duplicate and legacy tier cards (`Free`, `Starter Free`, `Plus`, `Premium`, `Pro Wealth Accelerator`, `Executive Enterprise`), whereas `/login` displayed 3 tiers.
+    * **Annual Billing Discount Discrepancy**: Login page displayed `Save 20%`, while Billing displayed `Save 17%` (R 1,990 vs R 2,388, which is mathematically 16.7% ~ 17%).
+    * **Annual Rate Display**: Pro annual billing on Login showed `R 159` while Billing showed `R 166` (or `Math.round(1990/12)`).
+    * **Feature Checklist Inconsistency**: Feature lists and descriptions diverged between `/login` and `/billing`, and `/billing` cards had a static 7-row checklist with greyed-out items.
+* **Root Cause**:
+  * `LoginPage` (`src/app/login/page.tsx`) initialized currency state to `"USD"` (`useState<SupportedCurrency>("USD")`), never invoked `setCurrency`, and had non-interactive currency preview pills without `onClick` handlers.
+  * The database on EC2 and local environments contained deprecated legacy tiers (`Free`, `Plus`, `Premium`) created during early SaaS prototyping that were never deactivated.
+  * `/billing/page.tsx` was not using tier-specific feature definitions, instead iterating through a hardcoded legacy list.
+* **Exact Resolution**:
+  * **Canonical 3-Tier Specification**:
+    * Enforced the 3 canonical tiers across the entire platform:
+      1. **Starter Free**: `R 0 / month` | `R 0 / year`.
+      2. **Pro Wealth Accelerator** (Most Popular): `R 199 / month` | Annual: `R 165 / month`, billed `R 1,990 / year` · Save 17%.
+      3. **Executive Enterprise**: `R 499 / month` | Annual: `R 415 / month`, billed `R 4,990 / year` · Save 17%.
+  * **Database & Route Cleanup**:
+    * Updated `src/app/api/billing/tiers/route.ts` to automatically deactivate any legacy/stale tiers (`Free`, `Plus`, `Premium`) and return strictly active canonical tiers in ascending monthly price order.
+    * Added legacy tier deactivation query in `scripts/setup_ec2_tables.sql`.
+  * **Login Page Alignment**:
+    * Set default currency state to `"ZAR"` in `src/app/login/page.tsx`.
+    * Made currency selector pills fully interactive with click handlers and active cyan glow.
+    * Added currency quick-switcher beside the billing cycle toggle in the pricing section.
+    * Aligned annual savings badge to `Save 17%` and included annual billed amounts (`Billed R 1,990 annually` & `Billed R 4,990 annually`).
+  * **Billing Hub Alignment**:
+    * Updated `src/app/billing/page.tsx` to calculate annual monthly rate with `Math.floor(Number(tier.priceAnnual) / 12)` displaying exact `R165 / month` and `R415 / month`.
+    * Implemented `TIER_FEATURES` mapping in `src/app/billing/page.tsx` that mirrors the login page subtitles and feature checklists word-for-word.
+* **Automated Regression Test**: `tests/regressionAuditSuite.test.ts` (`FIX-025`).
+

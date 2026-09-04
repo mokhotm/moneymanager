@@ -40,7 +40,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-type SupportedCurrency = "USD" | "EUR" | "GBP" | "ZAR";
+type SupportedCurrency = "ZAR" | "USD" | "EUR" | "GBP";
 
 const CURRENCY_CONFIG: Record<
   SupportedCurrency,
@@ -50,51 +50,61 @@ const CURRENCY_CONFIG: Record<
     starterPrice: string;
     proMonthly: string;
     proAnnual: string;
+    proAnnualBilled: string;
     enterpriseMonthly: string;
     enterpriseAnnual: string;
+    enterpriseAnnualBilled: string;
   }
 > = {
+  ZAR: {
+    symbol: "R",
+    code: "ZAR",
+    starterPrice: "R 0",
+    proMonthly: "R 199",
+    proAnnual: "R 165",
+    proAnnualBilled: "Billed R 1,990 annually",
+    enterpriseMonthly: "R 499",
+    enterpriseAnnual: "R 415",
+    enterpriseAnnualBilled: "Billed R 4,990 annually",
+  },
   USD: {
     symbol: "$",
     code: "USD",
     starterPrice: "$0",
     proMonthly: "$12",
-    proAnnual: "$9.99",
+    proAnnual: "$10",
+    proAnnualBilled: "Billed $120 annually",
     enterpriseMonthly: "$29",
     enterpriseAnnual: "$24",
+    enterpriseAnnualBilled: "Billed $290 annually",
   },
   EUR: {
     symbol: "€",
     code: "EUR",
     starterPrice: "€0",
     proMonthly: "€11",
-    proAnnual: "€8.99",
+    proAnnual: "€9",
+    proAnnualBilled: "Billed €110 annually",
     enterpriseMonthly: "€27",
     enterpriseAnnual: "€22",
+    enterpriseAnnualBilled: "Billed €265 annually",
   },
   GBP: {
     symbol: "£",
     code: "GBP",
     starterPrice: "£0",
     proMonthly: "£9.50",
-    proAnnual: "£7.99",
+    proAnnual: "£8",
+    proAnnualBilled: "Billed £95 annually",
     enterpriseMonthly: "£23",
     enterpriseAnnual: "£19",
-  },
-  ZAR: {
-    symbol: "R",
-    code: "ZAR",
-    starterPrice: "R 0",
-    proMonthly: "R 199",
-    proAnnual: "R 159",
-    enterpriseMonthly: "R 499",
-    enterpriseAnnual: "R 399",
+    enterpriseAnnualBilled: "Billed £230 annually",
   },
 };
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"LOGIN" | "REGISTER">("LOGIN");
-  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
+  const [currency, setCurrency] = useState<SupportedCurrency>("ZAR");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Login State
@@ -1412,21 +1422,36 @@ export default function LoginPage() {
               Whether tracking accounts in US Dollars ($), Euros (€), British Pounds (£), South African Rand (R), or offshore holdings, MoneyManager seamlessly denominates and unifies your net worth into a single coherent financial narrative.
             </p>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {["USD ($)", "EUR (€)", "GBP (£)", "ZAR (R)", "CAD (C$)", "AUD (A$)"].map((cur) => (
-                <span
-                  key={cur}
-                  style={{
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    padding: "5px 12px",
-                    borderRadius: "999px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                  }}
-                >
-                  {cur}
-                </span>
-              ))}
+              {(
+                [
+                  { code: "ZAR" as SupportedCurrency, label: "ZAR (R)" },
+                  { code: "USD" as SupportedCurrency, label: "USD ($)" },
+                  { code: "EUR" as SupportedCurrency, label: "EUR (€)" },
+                  { code: "GBP" as SupportedCurrency, label: "GBP (£)" },
+                ] as const
+              ).map((cur) => {
+                const isSelected = currency === cur.code;
+                return (
+                  <button
+                    key={cur.code}
+                    type="button"
+                    onClick={() => setCurrency(cur.code)}
+                    style={{
+                      background: isSelected ? "rgba(56, 189, 248, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                      border: `1px solid ${isSelected ? "#38bdf8" : "rgba(255, 255, 255, 0.1)"}`,
+                      color: isSelected ? "#38bdf8" : "#94a3b8",
+                      padding: "5px 14px",
+                      borderRadius: "999px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {cur.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1497,65 +1522,102 @@ export default function LoginPage() {
               Unlock live statement reconciliation, dual-track debt cascade engines, and multi-agent AI assistants.
             </p>
 
-            {/* Billing Cycle Pill Switcher */}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                background: "rgba(8, 14, 28, 0.9)",
-                padding: "4px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                gap: "4px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setBillingCycle("MONTHLY")}
+            {/* Billing Cycle & Currency Switchers */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
+              {/* Billing Cycle Pill Switcher */}
+              <div
                 style={{
-                  padding: "7px 18px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  background: "rgba(8, 14, 28, 0.9)",
+                  padding: "4px",
                   borderRadius: "999px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  border: "none",
-                  background: billingCycle === "MONTHLY" ? "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)" : "transparent",
-                  color: billingCycle === "MONTHLY" ? "#030712" : "#94a3b8",
-                  cursor: "pointer",
-                  transition: "all 0.18s ease",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  gap: "4px",
                 }}
               >
-                Monthly Billing
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingCycle("ANNUAL")}
-                style={{
-                  padding: "7px 18px",
-                  borderRadius: "999px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  border: "none",
-                  background: billingCycle === "ANNUAL" ? "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)" : "transparent",
-                  color: billingCycle === "ANNUAL" ? "#030712" : "#94a3b8",
-                  cursor: "pointer",
-                  transition: "all 0.18s ease",
-                }}
-              >
-                Annual Billing{" "}
-                <span
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle("MONTHLY")}
                   style={{
-                    fontSize: "10px",
-                    background: billingCycle === "ANNUAL" ? "rgba(0,0,0,0.2)" : "rgba(16,185,129,0.2)",
-                    color: billingCycle === "ANNUAL" ? "#030712" : "#10b981",
-                    padding: "2px 6px",
-                    borderRadius: "6px",
-                    marginLeft: "4px",
-                    fontWeight: 800,
+                    padding: "7px 18px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    border: "none",
+                    background: billingCycle === "MONTHLY" ? "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)" : "transparent",
+                    color: billingCycle === "MONTHLY" ? "#030712" : "#94a3b8",
+                    cursor: "pointer",
+                    transition: "all 0.18s ease",
                   }}
                 >
-                  Save 20%
-                </span>
-              </button>
+                  Monthly Billing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle("ANNUAL")}
+                  style={{
+                    padding: "7px 18px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    border: "none",
+                    background: billingCycle === "ANNUAL" ? "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)" : "transparent",
+                    color: billingCycle === "ANNUAL" ? "#030712" : "#94a3b8",
+                    cursor: "pointer",
+                    transition: "all 0.18s ease",
+                  }}
+                >
+                  Annual Billing{" "}
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      background: billingCycle === "ANNUAL" ? "rgba(0,0,0,0.2)" : "rgba(16,185,129,0.2)",
+                      color: billingCycle === "ANNUAL" ? "#030712" : "#10b981",
+                      padding: "2px 6px",
+                      borderRadius: "6px",
+                      marginLeft: "4px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Save 17%
+                  </span>
+                </button>
+              </div>
+
+              {/* Currency Quick-Switcher Pill */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  background: "rgba(8, 14, 28, 0.9)",
+                  padding: "4px",
+                  borderRadius: "999px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  gap: "2px",
+                }}
+              >
+                {(["ZAR", "USD", "EUR", "GBP"] as SupportedCurrency[]).map((cur) => (
+                  <button
+                    key={cur}
+                    type="button"
+                    onClick={() => setCurrency(cur)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "999px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      border: "none",
+                      background: currency === cur ? "rgba(56, 189, 248, 0.2)" : "transparent",
+                      color: currency === cur ? "#38bdf8" : "#64748b",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {cur} ({CURRENCY_CONFIG[cur].symbol})
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -1582,10 +1644,10 @@ export default function LoginPage() {
                 <p style={{ fontSize: "12.5px", color: "#64748b", marginBottom: "22px" }}>Essential debt tracking &amp; manual line items.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#cbd5e1", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Up to 3 Linked Accounts</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Standard Snowball Debt Engine</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Monthly Budget Allocation</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Multi-Currency Support</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Up to 3 Bank &amp; Asset Accounts</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> 5 Debt Trackers &amp; Snowball Engine</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Monthly Budget Allocation Engine</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#10b981" }} /> Multi-Currency &amp; Line-Item Tracking</div>
                 </div>
               </div>
 
@@ -1648,14 +1710,20 @@ export default function LoginPage() {
                   {billingCycle === "MONTHLY" ? curr.proMonthly : curr.proAnnual}{" "}
                   <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: 500 }}>/ month</span>
                 </div>
+                {billingCycle === "ANNUAL" && (
+                  <div style={{ fontSize: "12px", color: "#fbbf24", marginBottom: "8px", fontWeight: 600 }}>
+                    {curr.proAnnualBilled}
+                  </div>
+                )}
                 <p style={{ fontSize: "12.5px", color: "#94a3b8", marginBottom: "22px" }}>Complete dual-track debt cascade &amp; AI radar engine.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#f8fafc", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Unlimited Linked Accounts &amp; Debts</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Unlimited Accounts &amp; Debts</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Dual-Track Consumer vs Mortgage Engine</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Multi-Agent AI (Document OCR &amp; RAG)</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Forensic Ground Truth &amp; Reversal Netting</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Geotagged Merchant Spending Radar</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> GPS Geotagged Merchant Spending Radar</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> BYOK Custom LLM Engine Key Vault</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> Multi-Agent AI (Document OCR &amp; Vector RAG)</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#fbbf24" }} /> 365-Day Cashflow Forecasting</div>
                 </div>
               </div>
 
@@ -1699,13 +1767,20 @@ export default function LoginPage() {
                   {billingCycle === "MONTHLY" ? curr.enterpriseMonthly : curr.enterpriseAnnual}{" "}
                   <span style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>/ month</span>
                 </div>
+                {billingCycle === "ANNUAL" && (
+                  <div style={{ fontSize: "12px", color: "#60a5fa", marginBottom: "8px", fontWeight: 600 }}>
+                    {curr.enterpriseAnnualBilled}
+                  </div>
+                )}
                 <p style={{ fontSize: "12.5px", color: "#64748b", marginBottom: "22px" }}>Multi-family wealth workspace &amp; automated valuation feeds.</p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#cbd5e1", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Everything in Pro Tier</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Real Estate &amp; Automated Property Valuation</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Direct OpenBanking Feeds</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Direct OpenBanking Feeds (8 SA Banks via Stitch)</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Dedicated AI Financial Advisory Coach</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Multi-Entity Workspaces (Personal, Business, Trust)</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={15} style={{ color: "#60a5fa" }} /> Priority Concierge Support &amp; Forensic Auditing</div>
                 </div>
               </div>
 
